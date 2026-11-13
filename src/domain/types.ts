@@ -66,6 +66,8 @@ export type Participant = {
    * Only used on the referenced side of a binary relationship; it must be UNIQUE.
    */
   refAttributeId?: string;
+  /** FK column names to use instead of the generated ones, one per referenced column (set when importing a DDL). */
+  fkColumnNames?: string[];
 };
 
 export type Relationship = {

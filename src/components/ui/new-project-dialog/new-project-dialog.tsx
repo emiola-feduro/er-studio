@@ -65,7 +65,10 @@ const NewProjectDialog = () => {
           />
         </div>
         {startWith === 'random' && <NewProjectDialogRandomFields random={random} />}
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
+          <Button variant="ghost" className="mr-auto" onClick={() => useUiStore.getState().setImportOpen(true)}>
+            {t('newProject.import')}
+          </Button>
           <Button onClick={() => setOpen(false)}>{t('common.cancel')}</Button>
           <Button type="submit" variant="primary" disabled={!name.trim() || busy}>
             {startWith === 'random' ? t('newProject.generate') : t('newProject.create')}

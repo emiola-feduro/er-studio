@@ -239,9 +239,9 @@ export const buildSchema = (project: Project): Schema => {
       fkColumns.set(pl.id, []);
       return [];
     }
-    const columns: Column[] = refPk.map((ref) => ({
+    const columns: Column[] = refPk.map((ref, index) => ({
       id: fkColumnId(pl.rel.id, pl.participant.id, ref.id),
-      name: fkColumnName(pl.prefix, ref.name),
+      name: pl.participant.fkColumnNames?.[index]?.trim() || fkColumnName(pl.prefix, ref.name),
       ...fkTypeFor(dialect, ref),
       nullable: pl.nullable,
       unique: false,

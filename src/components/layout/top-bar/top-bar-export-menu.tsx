@@ -54,6 +54,7 @@ const TopBarExportMenu = () => {
           separatorBefore: true,
         },
         { label: t('export.importJson'), onSelect: importProject },
+        { label: t('import.menu'), onSelect: () => useUiStore.getState().setImportOpen(true) },
       ]}
     />
   );
