@@ -674,4 +674,8 @@ export const en: Messages = {
   'expr.meaning.isNull': "only rows not deleted",
   'expr.meaning.isTrue': "only true",
   'expr.meaning.equals': "only {value}",
+
+  // Names language
+  'inspector.namesLocale': "Language of the table names",
+  'inspector.namesLocaleHint': "Puts automatic FK names in singular: customers → customer_id",
 };

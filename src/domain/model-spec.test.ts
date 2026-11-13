@@ -30,7 +30,7 @@ describe('buildModelSpec', () => {
     const pedidos = spec.entities.find((e) => e.name === 'pedidos')!;
     expect(pedidos.primaryKey).toEqual(['id']);
     expect(pedidos.columns.find((c) => c.name === 'estado')).toMatchObject({ logicalType: 'enum', sqlType: 'VARCHAR(1)', enumValues: ['A', 'B'], default: "'A'", nullable: false });
-    expect(pedidos.columns.find((c) => c.name === 'clientes_id')).toMatchObject({ references: { table: 'clientes', column: 'id' }, nullable: false });
+    expect(pedidos.columns.find((c) => c.name === 'cliente_id')).toMatchObject({ references: { table: 'clientes', column: 'id' }, nullable: false });
     expect(pedidos.columns.find((c) => c.name === 'id')).toMatchObject({ primaryKey: true, autoIncrement: true, logicalType: 'int' });
   });
 
@@ -44,7 +44,7 @@ describe('buildModelSpec', () => {
     expect(relations('productos')).toContainEqual(expect.objectContaining({ kind: 'many-to-many', targets: ['pedidos'], via: 'pedidos_productos' }));
     const junction = spec.entities.find((e) => e.name === 'pedidos_productos')!;
     expect(junction.kind).toBe('junction');
-    expect(junction.primaryKey).toEqual(['pedidos_id', 'productos_id']);
+    expect(junction.primaryKey).toEqual(['pedido_id', 'producto_id']);
     expect(relations('empleados').map((r) => r.kind).sort()).toEqual(['many-to-one', 'one-to-many']);
     expect(relations('empleados').find((r) => r.kind === 'many-to-one')!.optional).toBe(true);
   });

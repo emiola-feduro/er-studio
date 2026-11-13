@@ -710,6 +710,10 @@ export const es = {
   'expr.meaning.isNull': "solo filas no borradas",
   'expr.meaning.isTrue': "solo verdaderos",
   'expr.meaning.equals': "solo {value}",
+
+  // Names language
+  'inspector.namesLocale': "Idioma de los nombres de tablas",
+  'inspector.namesLocaleHint': "Pone en singular el nombre de las FK automáticas: clientes → cliente_id",
 } as const;
 
 export type Messages = { [K in keyof typeof es]: string };

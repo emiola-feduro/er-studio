@@ -1,4 +1,4 @@
-import { t } from '../i18n';
+import { getLocale, t } from '../i18n';
 import { create } from 'zustand';
 import { createProject as newProject, syncJunctions, uid } from '../domain/model';
 import type { DialectId, Project, ProjectMeta } from '../domain/types';
@@ -126,6 +126,8 @@ const useProjectStore = create<ProjectState>((set, get) => {
 
     createProject: async (name, dialect, databaseName) => {
       const project = newProject(name, dialect);
+      // Names are written in the interface language, so FK names singularize in that language.
+      project.namesLocale = getLocale();
       if (databaseName?.trim()) project.databaseName = databaseName.trim();
       await persistNew(project);
     },

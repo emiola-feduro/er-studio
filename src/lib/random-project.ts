@@ -20,6 +20,7 @@ export type RandomProjectOptions = {
 /** A random model already laid out, optionally with random rows in every table. */
 export const createRandomProject = ({ name, dialect, databaseName, entityCount, themeId, recordCount, namesLocale }: RandomProjectOptions): Project => {
   const project = generateRandomModel({ dialect, entityCount, themeId, namesLocale });
+  project.namesLocale = namesLocale;
   const positions = layoutSchema(buildSchema(project));
   for (const entity of project.entities) entity.position = positions.get(entity.id) ?? entity.position;
   if (recordCount > 0) fillRandomRecords(project, recordCount, Math.random, namesLocale);

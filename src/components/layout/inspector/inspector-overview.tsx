@@ -1,3 +1,5 @@
+import { LOCALES, type Locale } from '../../../i18n';
+import { setNamesLocale } from '../../../lib/actions';
 import useT from '../../../hooks/ui/use-t';
 import useDerived from '../../../hooks/data/use-derived';
 import useProjectStore from '../../../stores/use-project-store';
@@ -36,6 +38,28 @@ const InspectorOverview = () => {
             </div>
           ))}
         </dl>
+        <div className="mt-4 space-y-1">
+          <label htmlFor="names-locale" className="block font-medium">
+            {t('inspector.namesLocale')}
+          </label>
+          <select
+            id="names-locale"
+            className="field field-sm"
+            title={t('inspector.namesLocaleHint')}
+            aria-describedby="names-locale-hint"
+            value={project.namesLocale ?? 'es'}
+            onChange={(e) => setNamesLocale(e.target.value as Locale)}
+          >
+            {LOCALES.map(({ id, name }) => (
+              <option key={id} value={id} lang={id}>
+                {name}
+              </option>
+            ))}
+          </select>
+          <span id="names-locale-hint" className="block text-[0.86em] text-muted">
+            {t('inspector.namesLocaleHint')}
+          </span>
+        </div>
       </div>
       <InspectorSection title={issues.length ? t('common.warningsTitle', { count: issues.length }) : t('common.warnings')}>
         <InspectorIssueList issues={issues} />

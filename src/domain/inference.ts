@@ -1,6 +1,6 @@
 import { t } from '../i18n';
 import { fkTypeFor } from './dialects';
-import { isRecursive, needsJunction, participantLabel } from './model';
+import { fkPrefix, isRecursive, needsJunction } from './model';
 import type {
   Column,
   EndMarker,
@@ -75,7 +75,7 @@ const buildPlacements = (project: Project, issues: Issue[]): Placement[] => {
           participant: p,
           holderId: junction.id,
           refId: p.entityId,
-          prefix: participantLabel(p, entities),
+          prefix: fkPrefix(p, entities, project.namesLocale),
           identifying: composite && keyIds.has(p.id),
           inDefaultKey: keyIds.has(p.id),
           nullable: false,
@@ -104,7 +104,7 @@ const buildPlacements = (project: Project, issues: Issue[]): Placement[] => {
       participant: parent,
       holderId: child.entityId,
       refId: parent.entityId,
-      prefix: participantLabel(parent, entities),
+      prefix: fkPrefix(parent, entities, project.namesLocale),
       identifying: rel.identifying && !recursive,
       inDefaultKey: false,
       nullable: parent.optional && !(rel.identifying && !recursive),

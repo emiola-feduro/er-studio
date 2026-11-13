@@ -1,3 +1,4 @@
+import type { Locale } from '../i18n';
 export type DialectId = 'postgresql' | 'mysql' | 'sqlite' | 'sqlserver' | 'oracle';
 
 export type ReferentialAction = 'NO ACTION' | 'RESTRICT' | 'CASCADE' | 'SET NULL' | 'SET DEFAULT';
@@ -86,6 +87,8 @@ export type Project = {
   dialect: DialectId;
   /** Database the DDL creates and switches to. Empty means the script runs on the current database. */
   databaseName?: string;
+  /** Language the table names are written in; used to put them in singular for FK names. Spanish when absent. */
+  namesLocale?: Locale;
   entities: Entity[];
   relationships: Relationship[];
   /** Data rows per table id. Optional so projects saved before this feature keep loading. */

@@ -86,9 +86,9 @@ describe('buildOpenApi', () => {
     expect(create.properties).not.toHaveProperty('id');
     expect(create.required).toEqual(['email', 'codigo']);
     const pedidos = doc.components.schemas.Pedidos as { properties: Record<string, { description: string }> };
-    expect(pedidos.properties.clientes_id.description).toContain('Referencia a clientes.id');
+    expect(pedidos.properties.cliente_id.description).toContain('Referencia a clientes.id');
     const list = doc.paths['/pedidos'].get as { parameters: { name?: string }[] };
-    expect(list.parameters.map((p) => p.name)).toContain('clientes_id');
+    expect(list.parameters.map((p) => p.name)).toContain('cliente_id');
   });
 
   it('uses the first record as the example', () => {

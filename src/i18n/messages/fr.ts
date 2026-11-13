@@ -674,4 +674,8 @@ export const fr: Messages = {
   'expr.meaning.isNull': "seulement les lignes non supprimées",
   'expr.meaning.isTrue': "seulement vrai",
   'expr.meaning.equals': "seulement {value}",
+
+  // Names language
+  'inspector.namesLocale': "Langue des noms de tables",
+  'inspector.namesLocaleHint': "Met au singulier le nom des FK automatiques : clients → client_id",
 };

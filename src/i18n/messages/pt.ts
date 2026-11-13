@@ -674,4 +674,8 @@ export const pt: Messages = {
   'expr.meaning.isNull': "só linhas não excluídas",
   'expr.meaning.isTrue': "só verdadeiros",
   'expr.meaning.equals': "só {value}",
+
+  // Names language
+  'inspector.namesLocale': "Idioma dos nomes das tabelas",
+  'inspector.namesLocaleHint': "Coloca no singular o nome das FKs automáticas: clientes → cliente_id",
 };

@@ -1,4 +1,4 @@
-import { formatList, t as translate } from '../i18n';
+import { formatList, t as translate, type Locale } from '../i18n';
 import { DIALECTS } from '../domain/dialects';
 import { generateRows, randomCellValue } from '../domain/random-values';
 import { nextAutoValue } from '../domain/records';
@@ -392,3 +392,9 @@ export const linkAttributeAsFk = (fromEntityId: string, attributeId: string, toE
   );
   return rel.id;
 };
+
+/** Language of the table names, used to put FK names in singular. */
+export const setNamesLocale = (namesLocale: Locale) =>
+  mutate((draft) => {
+    draft.namesLocale = namesLocale;
+  });

@@ -1,3 +1,5 @@
+import type { Locale } from '../i18n';
+import { singularize } from './naming';
 import { convertType, DIALECTS } from './dialects';
 import type {
   Attribute,
@@ -112,6 +114,13 @@ export const cardinalityLabel = (rel: Relationship) =>
 /** Prefix used for FK column names and junction names: the role when present, else the entity name. */
 export const participantLabel = (p: Participant, entities: Entity[]) =>
   p.role?.trim() || entities.find((e) => e.id === p.entityId)?.name || 'entidad';
+
+/**
+ * Prefix for FK columns and constraint names: the role when present, else the entity name in
+ * singular in the project's names language (clientes → cliente, so the column is cliente_id).
+ */
+export const fkPrefix = (p: Participant, entities: Entity[], locale: Locale = 'es') =>
+  p.role?.trim() || singularize(entities.find((e) => e.id === p.entityId)?.name || 'entidad', locale);
 
 export const defaultJunctionName = (rel: Relationship, entities: Entity[]) => {
   const recursive = isRecursive(rel);
