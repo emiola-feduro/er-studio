@@ -50,6 +50,8 @@ const InspectorOverview = () => {
           <dd>Rehacer</dd>
           <dt className="font-mono font-semibold">F</dt>
           <dd>Solo diagrama</dd>
+          <dt className="font-mono font-semibold">Alt+1 a 5</dt>
+          <dd>Proyectos, tablas, relaciones, resumen y encabezado</dd>
           <dt className="font-mono font-semibold">Esc</dt>
           <dd>Quitar selección</dd>
         </dl>

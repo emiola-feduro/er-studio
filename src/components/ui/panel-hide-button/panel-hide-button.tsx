@@ -1,5 +1,5 @@
 import { EyeOff } from 'lucide-react';
-import usePreferencesStore, { type PanelId } from '../../../stores/use-preferences-store';
+import usePreferencesStore, { panelShortcut, type PanelId } from '../../../stores/use-preferences-store';
 import IconButton from '../icon-button/icon-button';
 
 type PanelHideButtonProps = {
@@ -12,7 +12,7 @@ const PanelHideButton = ({ panel, label }: PanelHideButtonProps) => {
   const setPanelHidden = usePreferencesStore((s) => s.setPanelHidden);
 
   return (
-    <IconButton label={`Ocultar ${label}`} size="sm" onClick={() => setPanelHidden(panel, true)}>
+    <IconButton label={`Ocultar ${label} (${panelShortcut(panel)})`} size="sm" onClick={() => setPanelHidden(panel, true)}>
       <EyeOff size={15} />
     </IconButton>
   );

@@ -63,7 +63,7 @@ const TopBar = () => {
           </Button>
         )}
       />
-      <IconButton label="Ocultar encabezado" onClick={() => setVisible('header', false)}>
+      <IconButton label="Ocultar encabezado (Alt+5)" onClick={() => setVisible('header', false)}>
         <ChevronsUp size={18} />
       </IconButton>
     </header>

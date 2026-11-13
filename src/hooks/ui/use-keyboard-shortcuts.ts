@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { addEntity, deleteSelection } from '../../lib/actions';
 import useProjectStore from '../../stores/use-project-store';
+import usePreferencesStore, { PANELS } from '../../stores/use-preferences-store';
 import useUiStore from '../../stores/use-ui-store';
 
 const isTyping = (target: EventTarget | null) => {
@@ -9,7 +10,7 @@ const isTyping = (target: EventTarget | null) => {
   return el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName);
 };
 
-/** Global shortcuts: undo, redo, delete selection, new entity, diagram only (F), Escape. */
+/** Global shortcuts: undo, redo, delete selection, new entity, panels (Alt+1 to Alt+5), diagram only (F), Escape. */
 const useKeyboardShortcuts = () => {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -27,6 +28,17 @@ const useKeyboardShortcuts = () => {
       if (mod && key === 'y' && !typing) {
         event.preventDefault();
         redo();
+        return;
+      }
+      // Alt+1 to Alt+5 toggle each panel, also while typing in a field. event.code keeps it layout independent.
+      const panel = event.altKey && !mod ? PANELS.find((p) => event.code === `Digit${p.shortcut}`) : undefined;
+      if (panel) {
+        event.preventDefault();
+        const ui = useUiStore.getState();
+        const prefs = usePreferencesStore.getState();
+        const visible = !ui.focusMode && !prefs.hiddenPanels[panel.id];
+        if (ui.focusMode) ui.setFocusMode(false);
+        prefs.setPanelHidden(panel.id, visible);
         return;
       }
       if (typing) return;

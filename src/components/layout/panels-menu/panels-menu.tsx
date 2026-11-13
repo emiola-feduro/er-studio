@@ -16,8 +16,9 @@ const PanelsMenu = ({ trigger }: PanelsMenuProps) => {
       trigger={trigger}
       items={[
         { label: 'Solo diagrama', hint: 'F', checked: focusMode, onSelect: () => setFocusMode(!focusMode) },
-        ...PANELS.map(({ id, label }, i) => ({
+        ...PANELS.map(({ id, label, shortcut }, i) => ({
           label,
+          hint: `Alt+${shortcut}`,
           checked: isVisible(id),
           separatorBefore: i === 0,
           onSelect: () => setVisible(id, !isVisible(id)),

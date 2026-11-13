@@ -5,13 +5,16 @@ import { DEFAULT_THEME_ID } from '../lib/themes/themes';
 export type TextSize = 'sm' | 'md' | 'lg';
 export type PanelId = 'header' | 'projects' | 'tables' | 'relationships' | 'inspector';
 
-export const PANELS: { id: PanelId; label: string }[] = [
-  { id: 'header', label: 'Encabezado' },
-  { id: 'projects', label: 'Proyectos' },
-  { id: 'tables', label: 'Tablas' },
-  { id: 'relationships', label: 'Relaciones' },
-  { id: 'inspector', label: 'Resumen e inspector' },
+/** Panels that can be hidden. `shortcut` is the digit used with Alt to toggle each one. */
+export const PANELS: { id: PanelId; label: string; shortcut: string }[] = [
+  { id: 'projects', label: 'Proyectos', shortcut: '1' },
+  { id: 'tables', label: 'Tablas', shortcut: '2' },
+  { id: 'relationships', label: 'Relaciones', shortcut: '3' },
+  { id: 'inspector', label: 'Resumen e inspector', shortcut: '4' },
+  { id: 'header', label: 'Encabezado', shortcut: '5' },
 ];
+
+export const panelShortcut = (id: PanelId) => `Alt+${PANELS.find((p) => p.id === id)!.shortcut}`;
 
 type PreferencesState = {
   themeId: string;
