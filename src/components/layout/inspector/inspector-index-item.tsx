@@ -5,6 +5,7 @@ import { deleteIndex, updateIndex } from '../../../lib/actions';
 import useProjectStore from '../../../stores/use-project-store';
 import Checkbox from '../../ui/checkbox/checkbox';
 import IconButton from '../../ui/icon-button/icon-button';
+import SuggestionInput from '../../ui/suggestion-input/suggestion-input';
 import InspectorIndexColumns from './inspector-index-columns';
 
 type InspectorIndexItemProps = {
@@ -26,12 +27,12 @@ const InspectorIndexItem = ({ entityId, index, table, resolvedName }: InspectorI
           <label htmlFor={`idx-name-${id}`} className="block font-medium">
             Nombre
           </label>
-          <input
+          <SuggestionInput
             id={`idx-name-${id}`}
             className="field field-sm font-canvas"
             value={nameIsCustom ? name : ''}
-            placeholder={resolvedName}
-            onChange={(e) => update({ name: e.target.value, nameIsCustom: e.target.value.trim() !== '' }, `idx-name:${id}`)}
+            suggestion={resolvedName}
+            onChange={(value) => update({ name: value, nameIsCustom: value.trim() !== '' }, `idx-name:${id}`)}
           />
         </div>
         <IconButton label="Eliminar índice" tone="danger" size="sm" onClick={() => deleteIndex(entityId, id)} className="mb-0.5">

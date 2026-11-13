@@ -2,7 +2,9 @@ import { Trash2 } from 'lucide-react';
 import type { Cardinality, Entity, Participant } from '../../../domain/types';
 import { removeParticipant, updateParticipant } from '../../../lib/actions';
 import Checkbox from '../../ui/checkbox/checkbox';
+import useDerived from '../../../hooks/data/use-derived';
 import IconButton from '../../ui/icon-button/icon-button';
+import SuggestionInput from '../../ui/suggestion-input/suggestion-input';
 import SegmentedControl from '../../ui/segmented-control/segmented-control';
 
 type InspectorParticipantProps = {
@@ -15,6 +17,11 @@ type InspectorParticipantProps = {
 const InspectorParticipant = ({ relationshipId, participant, entities, canRemove }: InspectorParticipantProps) => {
   const { id, entityId, role, cardinality, optional, constraintName } = participant;
   const update = (patch: Partial<Participant>, key?: string) => updateParticipant(relationshipId, id, patch, key);
+  const derived = useDerived();
+  // Name the FK gets when none is typed; only participants whose key is referenced have one.
+  const generatedFkName = constraintName
+    ? undefined
+    : derived?.schema.foreignKeys.find((f) => f.relationshipId === relationshipId && f.participantId === id)?.name;
 
   return (
     <li className="space-y-2.5 rounded-theme border-(length:--bw) border-line p-3">
@@ -65,12 +72,13 @@ const InspectorParticipant = ({ relationshipId, participant, entities, canRemove
           <label htmlFor={`p-fk-${id}`} className="block text-[0.9em] text-muted">
             Nombre de la FK
           </label>
-          <input
+          <SuggestionInput
             id={`p-fk-${id}`}
             className="field field-sm font-canvas"
+            suggestion={generatedFkName}
             placeholder="automático"
             value={constraintName ?? ''}
-            onChange={(e) => update({ constraintName: e.target.value || undefined }, `p-fk:${id}`)}
+            onChange={(value) => update({ constraintName: value || undefined }, `p-fk:${id}`)}
           />
         </div>
       </div>
