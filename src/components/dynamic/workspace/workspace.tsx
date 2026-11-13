@@ -15,7 +15,7 @@ const Workspace = () => {
       </div>
       {view === 'sql' && <SqlPreview />}
       {view === 'records' && <RecordsView />}
-      <PanelsFloatingBar />
+      {view === 'diagram' && <PanelsFloatingBar />}
     </main>
   );
 };

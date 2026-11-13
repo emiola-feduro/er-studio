@@ -4,6 +4,7 @@ import useExportRecords from '../../../hooks/data/use-export-records';
 import { addRow, clearRows } from '../../../lib/actions';
 import Button from '../button/button';
 import ConfirmDialog from '../confirm-dialog/confirm-dialog';
+import PanelsRestoreButton from '../../layout/panels-menu/panels-restore-button';
 import Menu from '../menu/menu';
 import Pill from '../pill/pill';
 import RecordsViewGenerate from './records-view-generate';
@@ -54,6 +55,7 @@ const RecordsViewToolbar = ({ data }: { data: RecordsData }) => {
             { label: 'Todas las tablas como INSERT (.sql)', onSelect: () => void exportRecords('sql') },
           ]}
         />
+        <PanelsRestoreButton />
       </div>
       <ConfirmDialog
         open={confirming}

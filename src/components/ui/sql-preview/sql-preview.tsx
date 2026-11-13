@@ -3,6 +3,7 @@ import { downloadText, slug } from '../../../lib/project-file';
 import useProjectStore from '../../../stores/use-project-store';
 import useUiStore from '../../../stores/use-ui-store';
 import Button from '../button/button';
+import PanelsRestoreButton from '../../layout/panels-menu/panels-restore-button';
 import SqlPreviewCode from './sql-preview-code';
 import SqlPreviewDatabaseField from './sql-preview-database-field';
 import SqlPreviewFontSelect from './sql-preview-font-select';
@@ -36,6 +37,7 @@ const SqlPreview = () => {
         <Button size="sm" variant="primary" onClick={() => downloadText(`${slug(projectName)}.sql`, sql, 'application/sql')}>
           Descargar .sql
         </Button>
+        <PanelsRestoreButton />
       </div>
       {warnings.length > 0 && (
         <ul className="space-y-1 border-b border-line bg-warning-soft px-4 py-2 text-warning">

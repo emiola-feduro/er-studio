@@ -1,27 +1,17 @@
 import usePanels from '../../../hooks/ui/use-panels';
-import Button from '../../ui/button/button';
-import PanelsMenu from './panels-menu';
+import PanelsRestoreButton from './panels-restore-button';
 
-/** Way back when the header is hidden: the Paneles menu, or leaving "Solo diagrama". */
+/**
+ * Floating version of the restore button for the diagram, whose top right corner is free.
+ * The SQL and records views put the button in their own toolbar instead, so it never covers their actions.
+ */
 const PanelsFloatingBar = () => {
-  const { isVisible, focusMode, setFocusMode } = usePanels();
+  const { isVisible, focusMode } = usePanels();
   if (!focusMode && isVisible('header')) return null;
 
   return (
-    <div className="absolute top-3 right-3 z-20 flex gap-2 rounded-theme border-(length:--bw) border-line bg-surface/90 p-1.5 shadow-theme backdrop-blur-sm">
-      {focusMode ? (
-        <Button size="sm" onClick={() => setFocusMode(false)} title="Atajo: F">
-          Mostrar paneles
-        </Button>
-      ) : (
-        <PanelsMenu
-          trigger={({ open, toggle }) => (
-            <Button size="sm" aria-haspopup="menu" aria-expanded={open} onClick={toggle}>
-              Paneles
-            </Button>
-          )}
-        />
-      )}
+    <div className="absolute top-3 right-3 z-20 rounded-theme border-(length:--bw) border-line bg-surface/90 p-1.5 shadow-theme backdrop-blur-sm">
+      <PanelsRestoreButton />
     </div>
   );
 };
