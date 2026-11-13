@@ -8,6 +8,7 @@ import WorkspaceEmpty from '../../dynamic/workspace/workspace-empty';
 import WorkspaceError from '../../dynamic/workspace/workspace-error';
 import WorkspaceSkeleton from '../../dynamic/workspace/workspace-skeleton';
 import AgentExportDialog from '../../ui/agent-export-dialog/agent-export-dialog';
+import DeleteEntityDialog from '../../ui/delete-entity-dialog/delete-entity-dialog';
 import NewProjectDialog from '../../ui/new-project-dialog/new-project-dialog';
 import OpenApiExportDialog from '../../ui/openapi-export-dialog/openapi-export-dialog';
 import RelationshipDialog from '../../ui/relationship-dialog/relationship-dialog';
@@ -49,6 +50,7 @@ const AppShell = () => {
       <NewProjectDialog />
       <AgentExportDialog />
       <OpenApiExportDialog />
+      <DeleteEntityDialog />
       <ToastStack />
     </div>
   );

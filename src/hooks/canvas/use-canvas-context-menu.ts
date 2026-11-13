@@ -1,7 +1,7 @@
 import { useReactFlow } from '@xyflow/react';
 import { useMemo } from 'react';
 import type { MenuItem } from '../../components/ui/menu/menu-list';
-import { addAttribute, addEntity, addRandomRows, deleteEntity, duplicateEntity } from '../../lib/actions';
+import { addAttribute, addEntity, addRandomRows, duplicateEntity } from '../../lib/actions';
 import useProjectStore from '../../stores/use-project-store';
 import useUiStore, { type ContextMenuState } from '../../stores/use-ui-store';
 import usePanels from '../ui/use-panels';
@@ -67,7 +67,7 @@ const useCanvasContextMenu = (menu: ContextMenuState | null) => {
             danger: true,
             separatorBefore: isJunction,
             hint: t('inspector.shortcut.deleteKey'),
-            onSelect: () => deleteEntity(id),
+            onSelect: () => ui.requestDeleteEntity(id),
           },
         ],
       };

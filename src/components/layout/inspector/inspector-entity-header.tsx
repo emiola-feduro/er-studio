@@ -1,6 +1,7 @@
+import useUiStore from '../../../stores/use-ui-store';
 import useT from '../../../hooks/ui/use-t';
 import type { Entity } from '../../../domain/types';
-import { deleteEntity, duplicateEntity, renameEntity, resetJunctionName, updateEntity } from '../../../lib/actions';
+import { duplicateEntity, renameEntity, resetJunctionName, updateEntity } from '../../../lib/actions';
 import PanelHideButton from '../../ui/panel-hide-button/panel-hide-button';
 import Button from '../../ui/button/button';
 
@@ -21,7 +22,7 @@ const InspectorEntityHeader = ({ entity }: { entity: Entity }) => {
               {t('common.duplicate')}
             </Button>
           )}
-          <Button size="sm" variant="danger" onClick={() => deleteEntity(id)}>
+          <Button size="sm" variant="danger" onClick={() => useUiStore.getState().requestDeleteEntity(id)}>
             {t('common.delete')}
           </Button>
           <PanelHideButton panel="inspector" />

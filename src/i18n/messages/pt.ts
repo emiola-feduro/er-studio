@@ -630,4 +630,19 @@ export const pt: Messages = {
   'openapi.ok': "Sucesso",
   'openapi.created': "Criado",
   'openapi.deleted': "Excluído",
+
+  // Delete confirmation
+  'deleteEntity.title': "Excluir entidade",
+  'deleteEntity.titleJunction': "Excluir relacionamento",
+  'deleteEntity.message': "\"{name}\" será excluída{details}. Você pode recuperá-la com Desfazer (Ctrl+Z).",
+  'deleteEntity.with': " com {list}",
+  'count.attributes': "{count} atributos",
+  'count.attributes.one': "1 atributo",
+  'count.relationships': "{count} relacionamentos",
+  'count.relationships.one': "1 relacionamento",
+  'count.records': "{count} registros",
+  'count.records.one': "1 registro",
+  'deleteEntity.messageJunction': "\"{name}\" é a tabela associativa de um relacionamento. O relacionamento, a tabela e seus {records} registros serão excluídos. Você pode recuperá-los com Desfazer (Ctrl+Z).",
+  'deleteEntity.confirm': "Excluir entidade",
+  'deleteEntity.confirmJunction': "Excluir relacionamento",
 };

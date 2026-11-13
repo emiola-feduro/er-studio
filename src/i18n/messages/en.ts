@@ -630,4 +630,19 @@ export const en: Messages = {
   'openapi.ok': "OK",
   'openapi.created': "Created",
   'openapi.deleted': "Deleted",
+
+  // Delete confirmation
+  'deleteEntity.title': "Delete entity",
+  'deleteEntity.titleJunction': "Delete relationship",
+  'deleteEntity.message': "\"{name}\" will be deleted{details}. You can get it back with Undo (Ctrl+Z).",
+  'deleteEntity.with': " with {list}",
+  'count.attributes': "{count} attributes",
+  'count.attributes.one': "1 attribute",
+  'count.relationships': "{count} relationships",
+  'count.relationships.one': "1 relationship",
+  'count.records': "{count} records",
+  'count.records.one': "1 record",
+  'deleteEntity.messageJunction': "\"{name}\" is the junction table of a relationship. The relationship, the table and its {records} records will be deleted. You can get them back with Undo (Ctrl+Z).",
+  'deleteEntity.confirm': "Delete entity",
+  'deleteEntity.confirmJunction': "Delete relationship",
 };

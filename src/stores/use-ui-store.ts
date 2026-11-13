@@ -24,6 +24,8 @@ type UiState = {
   /** Export for AI agents; `tableId` preselects one entity. */
   agentExport: { open: boolean; tableId?: string };
   openApiExportOpen: boolean;
+  /** Entity waiting for the person to confirm its deletion. */
+  entityToDelete: string | null;
   toasts: Toast[];
   select: (selection: Selection) => void;
   setView: (view: CenterView) => void;
@@ -42,6 +44,7 @@ type UiState = {
   openAgentExport: (tableId?: string) => void;
   closeAgentExport: () => void;
   setOpenApiExportOpen: (open: boolean) => void;
+  requestDeleteEntity: (id: string | null) => void;
   notify: (message: string, tone?: Toast['tone']) => void;
   dismissToast: (id: number) => void;
 };
@@ -63,6 +66,7 @@ const useUiStore = create<UiState>((set, get) => ({
   contextMenu: null,
   agentExport: { open: false },
   openApiExportOpen: false,
+  entityToDelete: null,
   toasts: [],
   select: (selection) => set({ selection }),
   setView: (view) => set({ view }),
@@ -82,6 +86,7 @@ const useUiStore = create<UiState>((set, get) => ({
   openAgentExport: (tableId) => set({ agentExport: { open: true, tableId } }),
   closeAgentExport: () => set({ agentExport: { open: false } }),
   setOpenApiExportOpen: (openApiExportOpen) => set({ openApiExportOpen }),
+  requestDeleteEntity: (entityToDelete) => set({ entityToDelete, contextMenu: null }),
   notify: (message, tone = 'info') => {
     toastId += 1;
     const id = toastId;

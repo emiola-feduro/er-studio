@@ -666,6 +666,21 @@ export const es = {
   'openapi.ok': "Correcto",
   'openapi.created': "Creado",
   'openapi.deleted': "Eliminado",
+
+  // Delete confirmation
+  'deleteEntity.title': "Eliminar entidad",
+  'deleteEntity.titleJunction': "Eliminar relación",
+  'deleteEntity.message': "Se eliminará \"{name}\"{details}. Puedes recuperarla con Deshacer (Ctrl+Z).",
+  'deleteEntity.with': " con {list}",
+  'count.attributes': "{count} atributos",
+  'count.attributes.one': "1 atributo",
+  'count.relationships': "{count} relaciones",
+  'count.relationships.one': "1 relación",
+  'count.records': "{count} registros",
+  'count.records.one': "1 registro",
+  'deleteEntity.messageJunction': "\"{name}\" es la tabla intermedia de una relación. Se eliminarán la relación, la tabla y sus {records} registros. Puedes recuperarlas con Deshacer (Ctrl+Z).",
+  'deleteEntity.confirm': "Eliminar entidad",
+  'deleteEntity.confirmJunction': "Eliminar relación",
 } as const;
 
 export type Messages = { [K in keyof typeof es]: string };

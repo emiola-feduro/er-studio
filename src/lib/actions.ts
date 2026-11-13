@@ -344,7 +344,8 @@ export const setDialect = (dialect: DialectId) => {
 export const deleteSelection = () => {
   const { selection } = useUiStore.getState();
   if (!selection) return;
-  if (selection.kind === 'entity') deleteEntity(selection.id);
+  // Deleting an entity takes its attributes, relationships and records with it, so it asks first.
+  if (selection.kind === 'entity') useUiStore.getState().requestDeleteEntity(selection.id);
   else deleteRelationship(selection.id);
 };
 

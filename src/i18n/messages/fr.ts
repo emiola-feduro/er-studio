@@ -630,4 +630,19 @@ export const fr: Messages = {
   'openapi.ok': "Succès",
   'openapi.created': "Créé",
   'openapi.deleted': "Supprimé",
+
+  // Delete confirmation
+  'deleteEntity.title': "Supprimer l'entité",
+  'deleteEntity.titleJunction': "Supprimer la relation",
+  'deleteEntity.message': "« {name} » sera supprimée{details}. Vous pouvez la récupérer avec Annuler (Ctrl+Z).",
+  'deleteEntity.with': " avec {list}",
+  'count.attributes': "{count} attributs",
+  'count.attributes.one': "1 attribut",
+  'count.relationships': "{count} relations",
+  'count.relationships.one': "1 relation",
+  'count.records': "{count} enregistrements",
+  'count.records.one': "1 enregistrement",
+  'deleteEntity.messageJunction': "« {name} » est la table intermédiaire d'une relation. La relation, la table et ses {records} enregistrements seront supprimés. Vous pouvez les récupérer avec Annuler (Ctrl+Z).",
+  'deleteEntity.confirm': "Supprimer l'entité",
+  'deleteEntity.confirmJunction': "Supprimer la relation",
 };
