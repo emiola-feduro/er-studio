@@ -3,6 +3,8 @@ import { DIALECTS, type Generic } from './dialects';
 import { buildSchema } from './inference';
 import { createAttribute, createEntity, createProject, createRelationship, syncJunctions, uid, type RelationshipPreset } from './model';
 import { generateRows, type Rng } from './random-values';
+import type { Locale } from '../i18n';
+import { localName } from './random-model-names';
 import type { Attribute, DialectId, Entity, Project } from './types';
 
 type AttrSpec = {
@@ -14,7 +16,8 @@ type AttrSpec = {
   unique?: boolean;
   nullable?: boolean;
   enumValues?: string[];
-  check?: string;
+  /** CHECK on the column itself; written with the column name once it is translated. */
+  min?: '>= 0' | '> 0';
   /** Left out at random so two models of the same theme are not identical. */
   optional?: boolean;
 };
@@ -31,7 +34,7 @@ type RelSpec = {
 export type ThemeSpec = { id: string; name: string; entities: Record<string, AttrSpec[]>; relationships: RelSpec[] };
 
 const text = (name: string, length: number, extra: Partial<AttrSpec> = {}): AttrSpec => ({ name, generic: 'varchar', length, ...extra });
-const money = (name: string, extra: Partial<AttrSpec> = {}): AttrSpec => ({ name, generic: 'decimal', precision: 10, scale: 2, check: `${name} >= 0`, ...extra });
+const money = (name: string, extra: Partial<AttrSpec> = {}): AttrSpec => ({ name, generic: 'decimal', precision: 10, scale: 2, min: '>= 0', ...extra });
 const int = (name: string, extra: Partial<AttrSpec> = {}): AttrSpec => ({ name, generic: 'int', ...extra });
 const date = (name: string, extra: Partial<AttrSpec> = {}): AttrSpec => ({ name, generic: 'date', ...extra });
 const stamp = (name: string, extra: Partial<AttrSpec> = {}): AttrSpec => ({ name, generic: 'datetime', ...extra });
@@ -47,7 +50,7 @@ export const THEMES: ThemeSpec[] = [
     entities: {
       cliente: [...person, stamp('creado_en', { optional: true })],
       pedido: [date('fecha'), choice('estado', ['PENDIENTE', 'PAGADO', 'ENVIADO', 'ENTREGADO']), money('total', { optional: true })],
-      producto: [text('nombre', 120), text('sku', 20, { unique: true }), money('precio'), int('stock', { check: 'stock >= 0', optional: true })],
+      producto: [text('nombre', 120), text('sku', 20, { unique: true }), money('precio'), int('stock', { min: '>= 0', optional: true })],
       categoria: [text('nombre', 60, { unique: true }), text('descripcion', 255, { nullable: true, optional: true })],
       proveedor: [text('nombre', 120), text('email', 160, { unique: true }), text('pais', 60, { optional: true })],
       empleado: [...person.slice(0, 3), date('fecha_ingreso', { optional: true })],
@@ -55,7 +58,7 @@ export const THEMES: ThemeSpec[] = [
     },
     relationships: [
       { from: 'cliente', to: 'pedido', preset: '1:N', name: 'realiza' },
-      { from: 'pedido', to: 'producto', preset: 'N:M', name: 'detalle', attributes: [int('cantidad', { check: 'cantidad > 0' }), money('precio_unitario')] },
+      { from: 'pedido', to: 'producto', preset: 'N:M', name: 'detalle', attributes: [int('cantidad', { min: '> 0' }), money('precio_unitario')] },
       { from: 'categoria', to: 'producto', preset: '1:N', name: 'clasifica' },
       { from: 'proveedor', to: 'producto', preset: 'N:M', name: 'suministra', attributes: [money('costo', { optional: true })] },
       { from: 'empleado', to: 'pedido', preset: '1:N', name: 'atiende' },
@@ -89,10 +92,10 @@ export const THEMES: ThemeSpec[] = [
     name: 'Universidad',
     entities: {
       estudiante: [...person, date('fecha_nacimiento', { optional: true })],
-      curso: [text('codigo', 12, { unique: true }), text('nombre', 120), int('creditos', { check: 'creditos > 0' })],
+      curso: [text('codigo', 12, { unique: true }), text('nombre', 120), int('creditos', { min: '> 0' })],
       profesor: [...person.slice(0, 3), choice('categoria', ['AUXILIAR', 'ASOCIADO', 'TITULAR'], { optional: true })],
       departamento: [text('nombre', 120, { unique: true }), text('edificio', 40, { optional: true })],
-      aula: [text('codigo', 12, { unique: true }), int('capacidad', { check: 'capacidad > 0' })],
+      aula: [text('codigo', 12, { unique: true }), int('capacidad', { min: '> 0' })],
       carrera: [text('nombre', 120, { unique: true }), int('duracion_semestres', { optional: true })],
     },
     relationships: [
@@ -130,7 +133,7 @@ export const THEMES: ThemeSpec[] = [
     entities: {
       aeropuerto: [text('codigo_iata', 3, { unique: true }), text('nombre', 120), text('ciudad', 80)],
       vuelo: [text('numero', 8), stamp('salida'), stamp('llegada'), choice('estado', ['PROGRAMADO', 'EN_VUELO', 'ATERRIZADO', 'CANCELADO'])],
-      avion: [text('matricula', 10, { unique: true }), text('modelo', 60), int('capacidad', { check: 'capacidad > 0' })],
+      avion: [text('matricula', 10, { unique: true }), text('modelo', 60), int('capacidad', { min: '> 0' })],
       pasajero: [...person, text('pasaporte', 20, { unique: true })],
       reserva: [stamp('creada_en'), text('asiento', 4, { nullable: true }), choice('clase', ['ECONOMICA', 'EJECUTIVA', 'PRIMERA'])],
       tripulante: [...person.slice(0, 2), choice('cargo', ['PILOTO', 'COPILOTO', 'AUXILIAR'])],
@@ -151,7 +154,7 @@ export const THEMES: ThemeSpec[] = [
       usuario: [text('nombre', 80), text('email', 160, { unique: true }), date('fecha_registro')],
       plan: [text('nombre', 40, { unique: true }), money('precio_mensual'), int('pantallas', { optional: true })],
       suscripcion: [date('inicio'), date('fin', { nullable: true }), flag('activa')],
-      pelicula: [text('titulo', 200), int('duracion_minutos', { check: 'duracion_minutos > 0' }), int('anio', { optional: true })],
+      pelicula: [text('titulo', 200), int('duracion_minutos', { min: '> 0' }), int('anio', { optional: true })],
       genero: [text('nombre', 60, { unique: true })],
       actor: [text('nombre', 80), text('apellido', 80), text('pais', 60, { nullable: true, optional: true })],
       resena: [choice('puntuacion', ['1', '2', '3', '4', '5']), text('comentario', 500, { nullable: true }), date('fecha')],
@@ -194,8 +197,10 @@ const connectedSubset = (theme: ThemeSpec, count: number, rng: Rng) => {
   return names.filter((n) => chosen.has(n));
 };
 
-const toAttribute = (dialect: DialectId, spec: AttrSpec): Attribute => {
-  const { name, generic, unique = false, nullable = false, enumValues, check } = spec;
+const toAttribute = (dialect: DialectId, spec: AttrSpec, locale: Locale): Attribute => {
+  const { generic, unique = false, nullable = false, min } = spec;
+  const name = localName(locale, spec.name);
+  const enumValues = spec.enumValues?.map((v) => localName(locale, v));
   const ref = DIALECTS[dialect].map[generic];
   const typed = generic === 'enum' ? { type: ref.type } : {
     type: ref.type,
@@ -203,28 +208,33 @@ const toAttribute = (dialect: DialectId, spec: AttrSpec): Attribute => {
     precision: spec.precision ?? ref.precision,
     scale: spec.scale ?? ref.scale,
   };
-  return createAttribute(dialect, { name, ...typed, unique, nullable, enumValues, check });
+  return createAttribute(dialect, { name, ...typed, unique, nullable, enumValues, check: min ? `${name} ${min}` : undefined });
 };
 
-const attributesFor = (dialect: DialectId, specs: AttrSpec[], rng: Rng) =>
-  specs.filter((s) => !s.optional || rng() < 0.6).map((s) => toAttribute(dialect, s));
+const attributesFor = (dialect: DialectId, specs: AttrSpec[], rng: Rng, locale: Locale) =>
+  specs.filter((s) => !s.optional || rng() < 0.6).map((s) => toAttribute(dialect, s, locale));
 
-export type RandomModelOptions = { dialect: DialectId; entityCount: number; themeId?: string; rng?: Rng };
+export type RandomModelOptions = {
+  dialect: DialectId;
+  entityCount: number;
+  themeId?: string;
+  /** Language of table, column, relationship and ENUM names. */
+  namesLocale?: Locale;
+  rng?: Rng;
+};
 
-/**
- * A random but realistic model: a theme, a connected set of its entities, the relationships among
- * them (junction tables included) and their attributes. Positions are left at the origin for the
- * caller to lay out.
- */
-export const generateRandomModel = ({ dialect, entityCount, themeId, rng = Math.random }: RandomModelOptions): Project => {
+/** Theme name in the chosen language, used as the project name. */
+export const themeName = (theme: ThemeSpec, locale: Locale) => localName(locale, theme.name);
+
+export const generateRandomModel = ({ dialect, entityCount, themeId, namesLocale = 'es', rng = Math.random }: RandomModelOptions): Project => {
   const theme = THEMES.find((t) => t.id === themeId) ?? pick(rng, THEMES);
   const names = connectedSubset(theme, Math.max(MIN_ENTITIES, entityCount), rng);
-  const project = createProject(theme.name, dialect);
+  const project = createProject(themeName(theme, namesLocale), dialect);
 
   const byName = new Map<string, Entity>();
   for (const name of names) {
-    const entity = createEntity(dialect, name, { x: 0, y: 0 });
-    entity.attributes.push(...attributesFor(dialect, theme.entities[name], rng));
+    const entity = createEntity(dialect, localName(namesLocale, name), { x: 0, y: 0 });
+    entity.attributes.push(...attributesFor(dialect, theme.entities[name], rng, namesLocale));
     byName.set(name, entity);
     project.entities.push(entity);
   }
@@ -235,13 +245,13 @@ export const generateRandomModel = ({ dialect, entityCount, themeId, rng = Math.
     const to = byName.get(spec.to);
     if (!from || !to) continue;
     const rel = createRelationship([from.id, to.id], spec.preset);
-    rel.name = spec.name;
+    rel.name = spec.name && localName(namesLocale, spec.name);
     spec.roles?.forEach((role, i) => {
-      if (role) rel.participants[i].role = role;
+      if (role) rel.participants[i].role = localName(namesLocale, role);
     });
     if (spec.preset === '1:N' && from.id !== to.id) rel.onDelete = 'CASCADE';
     project.relationships.push(rel);
-    if (spec.attributes) junctionAttrs.set(rel.id, attributesFor(dialect, spec.attributes, rng));
+    if (spec.attributes) junctionAttrs.set(rel.id, attributesFor(dialect, spec.attributes, rng, namesLocale));
   }
 
   syncJunctions(project);
@@ -257,7 +267,7 @@ export const generateRandomModel = ({ dialect, entityCount, themeId, rng = Math.
  * rows that exist. Tables whose key is made only of foreign keys (junctions) get at most half of
  * the possible combinations, so keys do not repeat.
  */
-export const fillRandomRecords = (project: Project, count: number, rng: Rng = Math.random) => {
+export const fillRandomRecords = (project: Project, count: number, rng: Rng = Math.random, locale: Locale = 'es') => {
   const schema = buildSchema(project);
   project.records = {};
   for (const table of sortTables(schema.tables)) {
@@ -267,7 +277,7 @@ export const fillRandomRecords = (project: Project, count: number, rng: Rng = Ma
     const combos = onlyFks ? keyFks.reduce((n, fk) => n * (project.records![fk.refTableId]?.length ?? 0), 1) : Infinity;
     const rows = Math.min(count, Math.floor(combos / 2) || Math.min(1, combos));
     if (rows <= 0) continue;
-    const generated = generateRows(project, schema, table.id, rows, rng).rows;
+    const generated = generateRows(project, schema, table.id, rows, rng, locale).rows;
     project.records[table.id] = generated.map((values) => ({ id: uid(), values }));
   }
   return project;

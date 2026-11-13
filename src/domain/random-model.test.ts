@@ -50,3 +50,35 @@ describe('generateRandomModel', () => {
     expect(validateRecords(project, schema).total).toBe(0);
   });
 });
+
+describe('names language', () => {
+  it('builds every theme with names in each language, without issues, and fills valid rows', () => {
+    for (const theme of THEMES) {
+      for (const namesLocale of ['en', 'fr', 'pt'] as const) {
+        const project = generateRandomModel({ dialect: 'postgresql', entityCount: 99, themeId: theme.id, namesLocale, rng: seededRng(8) });
+        const schema = buildSchema(project);
+        expect(validateProject(project, schema).map((i) => i.message), `${theme.id} ${namesLocale}`).toEqual([]);
+        fillRandomRecords(project, 15, seededRng(9), namesLocale);
+        expect(validateRecords(project, buildSchema(project)).total, `${theme.id} ${namesLocale}`).toBe(0);
+      }
+    }
+  });
+
+  it('translates tables, columns, ENUM values and the project name', () => {
+    const project = generateRandomModel({ dialect: 'postgresql', entityCount: 99, themeId: 'tienda', namesLocale: 'en', rng: seededRng(2) });
+    expect(project.name).toBe('Store');
+    const names = project.entities.map((e) => e.name);
+    expect(names).toContain('customer');
+    expect(names).toContain('order_header_product');
+    const order = project.entities.find((e) => e.name === 'order_header')!;
+    expect(order.attributes.find((a) => a.name === 'status')?.enumValues).toEqual(['PENDING', 'PAID', 'SHIPPED', 'DELIVERED']);
+  });
+
+  it('writes sample text in the chosen language', () => {
+    const project = generateRandomModel({ dialect: 'postgresql', entityCount: 99, themeId: 'tienda', namesLocale: 'fr', rng: seededRng(2) });
+    fillRandomRecords(project, 5, seededRng(3), 'fr');
+    const client = project.entities.find((e) => e.name === 'client')!;
+    const email = client.attributes.find((a) => a.name === 'email')!;
+    expect(project.records![client.id][0].values[email.id]).toMatch(/@exemple\.com$/);
+  });
+});

@@ -1,9 +1,10 @@
-import { t } from '../../i18n';
-import { useState, type FormEvent } from 'react';
+import { getLocale, t, type Locale } from '../../i18n';
+import { useEffect, useState, type FormEvent } from 'react';
 import { maxEntities, MIN_ENTITIES, THEMES } from '../../domain/random-model';
 import type { DialectId } from '../../domain/types';
 import { createRandomProject } from '../../lib/random-project';
 import useProjectStore from '../../stores/use-project-store';
+import usePreferencesStore from '../../stores/use-preferences-store';
 import useUiStore from '../../stores/use-ui-store';
 
 export type StartWith = 'empty' | 'random';
@@ -28,6 +29,10 @@ const useNewProjectForm = (onDone: () => void) => {
   const [withRecords, setWithRecords] = useState(true);
   const [recordCount, setRecordCount] = useState(20);
   const [busy, setBusy] = useState(false);
+  // Names follow the interface language unless the person picks another one.
+  const [namesLocale, setNamesLocale] = useState<Locale>(getLocale);
+  const uiLocale = usePreferencesStore((s) => s.locale);
+  useEffect(() => setNamesLocale(uiLocale), [uiLocale]);
 
   const maxCount = maxEntities(themeId || undefined);
   const random = startWith === 'random';
@@ -53,6 +58,7 @@ const useNewProjectForm = (onDone: () => void) => {
           themeId: themeId || undefined,
           entityCount: clamp(entityCount, MIN_ENTITIES, maxCount),
           recordCount: withRecords ? clamp(recordCount, 1, MAX_RECORDS) : 0,
+          namesLocale,
         });
         await addProject(project);
         useUiStore.getState().setView('diagram');
@@ -94,6 +100,8 @@ const useNewProjectForm = (onDone: () => void) => {
       setWithRecords,
       recordCount,
       setRecordCount,
+      namesLocale,
+      setNamesLocale,
     },
     busy,
     submit,

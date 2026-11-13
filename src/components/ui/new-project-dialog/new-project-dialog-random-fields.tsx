@@ -1,3 +1,6 @@
+import { themeName } from '../../../domain/random-model';
+import { LOCALES, type Locale } from '../../../i18n';
+import usePreferencesStore from '../../../stores/use-preferences-store';
 import useT from '../../../hooks/ui/use-t';
 import type useNewProjectForm from '../../../hooks/model/use-new-project-form';
 import { MAX_RECORDS } from '../../../hooks/model/use-new-project-form';
@@ -19,7 +22,10 @@ const NewProjectDialogRandomFields = ({ random }: { random: RandomFields }) => {
     setWithRecords,
     recordCount,
     setRecordCount,
+    namesLocale,
+    setNamesLocale,
   } = random;
+  const locale = usePreferencesStore((s) => s.locale);
 
   return (
     <div className="space-y-4 rounded-theme border-(length:--bw) border-line bg-surface-2 p-4">
@@ -30,9 +36,9 @@ const NewProjectDialogRandomFields = ({ random }: { random: RandomFields }) => {
           </label>
           <select id="random-theme" className="field" value={themeId} onChange={(e) => setThemeId(e.target.value)}>
             <option value="">{t('newProject.anyTheme')}</option>
-            {themes.map(({ id, name }) => (
-              <option key={id} value={id}>
-                {name}
+            {themes.map((theme) => (
+              <option key={theme.id} value={theme.id}>
+                {themeName(theme, locale)}
               </option>
             ))}
           </select>
@@ -55,6 +61,18 @@ const NewProjectDialogRandomFields = ({ random }: { random: RandomFields }) => {
             {t('newProject.range', { min: minCount, max: maxCount })}
           </span>
         </div>
+      </div>
+      <div className="space-y-1.5">
+        <label htmlFor="random-names-locale" className="block font-medium">
+          {t('newProject.namesLanguage')}
+        </label>
+        <select id="random-names-locale" className="field sm:w-1/2" value={namesLocale} onChange={(e) => setNamesLocale(e.target.value as Locale)}>
+          {LOCALES.map(({ id, name }) => (
+            <option key={id} value={id} lang={id}>
+              {name}
+            </option>
+          ))}
+        </select>
       </div>
       <Checkbox label={t('newProject.withRecords')} checked={withRecords} onChange={setWithRecords} />
       {withRecords && (

@@ -1,3 +1,4 @@
+import { getLocale, type Locale } from '../i18n';
 import { DIALECTS, findType, isSerial, lengthLimit, type Generic } from './dialects';
 import { nextAutoValue } from './records';
 import type { Column, DataRow, DialectId, Project, Schema, Table } from './types';
@@ -23,29 +24,86 @@ const pad = (n: number, size = 2) => String(n).padStart(size, '0');
 const FIRST = ['Ana', 'Luis', 'María', 'Carlos', 'Sofía', 'Jorge', 'Lucía', 'Andrés', 'Valentina', 'Diego', 'Camila', 'Mateo'];
 const LAST = ['García', 'Rodríguez', 'López', 'Martínez', 'Gómez', 'Pérez', 'Sánchez', 'Ramírez', 'Torres', 'Flores'];
 const CITIES = ['Bogotá', 'Madrid', 'Lima', 'Quito', 'Santiago', 'Ciudad de México', 'Buenos Aires', 'Montevideo'];
-const COUNTRIES = ['Colombia', 'España', 'Perú', 'Ecuador', 'Chile', 'México', 'Argentina', 'Uruguay'];
-const STATUSES = ['activo', 'inactivo', 'pendiente'];
-const WORDS = ['mesa', 'azul', 'rápido', 'proyecto', 'cliente', 'norte', 'verde', 'datos', 'pedido', 'nube', 'claro', 'ruta'];
 
-const ascii = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-const words = (rng: Rng, count: number) => Array.from({ length: count }, () => pick(rng, WORDS)).join(' ');
+/** Sample data per language, so generated rows read naturally next to the column names. */
+const DATA: Record<Locale, { first: string[]; last: string[]; cities: string[]; countries: string[]; words: string[]; statuses: string[]; domain: string; street: (n: number) => string }> = {
+  es: {
+    first: FIRST,
+    last: LAST,
+    cities: CITIES,
+    countries: ['Colombia', 'España', 'Perú', 'Ecuador', 'Chile', 'México', 'Argentina', 'Uruguay'],
+    words: ['mesa', 'azul', 'rápido', 'proyecto', 'cliente', 'norte', 'verde', 'datos', 'pedido', 'nube', 'claro', 'ruta'],
+    statuses: ['activo', 'inactivo', 'pendiente'],
+    domain: 'ejemplo.com',
+    street: (n) => `Calle ${n}`,
+  },
+  en: {
+    first: ['Emma', 'Liam', 'Olivia', 'Noah', 'Ava', 'James', 'Mia', 'Lucas', 'Grace', 'Henry', 'Chloe', 'Jack'],
+    last: ['Smith', 'Johnson', 'Brown', 'Taylor', 'Wilson', 'Davis', 'Clark', 'Lewis', 'Walker', 'Hall'],
+    cities: ['London', 'New York', 'Toronto', 'Sydney', 'Dublin', 'Chicago', 'Boston', 'Seattle'],
+    countries: ['United Kingdom', 'United States', 'Canada', 'Australia', 'Ireland', 'New Zealand'],
+    words: ['table', 'blue', 'quick', 'project', 'river', 'north', 'green', 'data', 'order', 'cloud', 'bright', 'route'],
+    statuses: ['active', 'inactive', 'pending'],
+    domain: 'example.com',
+    street: (n) => `${n} Main Street`,
+  },
+  fr: {
+    first: ['Léa', 'Hugo', 'Chloé', 'Louis', 'Manon', 'Jules', 'Camille', 'Arthur', 'Inès', 'Gabriel', 'Zoé', 'Nathan'],
+    last: ['Martin', 'Bernard', 'Dubois', 'Thomas', 'Robert', 'Richard', 'Petit', 'Durand', 'Leroy', 'Moreau'],
+    cities: ['Paris', 'Lyon', 'Marseille', 'Bordeaux', 'Montréal', 'Bruxelles', 'Genève', 'Nantes'],
+    countries: ['France', 'Belgique', 'Suisse', 'Canada', 'Luxembourg', 'Sénégal'],
+    words: ['table', 'bleu', 'rapide', 'projet', 'rivière', 'nord', 'vert', 'données', 'commande', 'nuage', 'clair', 'route'],
+    statuses: ['actif', 'inactif', 'en attente'],
+    domain: 'exemple.com',
+    street: (n) => `${n} rue de la Paix`,
+  },
+  pt: {
+    first: ['Ana', 'João', 'Maria', 'Pedro', 'Beatriz', 'Lucas', 'Mariana', 'Gabriel', 'Laura', 'Rafael', 'Júlia', 'Miguel'],
+    last: ['Silva', 'Santos', 'Oliveira', 'Souza', 'Pereira', 'Costa', 'Rodrigues', 'Almeida', 'Lima', 'Carvalho'],
+    cities: ['São Paulo', 'Lisboa', 'Rio de Janeiro', 'Porto', 'Salvador', 'Recife', 'Curitiba', 'Coimbra'],
+    countries: ['Brasil', 'Portugal', 'Angola', 'Moçambique', 'Cabo Verde'],
+    words: ['mesa', 'azul', 'rápido', 'projeto', 'rio', 'norte', 'verde', 'dados', 'pedido', 'nuvem', 'claro', 'rota'],
+    statuses: ['ativo', 'inativo', 'pendente'],
+    domain: 'exemplo.com',
+    street: (n) => `Rua das Flores, ${n}`,
+  },
+};
+
+const ascii = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+/** Column name fragments in the four languages, used to guess what kind of text fits. */
+const KEYS = {
+  email: ['email', 'correo', 'mail', 'courriel'],
+  last: ['apellido', 'last', 'sobrenome', 'surname'],
+  first: ['nombre', 'name', 'first', 'nom', 'prenom', 'nome'],
+  phone: ['telefono', 'phone', 'celular', 'movil', 'telephone', 'telefone'],
+  city: ['ciudad', 'city', 'ville', 'cidade'],
+  country: ['pais', 'country', 'pays'],
+  address: ['direccion', 'address', 'adresse', 'endereco'],
+  code: ['codigo', 'code', 'sku', 'ref', 'numero', 'number', 'matricula', 'registration', 'immatriculation', 'pasaporte', 'passport', 'passeport', 'passaporte', 'licen', 'isbn', 'asiento', 'seat', 'siege', 'assento'],
+  status: ['estado', 'status', 'statut'],
+  url: ['url', 'web', 'sitio', 'site'],
+  long: ['descripcion', 'description', 'comentario', 'comment', 'commentaire', 'nota', 'note', 'detalle', 'detail', 'motivo', 'reason', 'motif', 'descricao'],
+};
 
 /** Plausible text guessed from the column name, so generated rows read naturally. */
-const textFor = (rng: Rng, columnName: string) => {
+const textFor = (rng: Rng, columnName: string, locale: Locale) => {
+  const data = DATA[locale];
   const name = ascii(columnName);
-  const has = (...keys: string[]) => keys.some((k) => name.includes(k));
-  if (has('email', 'correo', 'mail')) return `${ascii(pick(rng, FIRST))}.${ascii(pick(rng, LAST))}${int(rng, 1, 99)}@ejemplo.com`;
-  if (has('apellido', 'last')) return pick(rng, LAST);
-  if (has('nombre', 'name', 'first')) return name === 'nombre' || name === 'name' ? `${pick(rng, FIRST)} ${pick(rng, LAST)}` : pick(rng, FIRST);
-  if (has('telefono', 'phone', 'celular', 'movil')) return `3${int(rng, 0, 2)}${int(rng, 0, 9)} ${int(rng, 100, 999)} ${int(rng, 1000, 9999)}`;
-  if (has('ciudad', 'city')) return pick(rng, CITIES);
-  if (has('pais', 'country')) return pick(rng, COUNTRIES);
-  if (has('direccion', 'address')) return `Calle ${int(rng, 1, 150)} # ${int(rng, 1, 99)}-${int(rng, 1, 99)}`;
-  if (has('codigo', 'code', 'sku', 'ref')) return `COD-${int(rng, 1000, 9999)}`;
-  if (has('estado', 'status')) return pick(rng, STATUSES);
-  if (has('url', 'web', 'sitio')) return `https://ejemplo.com/${pick(rng, WORDS)}`;
-  if (has('descripcion', 'description', 'comentario', 'nota', 'detalle')) return words(rng, int(rng, 4, 8));
-  return words(rng, int(rng, 1, 3));
+  const has = (keys: string[]) => keys.some((k) => name.includes(k));
+  const words = (count: number) => Array.from({ length: count }, () => pick(rng, data.words)).join(' ');
+  if (has(KEYS.email)) return `${ascii(pick(rng, data.first))}.${ascii(pick(rng, data.last)).replace(/\s/g, '')}${int(rng, 1, 99)}@${data.domain}`;
+  if (has(KEYS.last)) return pick(rng, data.last);
+  if (has(KEYS.first)) return KEYS.first.includes(name) ? `${pick(rng, data.first)} ${pick(rng, data.last)}` : pick(rng, data.first);
+  if (has(KEYS.phone)) return `3${int(rng, 0, 2)}${int(rng, 0, 9)} ${int(rng, 100, 999)} ${int(rng, 1000, 9999)}`;
+  if (has(KEYS.city)) return pick(rng, data.cities);
+  if (has(KEYS.country)) return pick(rng, data.countries);
+  if (has(KEYS.address)) return data.street(int(rng, 1, 150));
+  if (has(KEYS.code)) return `${columnName.slice(0, 3).toUpperCase()}-${int(rng, 1000, 9999)}`;
+  if (has(KEYS.status)) return pick(rng, data.statuses);
+  if (has(KEYS.url)) return `https://${data.domain}/${ascii(pick(rng, data.words))}`;
+  if (has(KEYS.long)) return words(int(rng, 4, 8));
+  return words(int(rng, 1, 3));
 };
 
 const randomDate = (rng: Rng) => `${int(rng, 2015, 2026)}-${pad(int(rng, 1, 12))}-${pad(int(rng, 1, 28))}`;
@@ -62,7 +120,7 @@ export const canRandomize = (dialect: DialectId, column: Pick<Column, 'type'>) =
 };
 
 /** A random value that fits the column type, or null when the type is not supported. */
-export const randomValue = (dialect: DialectId, column: Column, rng: Rng): string | null => {
+export const randomValue = (dialect: DialectId, column: Column, rng: Rng, locale: Locale = getLocale()): string | null => {
   const def = findType(DIALECTS[dialect], column.type);
   if (!def || UNSUPPORTED.includes(def.generic)) return null;
   if (def.integer || def.serial) {
@@ -92,7 +150,7 @@ export const randomValue = (dialect: DialectId, column: Column, rng: Rng): strin
     case 'nvarchar':
     case 'text':
     case 'ntext': {
-      const text = textFor(rng, column.name);
+      const text = textFor(rng, column.name, locale);
       const limit = lengthLimit(dialect, column);
       return limit != null ? [...text].slice(0, limit).join('') : text;
     }
@@ -116,19 +174,19 @@ export const randomValue = (dialect: DialectId, column: Column, rng: Rng): strin
 
 /* Rows */
 
-type Context = { project: Project; schema: Schema; table: Table; rng: Rng };
+type Context = { project: Project; schema: Schema; table: Table; rng: Rng; locale: Locale };
 
 const isGenerated = (dialect: DialectId, column: Column) => column.autoIncrement || isSerial(dialect, column.type);
 
 /** Makes a value unique against the ones already used, keeping it within the length limit. */
 const uniqueValue = (ctx: Context, column: Column, used: Set<string>) => {
-  const { project, rng } = ctx;
+  const { project, rng, locale } = ctx;
   for (let attempt = 0; attempt < 25; attempt += 1) {
-    const value = randomValue(project.dialect, column, rng);
+    const value = randomValue(project.dialect, column, rng, locale);
     if (value === null) return null;
     if (!used.has(value)) return value;
   }
-  const base = randomValue(project.dialect, column, rng)!;
+  const base = randomValue(project.dialect, column, rng, locale)!;
   const def = findType(DIALECTS[project.dialect], column.type);
   if (def?.integer) {
     let n = Math.max(0, ...[...used].map(Number).filter(Number.isFinite)) + 1;
@@ -174,10 +232,17 @@ export type GeneratedRows = { rows: Record<string, string>[]; missingRefs: strin
  * Generates rows with random values. FK columns take values from rows that already exist in the
  * referenced table, auto increment keys continue the sequence, and PK or UNIQUE values are not repeated.
  */
-export const generateRows = (project: Project, schema: Schema, tableId: string, count: number, rng: Rng = Math.random): GeneratedRows => {
+export const generateRows = (
+  project: Project,
+  schema: Schema,
+  tableId: string,
+  count: number,
+  rng: Rng = Math.random,
+  locale: Locale = getLocale(),
+): GeneratedRows => {
   const table = schema.tables.find((t) => t.id === tableId);
   if (!table) return { rows: [], missingRefs: [] };
-  const ctx: Context = { project, schema, table, rng };
+  const ctx: Context = { project, schema, table, rng, locale };
   const records = project.records ?? {};
   const existing: DataRow[] = [...(records[tableId] ?? [])];
   const missingRefs = new Set<string>();
@@ -222,7 +287,7 @@ export const generateRows = (project: Project, schema: Schema, tableId: string, 
           continue;
         }
         const used = usedByColumn.get(column.id);
-        const value = used ? uniqueValue(ctx, column, used) : randomValue(project.dialect, column, rng);
+        const value = used ? uniqueValue(ctx, column, used) : randomValue(project.dialect, column, rng, locale);
         if (value !== null) values[column.id] = value;
       }
       if (pkIds.length === 0 || !usedPk.has(pkKey(values))) break;
@@ -262,7 +327,7 @@ export const randomCellValue = (
   const others = (records[tableId] ?? []).filter((r) => r.id !== rowId);
   if (isGenerated(project.dialect, column)) return nextAutoValue(others, columnId);
   if (column.unique || (column.pk && table.pk?.columnIds.length === 1)) {
-    return uniqueValue({ project, schema, table, rng }, column, new Set(others.map((r) => r.values[columnId]).filter(Boolean)));
+    return uniqueValue({ project, schema, table, rng, locale: getLocale() }, column, new Set(others.map((r) => r.values[columnId]).filter(Boolean)));
   }
   return randomValue(project.dialect, column, rng);
 };
