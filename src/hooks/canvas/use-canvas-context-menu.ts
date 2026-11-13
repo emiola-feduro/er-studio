@@ -54,6 +54,7 @@ const useCanvasContextMenu = (menu: ContextMenuState | null) => {
           },
           ...(isJunction ? [] : [{ label: t('canvas.relateTo'), onSelect: () => ui.openRelationshipDialog([id]) }]),
           { label: t('canvas.viewRecords'), onSelect: showRecords, separatorBefore: true },
+          { label: t('agentExport.contextMenu'), onSelect: () => ui.openAgentExport(id) },
           {
             label: t('canvas.generateRows', { count: RANDOM_ROWS }),
             onSelect: () => {

@@ -8,6 +8,7 @@ import type { Project } from '../../../domain/types';
 import { getDdl, getDerived } from '../../../lib/derived';
 import { downloadText, serializeProject, slug } from '../../../lib/project-file';
 import useProjectStore from '../../../stores/use-project-store';
+import useUiStore from '../../../stores/use-ui-store';
 import Button from '../../ui/button/button';
 import Menu from '../../ui/menu/menu';
 
@@ -41,6 +42,7 @@ const TopBarExportMenu = () => {
         { label: t('export.png'), onSelect: () => void exportImage('png') },
         { label: t('export.svg'), onSelect: () => void exportImage('svg') },
         { label: t('export.copyPng'), onSelect: () => void exportImage('copy-png') },
+        { label: t('agentExport.menu'), onSelect: () => useUiStore.getState().openAgentExport(), separatorBefore: true },
         { label: t('export.recordsSql'), onSelect: () => void exportRecords('sql'), separatorBefore: true },
         { label: t('export.recordsXlsx'), onSelect: () => void exportRecords('xlsx') },
         { label: t('export.recordsCsv'), onSelect: () => void exportRecords('csv-zip') },

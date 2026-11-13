@@ -21,6 +21,8 @@ type UiState = {
   /** Hides every panel and tool so only the diagram is left. */
   focusMode: boolean;
   contextMenu: ContextMenuState | null;
+  /** Export for AI agents; `tableId` preselects one entity. */
+  agentExport: { open: boolean; tableId?: string };
   toasts: Toast[];
   select: (selection: Selection) => void;
   setView: (view: CenterView) => void;
@@ -36,6 +38,8 @@ type UiState = {
   setFocusMode: (on: boolean) => void;
   openContextMenu: (menu: ContextMenuState) => void;
   closeContextMenu: () => void;
+  openAgentExport: (tableId?: string) => void;
+  closeAgentExport: () => void;
   notify: (message: string, tone?: Toast['tone']) => void;
   dismissToast: (id: number) => void;
 };
@@ -55,6 +59,7 @@ const useUiStore = create<UiState>((set, get) => ({
   recordsTableId: null,
   focusMode: false,
   contextMenu: null,
+  agentExport: { open: false },
   toasts: [],
   select: (selection) => set({ selection }),
   setView: (view) => set({ view }),
@@ -71,6 +76,8 @@ const useUiStore = create<UiState>((set, get) => ({
   setFocusMode: (focusMode) => set(focusMode ? { focusMode, view: 'diagram', contextMenu: null } : { focusMode }),
   openContextMenu: (contextMenu) => set({ contextMenu }),
   closeContextMenu: () => set({ contextMenu: null }),
+  openAgentExport: (tableId) => set({ agentExport: { open: true, tableId } }),
+  closeAgentExport: () => set({ agentExport: { open: false } }),
   notify: (message, tone = 'info') => {
     toastId += 1;
     const id = toastId;

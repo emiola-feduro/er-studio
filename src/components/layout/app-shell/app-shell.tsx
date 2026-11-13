@@ -7,6 +7,7 @@ import Workspace from '../../dynamic/workspace/workspace';
 import WorkspaceEmpty from '../../dynamic/workspace/workspace-empty';
 import WorkspaceError from '../../dynamic/workspace/workspace-error';
 import WorkspaceSkeleton from '../../dynamic/workspace/workspace-skeleton';
+import AgentExportDialog from '../../ui/agent-export-dialog/agent-export-dialog';
 import NewProjectDialog from '../../ui/new-project-dialog/new-project-dialog';
 import RelationshipDialog from '../../ui/relationship-dialog/relationship-dialog';
 import SettingsDialog from '../../ui/settings-dialog/settings-dialog';
@@ -45,6 +46,7 @@ const AppShell = () => {
       <RelationshipDialog />
       <SettingsDialog />
       <NewProjectDialog />
+      <AgentExportDialog />
       <ToastStack />
     </div>
   );
