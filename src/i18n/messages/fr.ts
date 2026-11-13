@@ -133,6 +133,7 @@ export const fr: Messages = {
   'relTitle.nary': 'Relation n-aire',
   'relName.and': '{a} et {b}',
 
+  'inspector.resize': 'Largeur du panneau résumé et inspecteur',
   'inspector.label': 'Inspecteur',
   'inspector.overview': 'Résumé du modèle',
   'inspector.stats.tables': 'Tables',

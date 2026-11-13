@@ -25,7 +25,8 @@ type PreferencesState = {
   sqlFontId: string;
   textSize: TextSize;
   showConstraintIcons: boolean;
-  sidebarWidth: number;
+  /** Width in pixels of each resizable side panel (wide screens only). */
+  panelWidths: Record<ResizablePanel, number>;
   hiddenPanels: Partial<Record<PanelId, boolean>>;
   setLocale: (locale: Locale) => void;
   setTheme: (id: string) => void;
@@ -34,11 +35,16 @@ type PreferencesState = {
   setSqlFont: (id: string) => void;
   setTextSize: (size: TextSize) => void;
   setShowConstraintIcons: (show: boolean) => void;
-  setSidebarWidth: (width: number) => void;
+  setPanelWidth: (panel: ResizablePanel, width: number) => void;
   setPanelHidden: (id: PanelId, hidden: boolean) => void;
 };
 
-export const SIDEBAR_WIDTH = { min: 200, max: 520, default: 272 } as const;
+export type ResizablePanel = 'sidebar' | 'inspector';
+
+export const PANEL_WIDTHS: Record<ResizablePanel, { min: number; max: number; default: number }> = {
+  sidebar: { min: 200, max: 520, default: 272 },
+  inspector: { min: 320, max: 760, default: 410 },
+};
 
 /** localStorage can throw in private windows; preferences then just do not persist. */
 const safeStorage: StateStorage = {
@@ -80,7 +86,7 @@ const usePreferencesStore = create<PreferencesState>()(
       sqlFontId: 'jetbrains-mono',
       textSize: 'md',
       showConstraintIcons: false,
-      sidebarWidth: SIDEBAR_WIDTH.default,
+      panelWidths: { sidebar: PANEL_WIDTHS.sidebar.default, inspector: PANEL_WIDTHS.inspector.default },
       hiddenPanels: {},
       setTheme: (themeId) => set({ themeId }),
       setUiFont: (uiFontId) => set({ uiFontId }),
@@ -88,13 +94,25 @@ const usePreferencesStore = create<PreferencesState>()(
       setSqlFont: (sqlFontId) => set({ sqlFontId }),
       setTextSize: (textSize) => set({ textSize }),
       setShowConstraintIcons: (showConstraintIcons) => set({ showConstraintIcons }),
-      setSidebarWidth: (width) =>
-        set({ sidebarWidth: Math.round(Math.min(SIDEBAR_WIDTH.max, Math.max(SIDEBAR_WIDTH.min, width))) }),
+      setPanelWidth: (panel, width) => {
+        const { min, max } = PANEL_WIDTHS[panel];
+        set((s) => ({ panelWidths: { ...s.panelWidths, [panel]: Math.round(Math.min(max, Math.max(min, width))) } }));
+      },
       setPanelHidden: (id, hidden) => set((s) => ({ hiddenPanels: { ...s.hiddenPanels, [id]: hidden } })),
     }),
     {
       name: 'er-studio:preferences',
       storage: createJSONStorage(() => safeStorage),
+      version: 1,
+      // Version 0 saved only the left panel width, as sidebarWidth.
+      migrate: (persisted, version) => {
+        const state = persisted as Partial<PreferencesState> & { sidebarWidth?: number };
+        if (version < 1) {
+          state.panelWidths = { sidebar: state.sidebarWidth ?? PANEL_WIDTHS.sidebar.default, inspector: PANEL_WIDTHS.inspector.default };
+          delete state.sidebarWidth;
+        }
+        return state as PreferencesState;
+      },
       onRehydrateStorage: () => (state) => {
         if (state && !isLocale(state.locale)) state.locale = DEFAULT_LOCALE;
         if (state) setLocale(state.locale);

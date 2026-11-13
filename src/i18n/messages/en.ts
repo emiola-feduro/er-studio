@@ -133,6 +133,7 @@ export const en: Messages = {
   'relTitle.nary': 'N-ary relationship',
   'relName.and': '{a} and {b}',
 
+  'inspector.resize': 'Summary and inspector panel width',
   'inspector.label': 'Inspector',
   'inspector.overview': 'Model summary',
   'inspector.stats.tables': 'Tables',

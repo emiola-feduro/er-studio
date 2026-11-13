@@ -18,14 +18,14 @@ import TopBar from '../top-bar/top-bar';
 const AppShell = () => {
   const { status, error, retry } = useProjectBootstrap();
   const hasProject = useProjectStore((s) => Boolean(s.project));
-  const sidebarWidth = usePreferencesStore((s) => s.sidebarWidth);
+  const panelWidths = usePreferencesStore((s) => s.panelWidths);
   const { isVisible, sidebar } = usePanels();
   const header = isVisible('header');
   const inspector = hasProject && isVisible('inspector');
   // The sidebar is a drawer below lg, so it only takes a column from lg up.
   const columns = {
     '--cols-md': inspector ? 'minmax(0,1fr) 340px' : 'minmax(0,1fr)',
-    '--cols-lg': [sidebar && `${sidebarWidth}px`, 'minmax(0,1fr)', inspector && '410px'].filter(Boolean).join(' '),
+    '--cols-lg': [sidebar && `${panelWidths.sidebar}px`, 'minmax(0,1fr)', inspector && `${panelWidths.inspector}px`].filter(Boolean).join(' '),
     '--rows-sm': inspector ? 'minmax(0,1fr) minmax(0,40vh)' : 'minmax(0,1fr)',
   } as CSSProperties;
 

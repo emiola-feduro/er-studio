@@ -1,3 +1,4 @@
+import ResizeHandle from '../../ui/resize-handle/resize-handle';
 import useT from '../../../hooks/ui/use-t';
 import useProjectStore from '../../../stores/use-project-store';
 import useUiStore from '../../../stores/use-ui-store';
@@ -16,14 +17,18 @@ const Inspector = () => {
   );
 
   return (
-    <aside aria-label={t('inspector.label')} className="relative flex min-h-0 flex-col overflow-y-auto border-l border-line bg-surface">
-      {entity ? (
-        <InspectorEntity key={entity.id} entity={entity} />
-      ) : relationship ? (
-        <InspectorRelationship key={relationship.id} relationship={relationship} />
-      ) : (
-        <InspectorOverview />
-      )}
+    <aside aria-label={t('inspector.label')} className="relative flex min-h-0 flex-col border-l border-line bg-surface">
+      <ResizeHandle panel="inspector" label={t('inspector.resize')} />
+      {/* The handle stays outside the scrolling area so it covers the whole edge. */}
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto">
+        {entity ? (
+          <InspectorEntity key={entity.id} entity={entity} />
+        ) : relationship ? (
+          <InspectorRelationship key={relationship.id} relationship={relationship} />
+        ) : (
+          <InspectorOverview />
+        )}
+      </div>
     </aside>
   );
 };

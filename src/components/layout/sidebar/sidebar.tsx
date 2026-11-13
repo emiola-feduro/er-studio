@@ -5,7 +5,7 @@ import useUiStore from '../../../stores/use-ui-store';
 import ProjectList from '../../dynamic/project-list/project-list';
 import IconButton from '../../ui/icon-button/icon-button';
 import SidebarModelList from './sidebar-model-list';
-import SidebarResizeHandle from './sidebar-resize-handle';
+import ResizeHandle from '../../ui/resize-handle/resize-handle';
 
 const Sidebar = () => {
   const t = useT();
@@ -29,7 +29,7 @@ const Sidebar = () => {
         </div>
         {projects && <ProjectList expanded={!model} />}
         {model && <SidebarModelList tables={isVisible('tables')} relationships={isVisible('relationships')} bordered={projects} />}
-        <SidebarResizeHandle />
+        <ResizeHandle panel="sidebar" label={t('sidebar.resize')} />
       </aside>
     </>
   );

@@ -145,6 +145,7 @@ export const es = {
   'relName.and': '{a} y {b}',
 
   // Inspector
+  'inspector.resize': 'Ancho del panel de resumen e inspector',
   'inspector.label': 'Inspector',
   'inspector.overview': 'Resumen del modelo',
   'inspector.stats.tables': 'Tablas',
