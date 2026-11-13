@@ -6,6 +6,7 @@ import useProjectStore from '../../../stores/use-project-store';
 import Button from '../../ui/button/button';
 import Checkbox from '../../ui/checkbox/checkbox';
 import IconButton from '../../ui/icon-button/icon-button';
+import InspectorDefaultField from './inspector-default-field';
 import InspectorNumberField from './inspector-number-field';
 
 type InspectorAttributeDetailsProps = {
@@ -17,7 +18,7 @@ type InspectorAttributeDetailsProps = {
 
 const InspectorAttributeDetails = ({ entityId, attribute, isFirst, isLast }: InspectorAttributeDetailsProps) => {
   const dialectId = useProjectStore((s) => s.project?.dialect ?? 'postgresql');
-  const { id, type, length, precision, scale, pk, nullable, unique, autoIncrement, defaultValue, check } = attribute;
+  const { id, type, length, precision, scale, pk, nullable, unique, autoIncrement, check } = attribute;
   const def = findType(DIALECTS[dialectId], type);
   const update = (patch: Partial<Attribute>) => updateAttribute(entityId, id, patch);
 
@@ -52,18 +53,7 @@ const InspectorAttributeDetails = ({ entityId, attribute, isFirst, isLast }: Ins
           onChange={(v) => update({ autoIncrement: v })}
         />
       </div>
-      <div className="space-y-1">
-        <label htmlFor={`attr-default-${id}`} className="block font-medium">
-          Valor por defecto
-        </label>
-        <input
-          id={`attr-default-${id}`}
-          className="field field-sm font-canvas"
-          placeholder="'activo', 0, CURRENT_TIMESTAMP"
-          value={defaultValue ?? ''}
-          onChange={(e) => update({ defaultValue: e.target.value || undefined })}
-        />
-      </div>
+      <InspectorDefaultField id={id} dialect={dialectId} attribute={attribute} onChange={(v) => update({ defaultValue: v })} />
       <div className="space-y-1">
         <label htmlFor={`attr-check-${id}`} className="block font-medium">
           Restricción CHECK

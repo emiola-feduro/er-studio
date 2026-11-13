@@ -1,3 +1,4 @@
+import { defaultValueProblem } from './default-values';
 import { DIALECTS, findType, isEnum, maxLengthFor, RESERVED_WORDS } from './dialects';
 import { isRecursive } from './model';
 import type { Issue, Project, Schema } from './types';
@@ -75,6 +76,17 @@ export const validateProject = (project: Project, schema: Schema): Issue[] => {
             entityId: table.id,
           });
         }
+      }
+      const problem = defaultValueProblem(project.dialect, col);
+      if (problem) {
+        const value = col.defaultValue!.trim();
+        const messages = {
+          unquotedText: `"${name}.${colName}": el texto por defecto va entre comillas simples: '${value}'.`,
+          notANumber: `"${name}.${colName}": el valor por defecto ${value} no es un número.`,
+          notABoolean: `"${name}.${colName}": el valor por defecto ${value} no es un booleano válido en ${dialect.name}.`,
+          unquotedDate: `"${name}.${colName}": las fechas por defecto van entre comillas simples: '${value}'.`,
+        };
+        issues.push({ level: 'warning', message: messages[problem], entityId: table.id });
       }
       if (!def) {
         issues.push({
