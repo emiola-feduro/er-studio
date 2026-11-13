@@ -24,7 +24,8 @@ const InspectorAttributeRow = ({ entityId, attribute, isFirst, isLast }: Inspect
 
   return (
     <li className={`rounded-[calc(var(--radius)*0.75)] ${expanded ? 'bg-surface-2' : ''}`}>
-      <div className="flex items-center gap-1">
+      {/* Wraps instead of squeezing the name: the name field never gets narrower than its minimum. */}
+      <div className="flex flex-wrap items-center gap-1">
         <IconButton
           label={expanded ? t('attr.hideDetails', { name }) : t('attr.showDetails', { name })}
           size="sm"
@@ -41,15 +42,17 @@ const InspectorAttributeRow = ({ entityId, attribute, isFirst, isLast }: Inspect
         </label>
         <input
           id={`attr-name-${id}`}
-          className="field field-sm min-w-0 flex-1 basis-20"
+          className="field field-sm min-w-[6rem] flex-[999_1_6rem]"
           value={name}
           onChange={(e) => updateAttribute(entityId, id, { name: e.target.value })}
         />
-        <InspectorTypeSelect entityId={entityId} attribute={attribute} />
-        <InspectorLengthField entityId={entityId} attribute={attribute} />
-        <IconButton label={t('attr.delete', { name })} tone="danger" size="sm" onClick={() => deleteAttribute(entityId, id)}>
-          <Trash2 size={15} />
-        </IconButton>
+        <div className="ml-auto flex flex-[1_1_auto] items-center justify-end gap-1">
+          <InspectorTypeSelect entityId={entityId} attribute={attribute} />
+          <InspectorLengthField entityId={entityId} attribute={attribute} />
+          <IconButton label={t('attr.delete', { name })} tone="danger" size="sm" onClick={() => deleteAttribute(entityId, id)}>
+            <Trash2 size={15} />
+          </IconButton>
+        </div>
       </div>
       {isEnum(attribute.type) && <InspectorEnumValues entityId={entityId} attribute={attribute} />}
       {expanded && <InspectorAttributeDetails entityId={entityId} attribute={attribute} isFirst={isFirst} isLast={isLast} />}

@@ -49,7 +49,7 @@ const InspectorTypeSelect = ({ entityId, attribute }: InspectorTypeSelectProps) 
       </label>
       <select
         id={`attr-type-${id}`}
-        className="field field-sm w-[7.5rem] shrink-0 pr-1"
+        className="field field-sm min-w-[5.5rem] flex-[0_1_7.5rem] pr-1"
         value={known ? known.name : CUSTOM}
         onChange={(e) => onChange(e.target.value)}
       >
