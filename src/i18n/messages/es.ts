@@ -511,6 +511,9 @@ export const es = {
   'ddl.sqliteDatabase': 'En SQLite la base de datos es el archivo; abre o crea "{name}.db" antes de ejecutar el script.',
 
   // Model and schema issues
+  'issue.checkUnknown': "\"{column}\": el CHECK menciona {names}, que no son columnas de \"{table}\".",
+  'issue.whereUnknown': "El WHERE del índice \"{index}\" menciona {names}, que no son columnas de \"{table}\".",
+  'issue.sqliteRegexp': "\"{column}\": SQLite solo entiende REGEXP si la conexión carga una extensión que lo defina.",
   'issue.recursiveIdentifying': 'Una relación recursiva no puede ser identificadora; se trata como no identificadora.',
   'issue.identifyingCycle': 'Ciclo de relaciones identificadoras alrededor de "{name}".',
   'issue.fkNotUnique': 'La FK de "{holder}" apunta a "{target}", que no es UNIQUE ni la llave primaria.',
@@ -681,6 +684,32 @@ export const es = {
   'deleteEntity.messageJunction': "\"{name}\" es la tabla intermedia de una relación. Se eliminarán la relación, la tabla y sus {records} registros. Puedes recuperarlas con Deshacer (Ctrl+Z).",
   'deleteEntity.confirm': "Eliminar entidad",
   'deleteEntity.confirmJunction': "Eliminar relación",
+
+  // CHECK and WHERE assistance
+  'expr.suggestions': "Sugerencias",
+  'expr.column': "columna",
+  'expr.regex': "Expresión regular",
+  'expr.regexPlaceholder': "^[A-Z]{3}-[0-9]{4}$",
+  'expr.apply': "Usar en el CHECK",
+  'expr.regexNone': "SQL Server no admite expresiones regulares en un CHECK. Usa los patrones LIKE de las sugerencias.",
+  'expr.regexExtension': "SQLite solo entiende REGEXP con una extensión que lo defina.",
+  'expr.unknown': "No son columnas de esta tabla: {names}",
+  'expr.meaning.nonNegative': "no negativo",
+  'expr.meaning.positive': "mayor que cero",
+  'expr.meaning.range': "rango",
+  'expr.meaning.minLength': "mínimo de caracteres",
+  'expr.meaning.notBlank': "no vacío",
+  'expr.meaning.upperCase': "solo mayúsculas",
+  'expr.meaning.afterDate': "desde una fecha",
+  'expr.meaning.regex.email': "correo válido",
+  'expr.meaning.regex.digits': "solo dígitos",
+  'expr.meaning.regex.code': "código en mayúsculas",
+  'expr.meaning.regex.slug': "slug de URL",
+  'expr.meaning.regex.phone': "teléfono",
+  'expr.meaning.notNull': "solo filas con valor",
+  'expr.meaning.isNull': "solo filas no borradas",
+  'expr.meaning.isTrue': "solo verdaderos",
+  'expr.meaning.equals': "solo {value}",
 } as const;
 
 export type Messages = { [K in keyof typeof es]: string };

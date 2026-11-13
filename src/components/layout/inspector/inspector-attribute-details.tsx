@@ -7,6 +7,8 @@ import useProjectStore from '../../../stores/use-project-store';
 import Button from '../../ui/button/button';
 import Checkbox from '../../ui/checkbox/checkbox';
 import IconButton from '../../ui/icon-button/icon-button';
+import useDerived from '../../../hooks/data/use-derived';
+import InspectorCheckField from './inspector-check-field';
 import InspectorDefaultField from './inspector-default-field';
 import InspectorNumberField from './inspector-number-field';
 
@@ -20,9 +22,10 @@ type InspectorAttributeDetailsProps = {
 const InspectorAttributeDetails = ({ entityId, attribute, isFirst, isLast }: InspectorAttributeDetailsProps) => {
   const t = useT();
   const dialectId = useProjectStore((s) => s.project?.dialect ?? 'postgresql');
-  const { id, type, length, precision, scale, pk, nullable, unique, autoIncrement, check } = attribute;
+  const { id, type, length, precision, scale, pk, nullable, unique, autoIncrement } = attribute;
   const def = findType(DIALECTS[dialectId], type);
   const update = (patch: Partial<Attribute>) => updateAttribute(entityId, id, patch);
+  const columns = useDerived()?.schema.tables.find((table) => table.id === entityId)?.columns.map((c) => c.name) ?? [attribute.name];
 
   return (
     <div className="space-y-3 px-2 pt-2 pb-3">
@@ -56,18 +59,7 @@ const InspectorAttributeDetails = ({ entityId, attribute, isFirst, isLast }: Ins
         />
       </div>
       <InspectorDefaultField id={id} dialect={dialectId} attribute={attribute} onChange={(v) => update({ defaultValue: v })} />
-      <div className="space-y-1">
-        <label htmlFor={`attr-check-${id}`} className="block font-medium">
-          {t('attr.check')}
-        </label>
-        <input
-          id={`attr-check-${id}`}
-          className="field field-sm font-canvas"
-          placeholder={t('attr.checkPlaceholder')}
-          value={check ?? ''}
-          onChange={(e) => update({ check: e.target.value || undefined })}
-        />
-      </div>
+      <InspectorCheckField id={id} dialect={dialectId} attribute={attribute} columns={columns} onChange={(v) => update({ check: v })} />
       <div className="flex items-center gap-1">
         <IconButton label={t('common.moveUp')} size="sm" disabled={isFirst} onClick={() => moveAttribute(entityId, id, -1)}>
           <ArrowUp size={15} />

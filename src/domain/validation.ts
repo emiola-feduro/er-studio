@@ -1,4 +1,5 @@
 import { t } from '../i18n';
+import { unknownIdentifiers } from './constraint-suggestions';
 import { defaultValueProblem } from './default-values';
 import { DIALECTS, findType, isEnum, maxLengthFor, RESERVED_WORDS } from './dialects';
 import { isRecursive } from './model';
@@ -90,6 +91,13 @@ export const validateProject = (project: Project, schema: Schema): Issue[] => {
         } as const;
         issues.push({ level: 'warning', message: t(keys[problem], { column, value, dialect: dialect.name }), entityId: table.id });
       }
+      if (col.check?.trim()) {
+        const unknown = unknownIdentifiers(col.check, table.columns.map((c) => c.name));
+        if (unknown.length) issues.push({ level: 'warning', message: t('issue.checkUnknown', { column, names: unknown.join(', '), table: name }), entityId: table.id });
+        if (project.dialect === 'sqlite' && /\bREGEXP\b/i.test(col.check)) {
+          issues.push({ level: 'warning', message: t('issue.sqliteRegexp', { column }), entityId: table.id });
+        }
+      }
       if (!def) {
         issues.push({
           level: 'warning',
@@ -122,6 +130,12 @@ export const validateProject = (project: Project, schema: Schema): Issue[] => {
           message: t('issue.indexRedundant', { index: index.name, table: name }),
           entityId: table.id,
         });
+      }
+      if (index.where?.trim()) {
+        const unknown = unknownIdentifiers(index.where, table.columns.map((c) => c.name));
+        if (unknown.length) {
+          issues.push({ level: 'warning', message: t('issue.whereUnknown', { index: index.name, names: unknown.join(', '), table: name }), entityId: table.id });
+        }
       }
       if (index.where?.trim() && !dialect.supportsPartialIndex) {
         issues.push({
