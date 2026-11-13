@@ -37,6 +37,7 @@ const TopBarExportMenu = () => {
         { label: 'Script SQL con registros (.sql)', onSelect: withProject((p) => downloadSql(p, true)) },
         { label: 'Imagen PNG', onSelect: () => void exportImage('png') },
         { label: 'Imagen SVG', onSelect: () => void exportImage('svg') },
+        { label: 'Copiar imagen PNG', onSelect: () => void exportImage('copy-png') },
         { label: 'Registros como INSERT (.sql)', onSelect: () => void exportRecords('sql'), separatorBefore: true },
         { label: 'Registros a Excel (.xlsx)', onSelect: () => void exportRecords('xlsx') },
         { label: 'Registros a CSV (.zip)', onSelect: () => void exportRecords('csv-zip') },

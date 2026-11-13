@@ -6,6 +6,7 @@ import useProjectStore from '../../stores/use-project-store';
 import useUiStore, { type ContextMenuState } from '../../stores/use-ui-store';
 import usePanels from '../ui/use-panels';
 import useAutoLayout from './use-auto-layout';
+import useExportImage from './use-export-image';
 
 const RANDOM_ROWS = 10;
 
@@ -14,6 +15,7 @@ const useCanvasContextMenu = (menu: ContextMenuState | null) => {
   const entity = useProjectStore((s) => (menu?.entityId ? s.project?.entities.find((e) => e.id === menu.entityId) : undefined));
   const { setVisible, isVisible, focusMode, setFocusMode } = usePanels();
   const autoLayout = useAutoLayout();
+  const exportImage = useExportImage();
   const { fitView } = useReactFlow();
 
   return useMemo((): { label: string; items: MenuItem[] } | null => {
@@ -75,10 +77,11 @@ const useCanvasContextMenu = (menu: ContextMenuState | null) => {
         { label: 'Nueva relación', onSelect: () => ui.openRelationshipDialog() },
         { label: 'Ordenar diagrama', onSelect: autoLayout, separatorBefore: true },
         { label: 'Ajustar vista', onSelect: () => void fitView({ padding: 0.15, duration: 250 }) },
+        { label: 'Copiar imagen PNG', onSelect: () => void exportImage('copy-png') },
         { label: 'Solo diagrama', hint: 'F', checked: focusMode, onSelect: () => setFocusMode(!focusMode), separatorBefore: true },
       ],
     };
-  }, [menu, entity, isVisible, setVisible, focusMode, setFocusMode, autoLayout, fitView]);
+  }, [menu, entity, isVisible, setVisible, focusMode, setFocusMode, autoLayout, fitView, exportImage]);
 };
 
 export default useCanvasContextMenu;
