@@ -32,7 +32,8 @@ const SqlPreviewCode = ({ sql }: { sql: string }) => {
 
   return (
     <pre className="min-h-0 flex-1 overflow-auto p-4 font-sql text-[13px] leading-relaxed">
-      <code>
+      {/* Tailwind preflight gives <code> its own monospace font; inherit so the chosen SQL font applies. */}
+      <code className="font-[inherit]">
         {lines.map((tokens, i) => (
           <div key={i}>
             {tokens.length === 0 ? ' ' : tokens.map((t, j) => <span key={j} className={kindClass[t.kind]}>{t.text}</span>)}
