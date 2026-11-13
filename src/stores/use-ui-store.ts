@@ -23,6 +23,7 @@ type UiState = {
   contextMenu: ContextMenuState | null;
   /** Export for AI agents; `tableId` preselects one entity. */
   agentExport: { open: boolean; tableId?: string };
+  openApiExportOpen: boolean;
   toasts: Toast[];
   select: (selection: Selection) => void;
   setView: (view: CenterView) => void;
@@ -40,6 +41,7 @@ type UiState = {
   closeContextMenu: () => void;
   openAgentExport: (tableId?: string) => void;
   closeAgentExport: () => void;
+  setOpenApiExportOpen: (open: boolean) => void;
   notify: (message: string, tone?: Toast['tone']) => void;
   dismissToast: (id: number) => void;
 };
@@ -60,6 +62,7 @@ const useUiStore = create<UiState>((set, get) => ({
   focusMode: false,
   contextMenu: null,
   agentExport: { open: false },
+  openApiExportOpen: false,
   toasts: [],
   select: (selection) => set({ selection }),
   setView: (view) => set({ view }),
@@ -78,6 +81,7 @@ const useUiStore = create<UiState>((set, get) => ({
   closeContextMenu: () => set({ contextMenu: null }),
   openAgentExport: (tableId) => set({ agentExport: { open: true, tableId } }),
   closeAgentExport: () => set({ agentExport: { open: false } }),
+  setOpenApiExportOpen: (openApiExportOpen) => set({ openApiExportOpen }),
   notify: (message, tone = 'info') => {
     toastId += 1;
     const id = toastId;

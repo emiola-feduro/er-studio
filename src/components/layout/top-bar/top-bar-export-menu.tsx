@@ -43,6 +43,7 @@ const TopBarExportMenu = () => {
         { label: t('export.svg'), onSelect: () => void exportImage('svg') },
         { label: t('export.copyPng'), onSelect: () => void exportImage('copy-png') },
         { label: t('agentExport.menu'), onSelect: () => useUiStore.getState().openAgentExport(), separatorBefore: true },
+        { label: t('openapi.menu'), onSelect: () => useUiStore.getState().setOpenApiExportOpen(true) },
         { label: t('export.recordsSql'), onSelect: () => void exportRecords('sql'), separatorBefore: true },
         { label: t('export.recordsXlsx'), onSelect: () => void exportRecords('xlsx') },
         { label: t('export.recordsCsv'), onSelect: () => void exportRecords('csv-zip') },
