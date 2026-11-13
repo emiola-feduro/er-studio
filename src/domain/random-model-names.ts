@@ -10,12 +10,12 @@ const en: Dictionary = {
   // Themes
   Tienda: 'Store', Biblioteca: 'Library', Universidad: 'University', Hospital: 'Hospital', Aerolínea: 'Airline', Streaming: 'Streaming',
   // Tables
-  cliente: 'customer', pedido: 'order_header', producto: 'product', categoria: 'category', proveedor: 'supplier', empleado: 'employee',
+  cliente: 'customer', pedido: 'order', producto: 'product', categoria: 'category', proveedor: 'supplier', empleado: 'employee',
   envio: 'shipment', socio: 'member', libro: 'book', autor: 'author', editorial: 'publisher', ejemplar: 'book_copy', prestamo: 'loan',
   genero: 'genre', estudiante: 'student', curso: 'course', profesor: 'teacher', departamento: 'department', aula: 'classroom',
   carrera: 'degree', paciente: 'patient', medico: 'doctor', especialidad: 'specialty', cita: 'appointment', medicamento: 'medicine',
   habitacion: 'room', aeropuerto: 'airport', vuelo: 'flight', avion: 'aircraft', pasajero: 'passenger', reserva: 'booking',
-  tripulante: 'crew_member', usuario: 'app_user', plan: 'plan', suscripcion: 'subscription', pelicula: 'movie', actor: 'actor', resena: 'review',
+  tripulante: 'crew_member', usuario: 'user', plan: 'plan', suscripcion: 'subscription', pelicula: 'movie', actor: 'actor', resena: 'review',
   // Columns
   nombre: 'name', apellido: 'last_name', email: 'email', telefono: 'phone', creado_en: 'created_at', fecha: 'recorded_on', estado: 'status',
   total: 'total', sku: 'sku', precio: 'price', stock: 'stock', descripcion: 'description', pais: 'country', fecha_ingreso: 'hire_date',
@@ -114,3 +114,41 @@ const DICTIONARIES: Partial<Record<Locale, Dictionary>> = { en, fr, pt };
 
 /** The name in the chosen language; Spanish, and any word without a translation, stay as written. */
 export const localName = (locale: Locale, name: string) => DICTIONARIES[locale]?.[name] ?? name;
+
+/** Table names in plural, the usual convention for tables. FK columns keep the singular (cliente_id). */
+const PLURALS: Record<Locale, Dictionary> = {
+  es: {
+    cliente: 'clientes', pedido: 'pedidos', producto: 'productos', categoria: 'categorias', proveedor: 'proveedores', empleado: 'empleados',
+    envio: 'envios', socio: 'socios', libro: 'libros', autor: 'autores', editorial: 'editoriales', ejemplar: 'ejemplares', prestamo: 'prestamos',
+    genero: 'generos', estudiante: 'estudiantes', curso: 'cursos', profesor: 'profesores', departamento: 'departamentos', aula: 'aulas',
+    carrera: 'carreras', paciente: 'pacientes', medico: 'medicos', especialidad: 'especialidades', cita: 'citas', medicamento: 'medicamentos',
+    habitacion: 'habitaciones', aeropuerto: 'aeropuertos', vuelo: 'vuelos', avion: 'aviones', pasajero: 'pasajeros', reserva: 'reservas',
+    tripulante: 'tripulantes', usuario: 'usuarios', plan: 'planes', suscripcion: 'suscripciones', pelicula: 'peliculas', actor: 'actores', resena: 'resenas',
+  },
+  en: {
+    cliente: 'customers', pedido: 'orders', producto: 'products', categoria: 'categories', proveedor: 'suppliers', empleado: 'employees',
+    envio: 'shipments', socio: 'members', libro: 'books', autor: 'authors', editorial: 'publishers', ejemplar: 'book_copies', prestamo: 'loans',
+    genero: 'genres', estudiante: 'students', curso: 'courses', profesor: 'teachers', departamento: 'departments', aula: 'classrooms',
+    carrera: 'degrees', paciente: 'patients', medico: 'doctors', especialidad: 'specialties', cita: 'appointments', medicamento: 'medicines',
+    habitacion: 'rooms', aeropuerto: 'airports', vuelo: 'flights', avion: 'aircraft', pasajero: 'passengers', reserva: 'bookings',
+    tripulante: 'crew_members', usuario: 'users', plan: 'plans', suscripcion: 'subscriptions', pelicula: 'movies', actor: 'actors', resena: 'reviews',
+  },
+  fr: {
+    cliente: 'clients', pedido: 'commandes', producto: 'produits', categoria: 'categories', proveedor: 'fournisseurs', empleado: 'employes',
+    envio: 'expeditions', socio: 'adherents', libro: 'livres', autor: 'auteurs', editorial: 'editeurs', ejemplar: 'exemplaires', prestamo: 'prets',
+    genero: 'genres', estudiante: 'etudiants', curso: 'cours', profesor: 'professeurs', departamento: 'departements', aula: 'salles',
+    carrera: 'filieres', paciente: 'patients', medico: 'medecins', especialidad: 'specialites', cita: 'rendez_vous', medicamento: 'medicaments',
+    habitacion: 'chambres', aeropuerto: 'aeroports', vuelo: 'vols', avion: 'avions', pasajero: 'passagers', reserva: 'reservations',
+    tripulante: 'membres_equipage', usuario: 'utilisateurs', plan: 'formules', suscripcion: 'abonnements', pelicula: 'films', actor: 'acteurs', resena: 'critiques',
+  },
+  pt: {
+    cliente: 'clientes', pedido: 'pedidos', producto: 'produtos', categoria: 'categorias', proveedor: 'fornecedores', empleado: 'funcionarios',
+    envio: 'envios', socio: 'socios', libro: 'livros', autor: 'autores', editorial: 'editoras', ejemplar: 'exemplares', prestamo: 'emprestimos',
+    genero: 'generos', estudiante: 'estudantes', curso: 'disciplinas', profesor: 'professores', departamento: 'departamentos', aula: 'salas',
+    carrera: 'graduacoes', paciente: 'pacientes', medico: 'medicos', especialidad: 'especialidades', cita: 'consultas', medicamento: 'medicamentos',
+    habitacion: 'quartos', aeropuerto: 'aeroportos', vuelo: 'voos', avion: 'aeronaves', pasajero: 'passageiros', reserva: 'reservas',
+    tripulante: 'tripulantes', usuario: 'usuarios', plan: 'planos', suscripcion: 'assinaturas', pelicula: 'filmes', actor: 'atores', resena: 'avaliacoes',
+  },
+};
+
+export const tableName = (locale: Locale, name: string) => PLURALS[locale][name] ?? localName(locale, name);

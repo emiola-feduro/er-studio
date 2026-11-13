@@ -64,20 +64,29 @@ describe('names language', () => {
     }
   });
 
-  it('translates tables, columns, ENUM values and the project name', () => {
+  it('uses plural table names and singular FK columns', () => {
     const project = generateRandomModel({ dialect: 'postgresql', entityCount: 99, themeId: 'tienda', namesLocale: 'en', rng: seededRng(2) });
     expect(project.name).toBe('Store');
     const names = project.entities.map((e) => e.name);
-    expect(names).toContain('customer');
-    expect(names).toContain('order_header_product');
-    const order = project.entities.find((e) => e.name === 'order_header')!;
-    expect(order.attributes.find((a) => a.name === 'status')?.enumValues).toEqual(['PENDING', 'PAID', 'SHIPPED', 'DELIVERED']);
+    expect(names).toContain('customers');
+    expect(names).toContain('orders_products');
+    const orders = project.entities.find((e) => e.name === 'orders')!;
+    expect(orders.attributes.find((a) => a.name === 'status')?.enumValues).toEqual(['PENDING', 'PAID', 'SHIPPED', 'DELIVERED']);
+    const schema = buildSchema(project);
+    const columns = (table: string) => schema.tables.find((t) => t.name === table)!.columns.map((c) => c.name);
+    expect(columns('orders')).toContain('customer_id');
+    expect(columns('orders_products')).toEqual(expect.arrayContaining(['order_id', 'product_id']));
+    expect(columns('employees')).toContain('manager_id');
+
+    const spanish = generateRandomModel({ dialect: 'postgresql', entityCount: 99, themeId: 'tienda', rng: seededRng(2) });
+    const pedidos = buildSchema(spanish).tables.find((t) => t.name === 'pedidos')!;
+    expect(pedidos.columns.map((c) => c.name)).toContain('cliente_id');
   });
 
   it('writes sample text in the chosen language', () => {
     const project = generateRandomModel({ dialect: 'postgresql', entityCount: 99, themeId: 'tienda', namesLocale: 'fr', rng: seededRng(2) });
     fillRandomRecords(project, 5, seededRng(3), 'fr');
-    const client = project.entities.find((e) => e.name === 'client')!;
+    const client = project.entities.find((e) => e.name === 'clients')!;
     const email = client.attributes.find((a) => a.name === 'email')!;
     expect(project.records![client.id][0].values[email.id]).toMatch(/@exemple\.com$/);
   });

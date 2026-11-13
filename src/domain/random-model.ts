@@ -4,7 +4,7 @@ import { buildSchema } from './inference';
 import { createAttribute, createEntity, createProject, createRelationship, syncJunctions, uid, type RelationshipPreset } from './model';
 import { generateRows, type Rng } from './random-values';
 import type { Locale } from '../i18n';
-import { localName } from './random-model-names';
+import { localName, tableName } from './random-model-names';
 import type { Attribute, DialectId, Entity, Project } from './types';
 
 type AttrSpec = {
@@ -233,7 +233,7 @@ export const generateRandomModel = ({ dialect, entityCount, themeId, namesLocale
 
   const byName = new Map<string, Entity>();
   for (const name of names) {
-    const entity = createEntity(dialect, localName(namesLocale, name), { x: 0, y: 0 });
+    const entity = createEntity(dialect, tableName(namesLocale, name), { x: 0, y: 0 });
     entity.attributes.push(...attributesFor(dialect, theme.entities[name], rng, namesLocale));
     byName.set(name, entity);
     project.entities.push(entity);
@@ -249,6 +249,12 @@ export const generateRandomModel = ({ dialect, entityCount, themeId, namesLocale
     spec.roles?.forEach((role, i) => {
       if (role) rel.participants[i].role = localName(namesLocale, role);
     });
+    // Tables are plural, so the referenced side gets its singular name as role: the FK reads cliente_id.
+    const referenced = spec.preset === 'N:M' ? [0, 1] : [0];
+    for (const i of referenced) {
+      const participant = rel.participants[i];
+      if (!participant.role) participant.role = localName(namesLocale, i === 0 ? spec.from : spec.to);
+    }
     if (spec.preset === '1:N' && from.id !== to.id) rel.onDelete = 'CASCADE';
     project.relationships.push(rel);
     if (spec.attributes) junctionAttrs.set(rel.id, attributesFor(dialect, spec.attributes, rng, namesLocale));

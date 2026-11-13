@@ -455,7 +455,7 @@ export const fr: Messages = {
   'actions.fkOnlyEntities': 'Les FK se créent entre entités, pas avec des tables intermédiaires.',
   'actions.fkCreated': 'FK {column} créée dans {table}, pointant vers {source}.',
   'actions.fkMadeUnique': ' {name} est maintenant UNIQUE pour pouvoir être référencé.',
-  'entity.newName': 'entite',
+  'entity.newName': 'entites',
 
   'file.invalidJson': "Le fichier n'est pas un JSON valide.",
   'file.notAProject': "Le fichier n'est pas un projet ER Studio.",

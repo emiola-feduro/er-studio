@@ -487,7 +487,7 @@ export const es = {
   'actions.fkOnlyEntities': 'Las FK se crean entre entidades, no con tablas intermedias.',
   'actions.fkCreated': 'FK {column} creada en {table}, apuntando a {source}.',
   'actions.fkMadeUnique': ' {name} ahora es UNIQUE para poder referenciarlo.',
-  'entity.newName': 'entidad',
+  'entity.newName': 'entidades',
 
   // Project file
   'file.invalidJson': 'El archivo no es JSON válido.',
