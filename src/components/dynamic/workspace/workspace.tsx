@@ -3,6 +3,7 @@ import PanelsFloatingBar from '../../layout/panels-menu/panels-floating-bar';
 import ErCanvas from '../../ui/er-canvas/er-canvas';
 import QueryBuilder from '../../ui/query-builder/query-builder';
 import RecordsView from '../../ui/records-view/records-view';
+import VersionsView from '../../ui/versions-view/versions-view';
 import SqlPreview from '../../ui/sql-preview/sql-preview';
 
 /** Center area once the project is loaded: diagram, DDL or data rows. */
@@ -17,6 +18,7 @@ const Workspace = () => {
       {view === 'sql' && <SqlPreview />}
       {view === 'records' && <RecordsView />}
       {view === 'queries' && <QueryBuilder />}
+      {view === 'versions' && <VersionsView />}
       {view === 'diagram' && <PanelsFloatingBar />}
     </main>
   );

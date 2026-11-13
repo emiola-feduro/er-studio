@@ -2,14 +2,15 @@ import useT from '../../../hooks/ui/use-t';
 import { LOCALES, type Locale } from '../../../i18n';
 import usePreferencesStore from '../../../stores/use-preferences-store';
 
-const TopBarLanguageSelect = () => {
+/** Interface language. Lives in Appearance so the header keeps room for the views. */
+const SettingsDialogLanguage = () => {
   const t = useT();
   const locale = usePreferencesStore((s) => s.locale);
   const setLocale = usePreferencesStore((s) => s.setLocale);
 
   return (
-    <div>
-      <label htmlFor="language" className="sr-only">
+    <div className="flex items-center gap-2">
+      <label htmlFor="language" className="text-muted">
         {t('topBar.language')}
       </label>
       <select id="language" className="field field-sm w-auto" value={locale} onChange={(e) => setLocale(e.target.value as Locale)}>
@@ -23,4 +24,4 @@ const TopBarLanguageSelect = () => {
   );
 };
 
-export default TopBarLanguageSelect;
+export default SettingsDialogLanguage;

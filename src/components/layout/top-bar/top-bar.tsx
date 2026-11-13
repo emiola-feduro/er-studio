@@ -1,5 +1,5 @@
 import useT from '../../../hooks/ui/use-t';
-import { ChevronsUp, Menu as MenuIcon, Redo2, Undo2 } from 'lucide-react';
+import { ChevronsUp, Menu as MenuIcon, PanelsTopLeft, Palette, Redo2, Undo2 } from 'lucide-react';
 import usePanels from '../../../hooks/ui/use-panels';
 import useProjectStore from '../../../stores/use-project-store';
 import useUiStore from '../../../stores/use-ui-store';
@@ -9,7 +9,6 @@ import SegmentedControl from '../../ui/segmented-control/segmented-control';
 import PanelsMenu from '../panels-menu/panels-menu';
 import TopBarDialectSelect from './top-bar-dialect-select';
 import TopBarExportMenu from './top-bar-export-menu';
-import TopBarLanguageSelect from './top-bar-language-select';
 import TopBarProjectName from './top-bar-project-name';
 
 const TopBar = () => {
@@ -44,6 +43,7 @@ const TopBar = () => {
             { value: 'sql', label: t('topBar.sql') },
             { value: 'records', label: t('topBar.records') },
             { value: 'queries', label: t('topBar.queries') },
+            { value: 'versions', label: t('versions.tab') },
           ]}
         />
       </div>
@@ -57,14 +57,16 @@ const TopBar = () => {
         </IconButton>
       </div>
       <TopBarExportMenu />
-      <TopBarLanguageSelect />
-      <Button size="sm" variant="ghost" onClick={() => setSettingsOpen(true)}>
-        {t('topBar.appearance')}
+      {/* Below 2xl the label does not fit next to five views, so an icon stands in for it. */}
+      <Button size="sm" variant="ghost" onClick={() => setSettingsOpen(true)} aria-label={t('topBar.appearance')} title={t('topBar.appearance')}>
+        <Palette size={17} className="2xl:hidden" aria-hidden />
+        <span className="hidden 2xl:inline">{t('topBar.appearance')}</span>
       </Button>
       <PanelsMenu
         trigger={({ open, toggle }) => (
-          <Button size="sm" variant="ghost" aria-haspopup="menu" aria-expanded={open} onClick={toggle}>
-            {t('topBar.panels')}
+          <Button size="sm" variant="ghost" aria-haspopup="menu" aria-expanded={open} onClick={toggle} aria-label={t('topBar.panels')} title={t('topBar.panels')}>
+            <PanelsTopLeft size={17} className="2xl:hidden" aria-hidden />
+            <span className="hidden 2xl:inline">{t('topBar.panels')}</span>
           </Button>
         )}
       />

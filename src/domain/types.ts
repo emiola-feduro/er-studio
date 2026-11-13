@@ -167,3 +167,13 @@ export type Issue = {
   entityId?: string;
   relationshipId?: string;
 };
+
+/** A saved copy of a project's model, to compare later and generate the migration between versions. */
+export type ModelVersion = {
+  id: string;
+  projectId: string;
+  name: string;
+  createdAt: number;
+  /** The model without its data rows. */
+  snapshot: Omit<Project, 'records'>;
+};

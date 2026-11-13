@@ -4,6 +4,7 @@ import usePreferencesStore, { type TextSize } from '../../../stores/use-preferen
 import useUiStore from '../../../stores/use-ui-store';
 import Modal from '../modal/modal';
 import SegmentedControl from '../segmented-control/segmented-control';
+import SettingsDialogLanguage from './settings-dialog-language';
 import SettingsDialogFontList from './settings-dialog-font-list';
 import SettingsDialogThemeGrid from './settings-dialog-theme-grid';
 
@@ -29,6 +30,7 @@ const SettingsDialog = () => {
             { value: 'fonts', label: t('settings.fonts') },
           ]}
         />
+        <SettingsDialogLanguage />
         <div className="flex items-center gap-2">
           <span className="text-muted">{t('settings.textSize')}</span>
           <SegmentedControl<TextSize>

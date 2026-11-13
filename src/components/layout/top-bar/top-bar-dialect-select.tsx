@@ -11,7 +11,7 @@ const TopBarDialectSelect = () => {
 
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor="dialect" className="text-muted">
+      <label htmlFor="dialect" className="sr-only text-muted 2xl:not-sr-only">
         {t('topBar.dialect')}
       </label>
       <select id="dialect" className="field field-sm w-auto" value={dialect} onChange={(event) => setDialect(event.target.value as DialectId)}>

@@ -26,7 +26,7 @@ const TopBarProjectName = () => {
         id="project-name"
         value={name}
         onChange={(event) => renameProject(id, event.target.value)}
-        className="field field-sm w-56 max-w-[40vw] border-transparent bg-transparent font-medium hover:border-line"
+        className="field field-sm w-44 max-w-[40vw] border-transparent bg-transparent font-medium hover:border-line"
       />
       <Pill tone={tone}>{t(text)}</Pill>
     </div>

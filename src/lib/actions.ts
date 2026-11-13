@@ -16,7 +16,7 @@ import {
   uid,
   type RelationshipPreset,
 } from '../domain/model';
-import type { Attribute, DialectId, Entity, Participant, Position, Project, Relationship, TableIndex } from '../domain/types';
+import type { Attribute, DialectId, ModelVersion, Entity, Participant, Position, Project, Relationship, TableIndex } from '../domain/types';
 import useProjectStore from '../stores/use-project-store';
 import useUiStore from '../stores/use-ui-store';
 
@@ -424,4 +424,15 @@ export const dismissFinding = (id: string) =>
 export const restoreFindings = () =>
   mutate((draft) => {
     delete draft.dismissedFindings;
+  });
+
+/** Replaces the model with a saved version. Records and the project name stay; Undo brings the model back. */
+export const restoreVersion = (snapshot: ModelVersion['snapshot']) =>
+  mutate((draft) => {
+    draft.dialect = snapshot.dialect;
+    draft.entities = structuredClone(snapshot.entities);
+    draft.relationships = structuredClone(snapshot.relationships);
+    draft.databaseName = snapshot.databaseName;
+    draft.namesLocale = snapshot.namesLocale;
+    draft.dismissedFindings = snapshot.dismissedFindings;
   });

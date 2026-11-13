@@ -24,7 +24,7 @@ export const sortTables = (tables: Table[]): Table[] => {
   return result;
 };
 
-const columnList = (dialect: DialectId, table: Table, ids: string[]) =>
+export const columnList = (dialect: DialectId, table: Table, ids: string[]) =>
   ids.map((id) => quoteIdent(dialect, table.columns.find((c) => c.id === id)?.name ?? id)).join(', ');
 
 const actionClause = (dialect: DialectId, fk: ForeignKey, warnings: string[]) => {
@@ -37,7 +37,7 @@ const actionClause = (dialect: DialectId, fk: ForeignKey, warnings: string[]) =>
   return parts.length ? ` ${parts.join(' ')}` : '';
 };
 
-const fkClause = (dialect: DialectId, fk: ForeignKey, tables: Map<string, Table>, warnings: string[]) => {
+export const fkClause = (dialect: DialectId, fk: ForeignKey, tables: Map<string, Table>, warnings: string[]) => {
   const holder = tables.get(fk.tableId)!;
   const ref = tables.get(fk.refTableId)!;
   return (
@@ -49,7 +49,7 @@ const fkClause = (dialect: DialectId, fk: ForeignKey, tables: Map<string, Table>
 
 type ColumnContext = { dialect: DialectId; table: Table; inlinePk: boolean; warnings: string[] };
 
-const columnDefinition = (col: Column, ctx: ColumnContext) => {
+export const columnDefinition = (col: Column, ctx: ColumnContext) => {
   const { dialect, table, inlinePk, warnings } = ctx;
   const parts = [quoteIdent(dialect, col.name), ddlType(dialect, col)];
   const auto = col.autoIncrement && !isSerial(dialect, col.type);
@@ -73,7 +73,7 @@ const columnDefinition = (col: Column, ctx: ColumnContext) => {
   return parts.join(' ');
 };
 
-const createTable = (table: Table, dialect: DialectId, tables: Map<string, Table>, warnings: string[]) => {
+export const createTable = (table: Table, dialect: DialectId, tables: Map<string, Table>, warnings: string[]) => {
   const pkCols = table.pk?.columnIds ?? [];
   const singlePk = pkCols.length === 1 ? table.columns.find((c) => c.id === pkCols[0]) : undefined;
   const inlinePkId =
@@ -108,7 +108,7 @@ const createTable = (table: Table, dialect: DialectId, tables: Map<string, Table
   return `CREATE TABLE ${quoteIdent(dialect, table.name)} (\n  ${lines.join(',\n  ')}\n);`;
 };
 
-const createIndex = (table: Table, index: TableIndex, dialect: DialectId, warnings: string[]) => {
+export const createIndex = (table: Table, index: TableIndex, dialect: DialectId, warnings: string[]) => {
   const d = DIALECTS[dialect];
   if (index.columns.length === 0) {
     warnings.push(t('ddl.indexNoColumns', { index: index.name }));
