@@ -43,6 +43,7 @@ const TopBar = () => {
             { value: 'diagram', label: t('topBar.diagram') },
             { value: 'sql', label: t('topBar.sql') },
             { value: 'records', label: t('topBar.records') },
+            { value: 'queries', label: t('topBar.queries') },
           ]}
         />
       </div>

@@ -3,7 +3,8 @@ import { useCallback, useMemo, useState, type KeyboardEvent } from 'react';
 export type CompletionOption = { value: string; label?: string; kind: 'suggestion' | 'column' };
 
 const MAX_OPTIONS = 8;
-const PARTIAL_WORD = /([A-Za-z_][A-Za-z0-9_]*)$/;
+// Includes dots so qualified names (pr.precio) complete too.
+const PARTIAL_WORD = /([A-Za-z_][A-Za-z0-9_.]*)$/;
 
 /**
  * Autocomplete for a SQL expression field: whole-expression suggestions that match what is typed,

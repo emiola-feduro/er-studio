@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 export type Selection = { kind: 'entity' | 'relationship'; id: string } | null;
-export type CenterView = 'diagram' | 'sql' | 'records';
+export type CenterView = 'diagram' | 'sql' | 'records' | 'queries';
 /** Right-click menu on the canvas. Without an entity id it is the menu of the empty canvas. */
 export type ContextMenuState = { x: number; y: number; entityId?: string; flowPosition?: { x: number; y: number } };
 export type Toast = { id: number; message: string; tone: 'info' | 'error' };

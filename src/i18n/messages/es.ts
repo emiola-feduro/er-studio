@@ -738,6 +738,29 @@ export const es = {
 
   // Design review link
   'review.goTo': "Ver {table}",
+
+  // Query builder
+  'topBar.queries': "Consultas",
+  'query.tables': "Tablas",
+  'query.tablesHint': "La primera que elijas va en FROM.",
+  'query.joins': "Uniones",
+  'query.bridge': "añadida para unir",
+  'query.unreachable': "Sin relación con las demás: {names}",
+  'query.columns': "Columnas",
+  'query.all': "Todas",
+  'query.none': "Ninguna",
+  'query.where': "Filtro (WHERE)",
+  'query.orderBy': "Ordenar por",
+  'query.noOrder': "Sin orden",
+  'query.asc': "Ascendente",
+  'query.desc': "Descendente",
+  'query.limit': "Límite de filas",
+  'query.distinct': "Sin filas repetidas (DISTINCT)",
+  'query.empty': "Elige al menos una tabla para armar la consulta.",
+  'query.title': "Consulta SELECT",
+  'query.copied': "Consulta copiada al portapapeles.",
+  'query.download': "Descargar .sql",
+  'query.clear': "Limpiar",
 } as const;
 
 export type Messages = { [K in keyof typeof es]: string };

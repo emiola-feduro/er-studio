@@ -1,6 +1,7 @@
 import useUiStore from '../../../stores/use-ui-store';
 import PanelsFloatingBar from '../../layout/panels-menu/panels-floating-bar';
 import ErCanvas from '../../ui/er-canvas/er-canvas';
+import QueryBuilder from '../../ui/query-builder/query-builder';
 import RecordsView from '../../ui/records-view/records-view';
 import SqlPreview from '../../ui/sql-preview/sql-preview';
 
@@ -15,6 +16,7 @@ const Workspace = () => {
       </div>
       {view === 'sql' && <SqlPreview />}
       {view === 'records' && <RecordsView />}
+      {view === 'queries' && <QueryBuilder />}
       {view === 'diagram' && <PanelsFloatingBar />}
     </main>
   );

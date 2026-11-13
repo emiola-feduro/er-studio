@@ -702,4 +702,27 @@ export const en: Messages = {
 
   // Design review link
   'review.goTo': "View {table}",
+
+  // Query builder
+  'topBar.queries': "Queries",
+  'query.tables': "Tables",
+  'query.tablesHint': "The first one you choose goes in FROM.",
+  'query.joins': "Joins",
+  'query.bridge': "added to connect",
+  'query.unreachable': "Not related to the others: {names}",
+  'query.columns': "Columns",
+  'query.all': "All",
+  'query.none': "None",
+  'query.where': "Filter (WHERE)",
+  'query.orderBy': "Order by",
+  'query.noOrder': "No order",
+  'query.asc': "Ascending",
+  'query.desc': "Descending",
+  'query.limit': "Row limit",
+  'query.distinct': "No repeated rows (DISTINCT)",
+  'query.empty': "Choose at least one table to build the query.",
+  'query.title': "SELECT query",
+  'query.copied': "Query copied to the clipboard.",
+  'query.download': "Download .sql",
+  'query.clear': "Clear",
 };

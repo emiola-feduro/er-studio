@@ -702,4 +702,27 @@ export const pt: Messages = {
 
   // Design review link
   'review.goTo': "Ver {table}",
+
+  // Query builder
+  'topBar.queries': "Consultas",
+  'query.tables': "Tabelas",
+  'query.tablesHint': "A primeira que você escolher vai no FROM.",
+  'query.joins': "Junções",
+  'query.bridge': "adicionada para ligar",
+  'query.unreachable': "Sem relação com as demais: {names}",
+  'query.columns': "Colunas",
+  'query.all': "Todas",
+  'query.none': "Nenhuma",
+  'query.where': "Filtro (WHERE)",
+  'query.orderBy': "Ordenar por",
+  'query.noOrder': "Sem ordem",
+  'query.asc': "Crescente",
+  'query.desc': "Decrescente",
+  'query.limit': "Limite de linhas",
+  'query.distinct': "Sem linhas repetidas (DISTINCT)",
+  'query.empty': "Escolha pelo menos uma tabela para montar a consulta.",
+  'query.title': "Consulta SELECT",
+  'query.copied': "Consulta copiada para a área de transferência.",
+  'query.download': "Baixar .sql",
+  'query.clear': "Limpar",
 };
