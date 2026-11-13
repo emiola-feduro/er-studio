@@ -4,13 +4,16 @@ import useT from '../../../hooks/ui/use-t';
 import useDerived from '../../../hooks/data/use-derived';
 import useProjectStore from '../../../stores/use-project-store';
 import PanelHideButton from '../../ui/panel-hide-button/panel-hide-button';
+import useDesignReview from '../../../hooks/data/use-design-review';
 import InspectorIssueList from './inspector-issue-list';
+import InspectorReviewList from './inspector-review-list';
 import InspectorSection from './inspector-section';
 
 const InspectorOverview = () => {
   const t = useT();
   const project = useProjectStore((s) => s.project);
   const derived = useDerived();
+  const review = useDesignReview();
   if (!project || !derived) return null;
   const { schema, issues } = derived;
   const junctions = schema.tables.filter((t) => t.kind === 'junction').length;
@@ -63,6 +66,9 @@ const InspectorOverview = () => {
       </div>
       <InspectorSection title={issues.length ? t('common.warningsTitle', { count: issues.length }) : t('common.warnings')}>
         <InspectorIssueList issues={issues} />
+      </InspectorSection>
+      <InspectorSection title={review.findings.length ? t('review.titleCount', { count: review.findings.length }) : t('review.title')}>
+        <InspectorReviewList findings={review.findings} dismissed={review.dismissed} linkTables />
       </InspectorSection>
       <InspectorSection title={t('inspector.shortcuts')}>
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">

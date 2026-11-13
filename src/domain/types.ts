@@ -89,6 +89,8 @@ export type Project = {
   databaseName?: string;
   /** Language the table names are written in; used to put them in singular for FK names. Spanish when absent. */
   namesLocale?: Locale;
+  /** Design review findings the person chose to ignore, by finding id. */
+  dismissedFindings?: string[];
   entities: Entity[];
   relationships: Relationship[];
   /** Data rows per table id. Optional so projects saved before this feature keep loading. */

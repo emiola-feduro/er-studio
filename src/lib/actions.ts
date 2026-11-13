@@ -1,5 +1,6 @@
 import { formatList, t as translate, type Locale } from '../i18n';
 import { DIALECTS } from '../domain/dialects';
+import type { ReviewFix } from '../domain/design-review';
 import { generateRows, randomCellValue } from '../domain/random-values';
 import { nextAutoValue } from '../domain/records';
 import { getDerived } from './derived';
@@ -397,4 +398,30 @@ export const linkAttributeAsFk = (fromEntityId: string, attributeId: string, toE
 export const setNamesLocale = (namesLocale: Locale) =>
   mutate((draft) => {
     draft.namesLocale = namesLocale;
+  });
+
+/* Design review */
+
+/** Applies the quick fix of a design review finding. */
+export const applyReviewFix = (fix: ReviewFix) => {
+  mutate((draft) => {
+    if (fix.kind === 'createIndex') {
+      const entity = entityIn(draft, fix.tableId);
+      entity?.indexes.push({ id: uid(), name: '', nameIsCustom: false, unique: false, columns: fix.columnIds.map((columnId) => ({ columnId, order: 'ASC' })) });
+    } else {
+      const attribute = entityIn(draft, fix.entityId)?.attributes.find((a) => a.id === fix.attributeId);
+      if (attribute) attribute.unique = true;
+    }
+  });
+  useUiStore.getState().notify(translate('review.fixed'));
+};
+
+export const dismissFinding = (id: string) =>
+  mutate((draft) => {
+    draft.dismissedFindings = [...new Set([...(draft.dismissedFindings ?? []), id])];
+  });
+
+export const restoreFindings = () =>
+  mutate((draft) => {
+    delete draft.dismissedFindings;
   });

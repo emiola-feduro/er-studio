@@ -678,4 +678,28 @@ export const pt: Messages = {
   // Names language
   'inspector.namesLocale': "Idioma dos nomes das tabelas",
   'inspector.namesLocaleHint': "Coloca no singular o nome das FKs automáticas: clientes → cliente_id",
+
+  // Design review
+  'review.title': "Revisão de design",
+  'review.titleCount': "Revisão de design ({count})",
+  'review.none': "Nada a revisar.",
+  'review.warning': "Aviso",
+  'review.info': "Sugestão",
+  'review.dismiss': "Ignorar",
+  'review.restore': "Mostrar as ignoradas ({count})",
+  'review.fix.createIndex': "Criar índice",
+  'review.fix.makeUnique': "Marcar {column} como UNIQUE",
+  'review.fixed': "Correção aplicada.",
+  'review.fkWithoutIndex': "A FK {fk} ({columns}) de \"{table}\" não tem índice. Os JOIN e as exclusões em \"{ref}\" terão de percorrer a tabela inteira.",
+  'review.noNaturalKey': "\"{table}\" só tem uma chave substituta ({pk}). Uma chave natural única evita linhas duplicadas.",
+  'review.noNaturalKeyCandidate': "\"{table}\" só tem uma chave substituta ({pk}). {candidate} parece uma boa chave natural; torne-a UNIQUE para evitar linhas duplicadas.",
+  'review.repeatedColumns': "{columns} se repetem em {tables}. Poderiam ir para uma tabela à parte relacionada com ambas.",
+  'review.redundantColumn': "\"{table}.{column}\" repete \"{ref}.{refColumn}\", que já se obtém pela FK {fk}. Removê-la evita dados inconsistentes (3FN).",
+  'review.repeatingGroup': "{columns} em \"{table}\" são um grupo repetido. Mova-as para uma tabela à parte com uma linha por valor e uma FK para \"{table}\" (1FN).",
+  'review.multiValued': "\"{table}.{column}\" parece guardar uma lista de valores. Use uma tabela à parte com uma linha por valor (1FN).",
+  'review.partialDependency': "\"{table}.{column}\" parece depender só de \"{ref}\", não da chave primária inteira (2FN). Mova-a para \"{ref}\" se não muda a cada linha.",
+  'review.wideTable': "\"{table}\" tem {count} colunas. Veja se algumas podem ir para uma tabela relacionada.",
+
+  // Design review link
+  'review.goTo': "Ver {table}",
 };

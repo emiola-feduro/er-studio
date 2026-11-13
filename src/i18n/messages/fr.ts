@@ -678,4 +678,28 @@ export const fr: Messages = {
   // Names language
   'inspector.namesLocale': "Langue des noms de tables",
   'inspector.namesLocaleHint': "Met au singulier le nom des FK automatiques : clients → client_id",
+
+  // Design review
+  'review.title': "Revue de conception",
+  'review.titleCount': "Revue de conception ({count})",
+  'review.none': "Rien à revoir.",
+  'review.warning': "Avertissement",
+  'review.info': "Suggestion",
+  'review.dismiss': "Ignorer",
+  'review.restore': "Afficher les ignorés ({count})",
+  'review.fix.createIndex': "Créer l'index",
+  'review.fix.makeUnique': "Rendre {column} UNIQUE",
+  'review.fixed': "Correction appliquée.",
+  'review.fkWithoutIndex': "La FK {fk} ({columns}) de « {table} » n'a pas d'index. Les jointures et suppressions sur « {ref} » devront parcourir toute la table.",
+  'review.noNaturalKey': "« {table} » n'a qu'une clé de substitution ({pk}). Une clé naturelle unique évite les lignes en double.",
+  'review.noNaturalKeyCandidate': "« {table} » n'a qu'une clé de substitution ({pk}). {candidate} semble une bonne clé naturelle ; rendez-la UNIQUE pour éviter les doublons.",
+  'review.repeatedColumns': "{columns} se répètent dans {tables}. Elles pourraient aller dans une table à part liée aux deux.",
+  'review.redundantColumn': "« {table}.{column} » répète « {ref}.{refColumn} », déjà obtenue par la FK {fk}. La retirer évite des données incohérentes (3FN).",
+  'review.repeatingGroup': "{columns} dans « {table} » forment un groupe répété. Déplacez-les dans une table à part avec une ligne par valeur et une FK vers « {table} » (1FN).",
+  'review.multiValued': "« {table}.{column} » semble stocker une liste de valeurs. Utilisez une table à part avec une ligne par valeur (1FN).",
+  'review.partialDependency': "« {table}.{column} » semble dépendre seulement de « {ref} », pas de toute la clé primaire (2FN). Déplacez-la dans « {ref} » si elle ne change pas selon la ligne.",
+  'review.wideTable': "« {table} » a {count} colonnes. Vérifiez si certaines peuvent aller dans une table liée.",
+
+  // Design review link
+  'review.goTo': "Voir {table}",
 };

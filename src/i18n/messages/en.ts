@@ -678,4 +678,28 @@ export const en: Messages = {
   // Names language
   'inspector.namesLocale': "Language of the table names",
   'inspector.namesLocaleHint': "Puts automatic FK names in singular: customers → customer_id",
+
+  // Design review
+  'review.title': "Design review",
+  'review.titleCount': "Design review ({count})",
+  'review.none': "Nothing to review.",
+  'review.warning': "Warning",
+  'review.info': "Suggestion",
+  'review.dismiss': "Dismiss",
+  'review.restore': "Show dismissed ({count})",
+  'review.fix.createIndex': "Create index",
+  'review.fix.makeUnique': "Make {column} UNIQUE",
+  'review.fixed': "Fix applied.",
+  'review.fkWithoutIndex': "The FK {fk} ({columns}) of \"{table}\" has no index. Joins and deletes on \"{ref}\" will have to scan the whole table.",
+  'review.noNaturalKey': "\"{table}\" only has a surrogate key ({pk}). A unique natural key prevents duplicate rows.",
+  'review.noNaturalKeyCandidate': "\"{table}\" only has a surrogate key ({pk}). {candidate} looks like a good natural key; make it UNIQUE to prevent duplicate rows.",
+  'review.repeatedColumns': "{columns} are repeated in {tables}. They could go in a separate table related to both.",
+  'review.redundantColumn': "\"{table}.{column}\" repeats \"{ref}.{refColumn}\", which the FK {fk} already gives. Removing it avoids inconsistent data (3NF).",
+  'review.repeatingGroup': "{columns} in \"{table}\" are a repeating group. Move them to a separate table with one row per value and an FK to \"{table}\" (1NF).",
+  'review.multiValued': "\"{table}.{column}\" seems to store a list of values. Use a separate table with one row per value (1NF).",
+  'review.partialDependency': "\"{table}.{column}\" seems to depend only on \"{ref}\", not on the whole primary key (2NF). Move it to \"{ref}\" if it does not change per row.",
+  'review.wideTable': "\"{table}\" has {count} columns. Check whether some could go in a related table.",
+
+  // Design review link
+  'review.goTo': "View {table}",
 };

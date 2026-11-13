@@ -714,6 +714,30 @@ export const es = {
   // Names language
   'inspector.namesLocale': "Idioma de los nombres de tablas",
   'inspector.namesLocaleHint': "Pone en singular el nombre de las FK automáticas: clientes → cliente_id",
+
+  // Design review
+  'review.title': "Revisión de diseño",
+  'review.titleCount': "Revisión de diseño ({count})",
+  'review.none': "Nada que revisar.",
+  'review.warning': "Aviso",
+  'review.info': "Sugerencia",
+  'review.dismiss': "Ignorar",
+  'review.restore': "Mostrar las ignoradas ({count})",
+  'review.fix.createIndex': "Crear índice",
+  'review.fix.makeUnique': "Marcar {column} como UNIQUE",
+  'review.fixed': "Corrección aplicada.",
+  'review.fkWithoutIndex': "La FK {fk} ({columns}) de \"{table}\" no tiene índice. Los JOIN y los borrados en \"{ref}\" tendrán que recorrer toda la tabla.",
+  'review.noNaturalKey': "\"{table}\" solo tiene una clave sustituta ({pk}). Una clave natural única evita filas duplicadas.",
+  'review.noNaturalKeyCandidate': "\"{table}\" solo tiene una clave sustituta ({pk}). {candidate} parece una buena clave natural; hazla UNIQUE para evitar filas duplicadas.",
+  'review.repeatedColumns': "{columns} se repiten en {tables}. Podrían ir en una tabla aparte relacionada con ambas.",
+  'review.redundantColumn': "\"{table}.{column}\" repite \"{ref}.{refColumn}\", que ya se obtiene con la FK {fk}. Quitarla evita datos inconsistentes (3FN).",
+  'review.repeatingGroup': "{columns} en \"{table}\" son un grupo repetido. Muévelas a una tabla aparte con una fila por valor y una FK hacia \"{table}\" (1FN).",
+  'review.multiValued': "\"{table}.{column}\" parece guardar una lista de valores. Usa una tabla aparte con una fila por valor (1FN).",
+  'review.partialDependency': "\"{table}.{column}\" parece depender solo de \"{ref}\", no de toda la llave primaria (2FN). Muévela a \"{ref}\" si no cambia en cada fila.",
+  'review.wideTable': "\"{table}\" tiene {count} columnas. Revisa si algunas pueden ir en una tabla relacionada.",
+
+  // Design review link
+  'review.goTo': "Ver {table}",
 } as const;
 
 export type Messages = { [K in keyof typeof es]: string };
