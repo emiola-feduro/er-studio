@@ -14,7 +14,7 @@ const Inspector = () => {
   );
 
   return (
-    <aside aria-label="Inspector" className="flex min-h-0 flex-col overflow-y-auto border-l border-line bg-surface">
+    <aside aria-label="Inspector" className="relative flex min-h-0 flex-col overflow-y-auto border-l border-line bg-surface">
       {entity ? (
         <InspectorEntity key={entity.id} entity={entity} />
       ) : relationship ? (

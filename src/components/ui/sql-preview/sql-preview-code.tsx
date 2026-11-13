@@ -31,7 +31,7 @@ const SqlPreviewCode = ({ sql }: { sql: string }) => {
   const lines = useMemo(() => sql.split('\n').map(tokenize), [sql]);
 
   return (
-    <pre className="min-h-0 flex-1 overflow-auto p-4 font-sql text-[13px] leading-relaxed">
+    <pre className="relative min-h-0 flex-1 overflow-auto p-4 font-sql text-[13px] leading-relaxed">
       {/* Tailwind preflight gives <code> its own monospace font; inherit so the chosen SQL font applies. */}
       <code className="font-[inherit]">
         {lines.map((tokens, i) => (

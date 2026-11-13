@@ -38,7 +38,7 @@ const ProjectList = ({ expanded = false }: { expanded?: boolean }) => {
       {status === 'loading' && <ProjectListSkeleton />}
       {status === 'error' && <ProjectListError />}
       {status === 'ready' && (
-        <ul className="min-h-0 overflow-y-auto">
+        <ul className="relative min-h-0 overflow-y-auto">
           {projects.length === 0 && <li className="px-2 text-muted">No hay proyectos</li>}
           {projects.length > 0 && visible.length === 0 && <li className="px-2 py-1 text-muted">Ningún proyecto coincide con "{query}"</li>}
           {visible.map((meta) => (

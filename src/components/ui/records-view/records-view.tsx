@@ -20,7 +20,7 @@ const RecordsView = () => {
     <div className="flex h-full min-h-0 flex-col bg-bg">
       <RecordsViewTabs data={data} />
       {table && <RecordsViewToolbar data={data} />}
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div className="relative min-h-0 flex-1 overflow-auto">
         {table && (rows.length === 0 ? <RecordsViewEmpty tableId={table.id} tableName={table.name} /> : <RecordsViewGrid data={data} />)}
       </div>
     </div>

@@ -39,7 +39,7 @@ const Modal = ({ title, open, onClose, children, footer, width = 'max-w-lg' }: M
               <X size={18} />
             </IconButton>
           </header>
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
+          <div className="relative min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
           {footer && <footer className="flex justify-end gap-2 border-t border-line px-5 py-3">{footer}</footer>}
         </div>
       )}

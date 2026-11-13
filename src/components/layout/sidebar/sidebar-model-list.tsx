@@ -32,7 +32,7 @@ const SidebarModelList = ({ tables, relationships: showRelationships, bordered }
   const nameOf = (id: string) => entities.find((e) => e.id === id)?.name ?? '?';
 
   return (
-    <div className={`min-h-0 flex-1 overflow-y-auto px-2 py-3 ${bordered ? 'border-t border-line' : ''}`}>
+    <div className={`relative min-h-0 flex-1 overflow-y-auto px-2 py-3 ${bordered ? 'border-t border-line' : ''}`}>
       {tables && (
         <SidebarModelSection title="Tablas" panel="tables" empty={entities.length === 0}>
           {entities.map((entity) => (
