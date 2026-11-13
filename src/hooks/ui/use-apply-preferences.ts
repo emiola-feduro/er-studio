@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { getFont, loadFont } from '../../lib/themes/fonts';
+import { rememberBootTheme } from '../../lib/themes/boot-theme';
 import { getTheme, themeVariables } from '../../lib/themes/themes';
 import usePreferencesStore from '../../stores/use-preferences-store';
 
@@ -28,6 +29,7 @@ const useApplyPreferences = () => {
       document.head.appendChild(style);
     }
     style.textContent = theme.extraCss ?? '';
+    rememberBootTheme(theme);
   }, [themeId]);
 
   useEffect(() => {

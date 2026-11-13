@@ -7,9 +7,75 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='2' y='4' width='12' height='10' rx='2' fill='%236366f1'/><rect x='18' y='18' width='12' height='10' rx='2' fill='%236366f1'/><path d='M14 9h4v14h0' stroke='%236366f1' stroke-width='2' fill='none'/></svg>" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <script>
+      // Paint the saved theme and language before the app bundle loads, so the first frame is never white.
+      (function () {
+        var root = document.documentElement;
+        var boot = {};
+        var locale = 'es';
+        try {
+          boot = JSON.parse(localStorage.getItem('er-studio:boot') || '{}') || {};
+          var prefs = JSON.parse(localStorage.getItem('er-studio:preferences') || '{}');
+          if (prefs && prefs.state && /^(es|en|fr|pt)$/.test(prefs.state.locale)) locale = prefs.state.locale;
+        } catch (e) {}
+        var colors = { bg: '--c-bg', surface: '--c-surface', fg: '--c-fg', muted: '--c-muted', border: '--c-border', accent: '--c-accent' };
+        for (var key in colors) if (typeof boot[key] === 'string') root.style.setProperty(colors[key], boot[key]);
+        root.style.colorScheme = boot.dark ? 'dark' : 'light';
+        root.lang = locale;
+        window.__erLoadingLabel = { es: 'Cargando ER Studio', en: 'Loading ER Studio', fr: 'Chargement de ER Studio', pt: 'Carregando o ER Studio' }[locale];
+      })();
+    </script>
+    <style>
+      html, body, #root { margin: 0; height: 100%; }
+      html, body { background: var(--c-bg, #f6f7f9); color: var(--c-fg, #1c2230); }
+      .boot { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+      .boot svg { width: 220px; height: auto; overflow: visible; }
+      .boot .card { fill: var(--c-surface, #fff); stroke: var(--c-border, #d9dde5); stroke-width: 2; }
+      .boot .head { fill: var(--c-accent, #3a5bd9); }
+      .boot .row { fill: var(--c-muted, #5b6475); opacity: 0.35; }
+      .boot .link { fill: none; stroke: var(--c-accent, #3a5bd9); stroke-width: 2.5; stroke-linecap: round;
+        stroke-dasharray: 120; stroke-dashoffset: 120; animation: boot-draw 1.6s ease-in-out infinite; }
+      .boot .left { animation: boot-in 1.6s ease-out infinite; }
+      .boot .right { animation: boot-in 1.6s ease-out 0.15s infinite; }
+      .boot .row { animation: boot-pulse 1.6s ease-in-out infinite; }
+      .boot .name { font-weight: 700; letter-spacing: -0.01em; font-size: 17px; }
+      @keyframes boot-draw { 0%, 15% { stroke-dashoffset: 120; } 55%, 80% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -120; } }
+      @keyframes boot-in { 0% { opacity: 0.4; transform: translateY(4px); } 30%, 100% { opacity: 1; transform: none; } }
+      @keyframes boot-pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.5; } }
+      @media (prefers-reduced-motion: reduce) { .boot * { animation: none !important; stroke-dashoffset: 0 !important; } }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Shown until React renders: two tables joined by a one-to-many relationship. -->
+      <div class="boot" role="status" id="boot">
+        <svg viewBox="0 0 220 96" aria-hidden="true">
+          <g class="left">
+            <rect class="card" x="2" y="14" width="72" height="68" rx="7" />
+            <rect class="head" x="2" y="14" width="72" height="16" rx="7" />
+            <rect class="head" x="2" y="23" width="72" height="7" />
+            <rect class="row" x="12" y="40" width="44" height="6" rx="3" />
+            <rect class="row" x="12" y="54" width="34" height="6" rx="3" />
+            <rect class="row" x="12" y="68" width="40" height="6" rx="3" />
+          </g>
+          <g class="right">
+            <rect class="card" x="146" y="14" width="72" height="68" rx="7" />
+            <rect class="head" x="146" y="14" width="72" height="16" rx="7" />
+            <rect class="head" x="146" y="23" width="72" height="7" />
+            <rect class="row" x="156" y="40" width="40" height="6" rx="3" />
+            <rect class="row" x="156" y="54" width="48" height="6" rx="3" />
+            <rect class="row" x="156" y="68" width="30" height="6" rx="3" />
+          </g>
+          <!-- one (||) on the left, many (crow's foot) on the right -->
+          <path class="link" d="M74 43 H82 M80 37 V49 M86 37 V49 M86 43 H128 L146 36 M128 43 L146 43 M128 43 L146 50" />
+        </svg>
+        <span class="name">ER Studio</span>
+      </div>
+      <script>
+        document.getElementById('boot').setAttribute('aria-label', window.__erLoadingLabel || 'Cargando ER Studio');
+      </script>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
