@@ -26,6 +26,9 @@ export type FkEdgeType = Edge<FkEdgeData, 'fk'>;
 
 export const NODE_WIDTH = 280;
 
+/** Handle on each attribute row; dragging it onto another entity creates a FK to that attribute. */
+export const ATTR_HANDLE_PREFIX = 'attr:';
+
 export const handleId = (columnId: string, side: 'L' | 'R', type: 's' | 't') => `${columnId}|${side}|${type}`;
 
 type NodeInput = {

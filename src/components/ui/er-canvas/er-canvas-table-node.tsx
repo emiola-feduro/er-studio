@@ -38,6 +38,7 @@ const ErCanvasTableNode = ({ data, selected }: NodeProps<TableNodeType>) => {
             dialect={dialect}
             highlighted={highlighted.includes(column.id)}
             indexed={indexedColumnIds.includes(column.id)}
+            linkable={!isJunction}
           />
         ))}
       </div>

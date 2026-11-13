@@ -15,13 +15,17 @@ type InspectorParticipantProps = {
 };
 
 const InspectorParticipant = ({ relationshipId, participant, entities, canRemove }: InspectorParticipantProps) => {
-  const { id, entityId, role, cardinality, optional, constraintName } = participant;
+  const { id, entityId, role, cardinality, optional, constraintName, refAttributeId } = participant;
   const update = (patch: Partial<Participant>, key?: string) => updateParticipant(relationshipId, id, patch, key);
   const derived = useDerived();
   // Name the FK gets when none is typed; only participants whose key is referenced have one.
-  const generatedFkName = constraintName
-    ? undefined
-    : derived?.schema.foreignKeys.find((f) => f.relationshipId === relationshipId && f.participantId === id)?.name;
+  const fk = derived?.schema.foreignKeys.find((f) => f.relationshipId === relationshipId && f.participantId === id);
+  const generatedFkName = constraintName ? undefined : fk?.name;
+  // A FK can point to the primary key or to any UNIQUE attribute of the referenced entity.
+  const entity = entities.find((e) => e.id === entityId);
+  const keyCount = entity?.attributes.filter((a) => a.pk).length ?? 0;
+  const uniqueTargets = entity?.attributes.filter((a) => a.unique && !(a.pk && keyCount === 1)) ?? [];
+  const showTarget = Boolean(fk) && (uniqueTargets.length > 0 || Boolean(refAttributeId));
 
   return (
     <li className="space-y-2.5 rounded-theme border-(length:--bw) border-line p-3">
@@ -55,6 +59,28 @@ const InspectorParticipant = ({ relationshipId, participant, entities, canRemove
         />
         <Checkbox label="Opcional" checked={optional} onChange={(v) => update({ optional: v })} title="Mínimo cero: la FK hacia esta entidad admite NULL" />
       </div>
+      {showTarget && (
+        <div className="space-y-1">
+          <label htmlFor={`p-ref-${id}`} className="block text-[0.9em] text-muted">
+            Columna referenciada
+          </label>
+          <select
+            id={`p-ref-${id}`}
+            className="field field-sm font-canvas"
+            value={refAttributeId ?? ''}
+            onChange={(e) => update({ refAttributeId: e.target.value || undefined })}
+          >
+            <option value="">Llave primaria</option>
+            {entity?.attributes
+              .filter((a) => uniqueTargets.includes(a) || a.id === refAttributeId)
+              .map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+          </select>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
           <label htmlFor={`p-role-${id}`} className="block text-[0.9em] text-muted">

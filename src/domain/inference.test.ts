@@ -276,3 +276,31 @@ describe('indexes', () => {
     expect(issues.some((i) => i.message.includes('redundante'))).toBe(true);
   });
 });
+
+describe('FK to a unique attribute', () => {
+  it('points to the attribute and copies its type', () => {
+    const b = makeProject('postgresql');
+    const cliente = b.entity('cliente');
+    const email = createAttribute('postgresql', { name: 'email', type: 'VARCHAR', length: 160, unique: true, nullable: false });
+    cliente.attributes.push(email);
+    const pedido = b.entity('pedido');
+    const rel = b.relate([cliente, pedido], '1:N');
+    rel.participants[0].refAttributeId = email.id;
+    const schema = buildSchema(b.project);
+    const fk = schema.foreignKeys[0];
+    const column = schema.tables.find((t) => t.id === pedido.id)!.columns.find((c) => c.id === fk.columnIds[0])!;
+    expect(fk.refColumnIds).toEqual([email.id]);
+    expect(column).toMatchObject({ name: 'cliente_email', type: 'VARCHAR', length: 160 });
+  });
+
+  it('reports an error when the attribute is not unique', () => {
+    const b = makeProject('postgresql');
+    const cliente = b.entity('cliente');
+    const nombre = createAttribute('postgresql', { name: 'nombre' });
+    cliente.attributes.push(nombre);
+    const rel = b.relate([cliente, b.entity('pedido')], '1:N');
+    rel.participants[0].refAttributeId = nombre.id;
+    const issues = validateProject(b.project, buildSchema(b.project));
+    expect(issues.some((i) => i.level === 'error' && i.message.includes('no es UNIQUE'))).toBe(true);
+  });
+});

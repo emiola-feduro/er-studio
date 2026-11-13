@@ -354,3 +354,42 @@ export const setDatabaseName = (databaseName: string) =>
   mutate((draft) => {
     draft.databaseName = databaseName;
   }, 'database-name');
+
+/**
+ * Links an attribute of one entity to another entity as a foreign key: a one-to-many relationship
+ * whose FK copies the attribute's type. A non-key attribute becomes UNIQUE, since a FK can only
+ * point to a unique column. Returns the new relationship id.
+ */
+export const linkAttributeAsFk = (fromEntityId: string, attributeId: string, toEntityId: string) => {
+  const project = useProjectStore.getState().project;
+  const from = project?.entities.find((e) => e.id === fromEntityId);
+  const to = project?.entities.find((e) => e.id === toEntityId);
+  const attribute = from?.attributes.find((a) => a.id === attributeId);
+  const { notify, select } = useUiStore.getState();
+  if (!project || !from || !to || !attribute) return undefined;
+  if (from.kind !== 'entity' || to.kind !== 'entity') {
+    notify('Las FK se crean entre entidades, no con tablas intermedias.', 'error');
+    return undefined;
+  }
+  const keyAttributes = from.attributes.filter((a) => a.pk);
+  const isWholeKey = attribute.pk && keyAttributes.length === 1;
+  const madeUnique = !isWholeKey && !attribute.unique;
+  const rel = createRelationship([from.id, to.id], '1:N');
+  if (!isWholeKey) rel.participants[0].refAttributeId = attribute.id;
+  mutate((draft) => {
+    if (madeUnique) {
+      const target = entityIn(draft, from.id)?.attributes.find((a) => a.id === attribute.id);
+      if (target) target.unique = true;
+    }
+    draft.relationships.push(rel);
+  });
+  select({ kind: 'relationship', id: rel.id });
+  const { schema } = getDerived(useProjectStore.getState().project!);
+  const fk = schema.foreignKeys.find((f) => f.relationshipId === rel.id);
+  const column = fk && schema.tables.find((t) => t.id === fk.tableId)?.columns.find((c) => c.id === fk.columnIds[0]);
+  notify(
+    `FK ${column?.name ?? ''} creada en ${to.name}, apuntando a ${from.name}.${attribute.name}.` +
+      (madeUnique ? ` ${attribute.name} ahora es UNIQUE para poder referenciarlo.` : ''),
+  );
+  return rel.id;
+};

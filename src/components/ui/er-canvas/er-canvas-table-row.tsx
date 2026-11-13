@@ -1,7 +1,7 @@
 import { Handle, Position } from '@xyflow/react';
 import { displayType } from '../../../domain/dialects';
 import type { Column, DialectId } from '../../../domain/types';
-import { handleId } from '../../../lib/graph';
+import { ATTR_HANDLE_PREFIX, handleId } from '../../../lib/graph';
 import usePreferencesStore from '../../../stores/use-preferences-store';
 import useUiStore from '../../../stores/use-ui-store';
 import ConstraintIcons, { CONSTRAINTS, type ConstraintKind } from '../constraint-icons/constraint-icons';
@@ -11,9 +11,11 @@ type ErCanvasTableRowProps = {
   dialect: DialectId;
   highlighted: boolean;
   indexed: boolean;
+  /** Attribute rows of regular entities can be dragged onto another entity to create a FK. */
+  linkable: boolean;
 };
 
-const ErCanvasTableRow = ({ column, dialect, highlighted, indexed }: ErCanvasTableRowProps) => {
+const ErCanvasTableRow = ({ column, dialect, highlighted, indexed, linkable }: ErCanvasTableRowProps) => {
   const { id, name, pk, origin, nullable, unique, autoIncrement, fkId } = column;
   const isFk = origin === 'fk';
   const setHoveredFk = useUiStore((s) => s.setHoveredFk);
@@ -27,7 +29,7 @@ const ErCanvasTableRow = ({ column, dialect, highlighted, indexed }: ErCanvasTab
 
   return (
     <div
-      className={`relative flex items-center gap-2 px-3 py-[5px] text-[12px] leading-tight ${highlighted ? 'bg-accent-soft' : ''}`}
+      className={`attr-row relative flex items-center gap-2 px-3 py-[5px] text-[12px] leading-tight ${highlighted ? 'bg-accent-soft' : ''}`}
       onMouseEnter={fkId ? () => setHoveredFk(fkId) : undefined}
       onMouseLeave={fkId ? () => setHoveredFk(null) : undefined}
     >
@@ -54,6 +56,15 @@ const ErCanvasTableRow = ({ column, dialect, highlighted, indexed }: ErCanvasTab
         ))}
       <Handle id={handleId(id, 'R', 's')} type="source" position={Position.Right} className="column-handle" isConnectable={false} />
       <Handle id={handleId(id, 'R', 't')} type="target" position={Position.Right} className="column-handle" isConnectable={false} />
+      {linkable && origin === 'attribute' && (
+        <Handle
+          id={`${ATTR_HANDLE_PREFIX}${id}`}
+          type="source"
+          position={Position.Right}
+          className="attr-handle"
+          title={`Arrastra ${name} hasta otra entidad para crear una FK`}
+        />
+      )}
     </div>
   );
 };

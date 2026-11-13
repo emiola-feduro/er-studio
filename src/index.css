@@ -171,6 +171,24 @@
   opacity: 1;
 }
 
+.react-flow__handle.attr-handle {
+  /* Inside the row's right padding: the node clips anything past its border. */
+  width: 9px;
+  height: 9px;
+  min-width: 0;
+  min-height: 0;
+  right: 2px;
+  transform: translate(0, -50%);
+  opacity: 0;
+  background: var(--c-fk);
+  border: 2px solid var(--c-node);
+  transition: opacity 120ms;
+}
+.attr-row:hover .react-flow__handle.attr-handle,
+.react-flow__handle.attr-handle.connectingfrom {
+  opacity: 1;
+}
+
 .react-flow__handle.column-handle {
   width: 1px;
   height: 1px;

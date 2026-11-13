@@ -60,6 +60,11 @@ export type Participant = {
   cardinality: Cardinality;
   optional: boolean;
   constraintName?: string;
+  /**
+   * Attribute of this participant's entity that the FK points to, instead of its primary key.
+   * Only used on the referenced side of a binary relationship; it must be UNIQUE.
+   */
+  refAttributeId?: string;
 };
 
 export type Relationship = {

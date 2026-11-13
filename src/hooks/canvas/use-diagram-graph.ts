@@ -9,8 +9,8 @@ import {
 } from '@xyflow/react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { moveEntities } from '../../lib/actions';
-import { buildEdges, buildNodes, type TableNodeType } from '../../lib/graph';
+import { linkAttributeAsFk, moveEntities } from '../../lib/actions';
+import { ATTR_HANDLE_PREFIX, buildEdges, buildNodes, type TableNodeType } from '../../lib/graph';
 import useProjectStore from '../../stores/use-project-store';
 import useUiStore from '../../stores/use-ui-store';
 import useDerived from '../data/use-derived';
@@ -123,12 +123,20 @@ const useDiagramGraph = () => {
 
   const onSelectionChange = useCallback((_: OnSelectionChangeParams) => undefined, []);
 
-  /** Dragging from a table's connector onto another table (or itself) opens the relationship dialog. */
+  /**
+   * Dragging from a table's connector onto another table (or itself) opens the relationship dialog.
+   * Dragging from an attribute's handle creates a FK to that attribute right away.
+   */
   const onConnectEnd = useCallback(
     (event: MouseEvent | TouchEvent, state: FinalConnectionState) => {
       const fromId = state.fromNode?.id;
       const toId = state.toNode?.id ?? nodeIdAtPoint(event);
       if (!fromId || !toId || !project) return;
+      const handle = state.fromHandle?.id ?? '';
+      if (handle.startsWith(ATTR_HANDLE_PREFIX)) {
+        linkAttributeAsFk(fromId, handle.slice(ATTR_HANDLE_PREFIX.length), toId);
+        return;
+      }
       const isRegular = (id: string) => project.entities.find((e) => e.id === id)?.kind === 'entity';
       if (!isRegular(fromId) || !isRegular(toId)) {
         useUiStore.getState().notify('Las relaciones se crean entre entidades, no con tablas intermedias.', 'error');

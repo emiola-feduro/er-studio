@@ -203,13 +203,31 @@ export const buildSchema = (project: Project): Schema => {
     return result;
   };
 
+  /** The referenced entity's PK, or the UNIQUE attribute the participant points to. */
+  const referencedColumns = (pl: Placement, refEntity: Entity, holder: Entity): Column[] => {
+    const attrId = pl.participant.refAttributeId;
+    const attr = attrId ? refEntity.attributes.find((a) => a.id === attrId) : undefined;
+    if (!attr) return pkColumns(pl.refId);
+    const ownKey = refEntity.attributes.filter((a) => a.pk);
+    if (!attr.unique && !(attr.pk && ownKey.length === 1)) {
+      issues.push({
+        level: 'error',
+        message: `La FK de "${holder.name}" apunta a "${refEntity.name}.${attr.name}", que no es UNIQUE ni la llave primaria.`,
+        entityId: holder.id,
+        relationshipId: pl.rel.id,
+      });
+    }
+    const column = attrColumns.get(refEntity.id)?.find((c) => c.id === attr.id);
+    return column ? [column] : pkColumns(pl.refId);
+  };
+
   const ensureFk = (pl: Placement): Column[] => {
     const existing = fkColumns.get(pl.id);
     if (existing) return existing;
     const refEntity = entityById.get(pl.refId);
     const holder = entityById.get(pl.holderId);
     if (!refEntity || !holder) return [];
-    const refPk = pkColumns(pl.refId);
+    const refPk = referencedColumns(pl, refEntity, holder);
     if (refPk.length === 0) {
       issues.push({
         level: 'error',
