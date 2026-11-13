@@ -1,5 +1,6 @@
 import useT from '../../../hooks/ui/use-t';
 import useHoverDismiss from '../../../hooks/ui/use-hover-dismiss';
+import KeyMarkers from '../constraint-icons/key-markers';
 import usePreferencesStore from '../../../stores/use-preferences-store';
 import ConstraintIcons, { CONSTRAINTS, type ConstraintKind } from '../constraint-icons/constraint-icons';
 
@@ -19,17 +20,15 @@ const ErCanvasLegend = () => {
         {KINDS.map((kind) => (
           <div key={kind} className="contents">
             <dt className={`font-bold ${CONSTRAINTS[kind].className}`}>
-              {showIcons ? <ConstraintIcons kinds={[kind]} size={14} /> : CONSTRAINTS[kind].text}
+              {showIcons || kind === 'fk' ? <ConstraintIcons kinds={[kind]} size={14} /> : CONSTRAINTS[kind].text}
             </dt>
             <dd>{t(CONSTRAINTS[kind].label)}</dd>
           </div>
         ))}
-        {!showIcons && (
-          <>
-            <dt className="font-bold text-pk">PF</dt>
-            <dd>{t('legend.pf')}</dd>
-          </>
-        )}
+        <dt>
+          <KeyMarkers pk fk size={14} />
+        </dt>
+        <dd>{t('legend.pf')}</dd>
         <dt className="font-semibold">||</dt>
         <dd>{t('legend.exactlyOne')}</dd>
         <dt className="font-semibold">o|</dt>

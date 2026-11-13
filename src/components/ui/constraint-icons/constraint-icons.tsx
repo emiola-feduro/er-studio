@@ -1,12 +1,13 @@
 import type { MessageKey } from '../../../i18n';
 import useT from '../../../hooks/ui/use-t';
-import { ArrowUp10, Asterisk, Fingerprint, KeyRound, Link2, Zap, type LucideIcon } from 'lucide-react';
+import { ArrowUp10, Asterisk, Fingerprint, Key, KeyRound, Zap, type LucideIcon } from 'lucide-react';
 
 export type ConstraintKind = 'pk' | 'fk' | 'nn' | 'uq' | 'ai' | 'ix';
 
 export const CONSTRAINTS: Record<ConstraintKind, { icon: LucideIcon; text: string; label: MessageKey; className: string }> = {
   pk: { icon: KeyRound, text: 'PK', label: 'constraint.pk', className: 'text-pk' },
-  fk: { icon: Link2, text: 'FK', label: 'constraint.fk', className: 'text-fk' },
+  // FKs always show as a key, in their own color and shape, so links between tables read at a glance.
+  fk: { icon: Key, text: 'FK', label: 'constraint.fk', className: 'text-fk' },
   nn: { icon: Asterisk, text: 'NN', label: 'constraint.nn', className: 'text-muted' },
   uq: { icon: Fingerprint, text: 'UQ', label: 'constraint.uq', className: 'text-muted' },
   ai: { icon: ArrowUp10, text: 'AI', label: 'constraint.ai', className: 'text-muted' },

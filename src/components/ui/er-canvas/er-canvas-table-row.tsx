@@ -6,6 +6,7 @@ import { ATTR_HANDLE_PREFIX, handleId } from '../../../lib/graph';
 import usePreferencesStore from '../../../stores/use-preferences-store';
 import useUiStore from '../../../stores/use-ui-store';
 import ConstraintIcons, { CONSTRAINTS, type ConstraintKind } from '../constraint-icons/constraint-icons';
+import KeyMarkers from '../constraint-icons/key-markers';
 
 type ErCanvasTableRowProps = {
   column: Column;
@@ -23,11 +24,9 @@ const ErCanvasTableRow = ({ column, dialect, highlighted, indexed, linkable }: E
   const setHoveredFk = useUiStore((s) => s.setHoveredFk);
   const showIcons = usePreferencesStore((s) => s.showConstraintIcons);
 
-  const keys: ConstraintKind[] = [pk && 'pk', isFk && 'fk'].filter(Boolean) as ConstraintKind[];
   const flags: ConstraintKind[] = [!nullable && !pk && 'nn', unique && 'uq', autoIncrement && 'ai', indexed && 'ix'].filter(
     Boolean,
   ) as ConstraintKind[];
-  const keyText = pk && isFk ? 'PF' : pk ? 'PK' : isFk ? 'FK' : '';
 
   return (
     <div
@@ -37,14 +36,8 @@ const ErCanvasTableRow = ({ column, dialect, highlighted, indexed, linkable }: E
     >
       <Handle id={handleId(id, 'L', 's')} type="source" position={Position.Left} className="column-handle" isConnectable={false} />
       <Handle id={handleId(id, 'L', 't')} type="target" position={Position.Left} className="column-handle" isConnectable={false} />
-      <span className="flex w-7 shrink-0">
-        {showIcons ? (
-          <ConstraintIcons kinds={keys} size={13} />
-        ) : (
-          keyText && (
-            <span className={`text-[10px] font-bold ${pk ? CONSTRAINTS.pk.className : CONSTRAINTS.fk.className}`}>{keyText}</span>
-          )
-        )}
+      <span className="flex w-9 shrink-0">
+        <KeyMarkers pk={pk} fk={isFk} />
       </span>
       <span className={`min-w-0 flex-1 truncate ${pk ? 'font-semibold' : ''} ${isFk ? 'text-fk' : ''}`} title={name}>
         {name}

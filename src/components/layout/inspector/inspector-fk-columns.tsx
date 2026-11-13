@@ -1,3 +1,4 @@
+import KeyMarkers from '../../ui/constraint-icons/key-markers';
 import useT from '../../../hooks/ui/use-t';
 import { displayType } from '../../../domain/dialects';
 import type { Table } from '../../../domain/types';
@@ -29,7 +30,9 @@ const InspectorFkColumns = ({ table }: { table: Table }) => {
                 onMouseLeave={() => setHoveredFk(null)}
                 className="flex w-full items-baseline gap-2 rounded-[calc(var(--radius)*0.75)] px-2 py-1.5 text-left hover:bg-surface-2"
               >
-                <span className={`w-6 text-[0.8em] font-bold ${col.pk ? 'text-pk' : 'text-fk'}`}>{col.pk ? 'PF' : 'FK'}</span>
+                <span className="flex w-10 shrink-0 self-center">
+                  <KeyMarkers pk={col.pk} fk size={14} />
+                </span>
                 <span className="min-w-0 flex-1 truncate font-medium">{col.name}</span>
                 <span className="text-muted">{displayType(dialect, col)}</span>
                 <span className="text-[0.86em] text-muted">{col.nullable ? 'NULL' : 'NN'}</span>
