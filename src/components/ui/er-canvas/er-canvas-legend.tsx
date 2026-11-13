@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import useHoverDismiss from '../../../hooks/ui/use-hover-dismiss';
 import usePreferencesStore from '../../../stores/use-preferences-store';
 import ConstraintIcons, { CONSTRAINTS, type ConstraintKind } from '../constraint-icons/constraint-icons';
@@ -5,6 +6,7 @@ import ConstraintIcons, { CONSTRAINTS, type ConstraintKind } from '../constraint
 const KINDS: ConstraintKind[] = ['pk', 'fk', 'nn', 'uq', 'ai', 'ix'];
 
 const ErCanvasLegend = () => {
+  const t = useT();
   const showIcons = usePreferencesStore((s) => s.showConstraintIcons);
   const disclosure = useHoverDismiss<HTMLDetailsElement>();
 
@@ -12,32 +14,32 @@ const ErCanvasLegend = () => {
     <details
       {...disclosure}
       className="absolute bottom-3 left-14 z-10 rounded-theme border-(length:--bw) border-line bg-surface/95 text-[12px] shadow-theme backdrop-blur-sm">
-      <summary className="cursor-pointer px-3 py-1.5 font-medium select-none">Leyenda</summary>
+      <summary className="cursor-pointer px-3 py-1.5 font-medium select-none">{t('legend.title')}</summary>
       <dl className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1 px-3 pb-2.5">
         {KINDS.map((kind) => (
           <div key={kind} className="contents">
             <dt className={`font-bold ${CONSTRAINTS[kind].className}`}>
               {showIcons ? <ConstraintIcons kinds={[kind]} size={14} /> : CONSTRAINTS[kind].text}
             </dt>
-            <dd>{CONSTRAINTS[kind].label}</dd>
+            <dd>{t(CONSTRAINTS[kind].label)}</dd>
           </div>
         ))}
         {!showIcons && (
           <>
             <dt className="font-bold text-pk">PF</dt>
-            <dd>Llave foránea que forma parte de la PK</dd>
+            <dd>{t('legend.pf')}</dd>
           </>
         )}
         <dt className="font-semibold">||</dt>
-        <dd>Exactamente uno</dd>
+        <dd>{t('legend.exactlyOne')}</dd>
         <dt className="font-semibold">o|</dt>
-        <dd>Cero o uno</dd>
+        <dd>{t('legend.zeroOrOne')}</dd>
         <dt className="font-semibold">|&lt;</dt>
-        <dd>Uno o muchos</dd>
+        <dd>{t('legend.oneOrMany')}</dd>
         <dt className="font-semibold">o&lt;</dt>
-        <dd>Cero o muchos</dd>
-        <dt className="font-semibold">Borde punteado</dt>
-        <dd>Tabla intermedia</dd>
+        <dd>{t('legend.zeroOrMany')}</dd>
+        <dt className="font-semibold">{t('legend.dashed')}</dt>
+        <dd>{t('legend.junction')}</dd>
       </dl>
     </details>
   );

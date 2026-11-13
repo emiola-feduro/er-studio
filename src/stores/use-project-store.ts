@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { create } from 'zustand';
 import { createProject as newProject, syncJunctions, uid } from '../domain/model';
 import type { DialectId, Project, ProjectMeta } from '../domain/types';
@@ -150,7 +151,7 @@ const useProjectStore = create<ProjectState>((set, get) => {
       const stored = await db.getProject(id);
       if (!stored) return;
       const now = Date.now();
-      await persistNew({ ...structuredClone(stored), id: uid(), name: `${stored.name} (copia)`, createdAt: now, updatedAt: now });
+      await persistNew({ ...structuredClone(stored), id: uid(), name: t('projects.copyName', { name: stored.name }), createdAt: now, updatedAt: now });
     },
 
     deleteProject: async (id) => {

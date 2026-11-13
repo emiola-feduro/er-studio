@@ -1,9 +1,11 @@
+import useT from '../../../hooks/ui/use-t';
 import type useRelationshipForm from '../../../hooks/model/use-relationship-form';
 import Button from '../button/button';
 
 type RelationshipForm = ReturnType<typeof useRelationshipForm>;
 
 const RelationshipDialogEntities = ({ form }: { form: RelationshipForm }) => {
+  const t = useT();
   const { ids, entities, arity, setAt, addSlot, removeSlot } = form;
 
   return (
@@ -11,7 +13,7 @@ const RelationshipDialogEntities = ({ form }: { form: RelationshipForm }) => {
       {ids.map((id, index) => (
         <div key={index} className="flex items-center gap-2">
           <label className="w-24 shrink-0 text-muted" htmlFor={`rel-entity-${index}`}>
-            Entidad {index + 1}
+            {t('relDialog.entityN', { index: index + 1 })}
           </label>
           <select id={`rel-entity-${index}`} className="field" value={id} onChange={(event) => setAt(index, event.target.value)}>
             {entities.map((entity) => (
@@ -22,14 +24,14 @@ const RelationshipDialogEntities = ({ form }: { form: RelationshipForm }) => {
           </select>
           {arity === 'nary' && ids.length > 3 && (
             <Button size="sm" variant="ghost" onClick={() => removeSlot(index)}>
-              Quitar
+              {t('relDialog.remove')}
             </Button>
           )}
         </div>
       ))}
       {arity === 'nary' && (
         <Button size="sm" variant="ghost" onClick={addSlot}>
-          Añadir entidad
+          {t('relDialog.addEntity')}
         </Button>
       )}
     </div>

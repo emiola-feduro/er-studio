@@ -126,3 +126,6 @@ export const loadFontPreviews = (fonts: FontDef[]) => {
   }
   for (const f of pending.filter((p) => !p.google)) loadFont(f);
 };
+
+/** Display name of a font; only the system font has a translated name. */
+export const fontName = (font: FontDef, t: (key: 'font.system') => string) => (font.id === 'system' ? t('font.system') : font.name);

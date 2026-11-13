@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import { useMemo } from 'react';
 import type useRecordsTable from '../../../hooks/data/use-records-table';
 import RecordsViewHeaderCell from './records-view-header-cell';
@@ -6,6 +7,7 @@ import RecordsViewRow from './records-view-row';
 type RecordsData = ReturnType<typeof useRecordsTable>;
 
 const RecordsViewGrid = ({ data }: { data: RecordsData }) => {
+  const t = useT();
   const { table, rows, tables, allRecords, dialect, cellIssues } = data;
 
   /** Values available in the referenced tables, offered as suggestions for FK cells. */
@@ -45,7 +47,7 @@ const RecordsViewGrid = ({ data }: { data: RecordsData }) => {
               <RecordsViewHeaderCell key={column.id} column={column} dialect={dialect} refTable={fkTables.get(column.id)} />
             ))}
             <th scope="col" className="w-20 border-b border-line">
-              <span className="sr-only">Acciones</span>
+              <span className="sr-only">{t('records.actions')}</span>
             </th>
           </tr>
         </thead>

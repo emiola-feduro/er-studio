@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import { getNodesBounds, useReactFlow } from '@xyflow/react';
 import { toBlob, toPng, toSvg } from 'html-to-image';
 import { useCallback } from 'react';
@@ -19,7 +20,7 @@ const useExportImage = () => {
       const project = useProjectStore.getState().project;
       const nodes = getNodes();
       if (!project || nodes.length === 0) {
-        notify('No hay nada que exportar todavía.', 'error');
+        notify(t('export.nothing'), 'error');
         return;
       }
 
@@ -52,7 +53,7 @@ const useExportImage = () => {
 
       if (format === 'copy-png') {
         if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
-          notify('Este navegador no permite copiar imágenes. Descarga el PNG.', 'error');
+          notify(t('export.copyUnsupported'), 'error');
           return;
         }
         // The clipboard write must start right away, inside the click, so the image goes in as a pending promise.
@@ -63,9 +64,9 @@ const useExportImage = () => {
         });
         try {
           await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-          notify('Imagen PNG copiada al portapapeles.');
+          notify(t('export.copied'));
         } catch {
-          notify('No se pudo copiar la imagen. Revisa los permisos del portapapeles o descarga el PNG.', 'error');
+          notify(t('export.copyFailed'), 'error');
         } finally {
           if (view !== 'diagram') setView(view);
         }
@@ -77,7 +78,7 @@ const useExportImage = () => {
         const dataUrl = format === 'png' ? await toPng(viewportEl, options) : await toSvg(viewportEl, options);
         downloadDataUrl(`${slug(project.name)}-er.${format}`, dataUrl);
       } catch {
-        notify('No se pudo generar la imagen.', 'error');
+        notify(t('export.imageFailed'), 'error');
       }
     },
     [getNodes],

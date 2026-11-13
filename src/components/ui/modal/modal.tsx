@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import { X } from 'lucide-react';
 import { useEffect, useRef, type ReactNode } from 'react';
 import IconButton from '../icon-button/icon-button';
@@ -13,6 +14,7 @@ type ModalProps = {
 
 /** Native dialog: focus trapping, Escape and backdrop come from the browser. */
 const Modal = ({ title, open, onClose, children, footer, width = 'max-w-lg' }: ModalProps) => {
+  const t = useT();
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -35,7 +37,7 @@ const Modal = ({ title, open, onClose, children, footer, width = 'max-w-lg' }: M
         <div className="flex max-h-[85vh] flex-col">
           <header className="flex items-center justify-between gap-4 border-b border-line px-5 py-3">
             <h2 className="text-[1.15em] font-semibold">{title}</h2>
-            <IconButton label="Cerrar" onClick={onClose}>
+            <IconButton label={t('common.close')} onClick={onClose}>
               <X size={18} />
             </IconButton>
           </header>

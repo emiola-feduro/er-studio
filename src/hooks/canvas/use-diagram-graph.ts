@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import {
   applyNodeChanges,
   type Edge,
@@ -139,7 +140,7 @@ const useDiagramGraph = () => {
       }
       const isRegular = (id: string) => project.entities.find((e) => e.id === id)?.kind === 'entity';
       if (!isRegular(fromId) || !isRegular(toId)) {
-        useUiStore.getState().notify('Las relaciones se crean entre entidades, no con tablas intermedias.', 'error');
+        useUiStore.getState().notify(t('canvas.onlyEntities'), 'error');
         return;
       }
       useUiStore.getState().openRelationshipDialog([fromId, toId]);

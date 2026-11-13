@@ -1,14 +1,16 @@
+import useT from '../../../hooks/ui/use-t';
 import { DIALECTS } from '../../../domain/dialects';
 import type { ReferentialAction, Relationship } from '../../../domain/types';
 import { updateRelationship } from '../../../lib/actions';
 import useProjectStore from '../../../stores/use-project-store';
 
 const InspectorReferentialActions = ({ relationship }: { relationship: Relationship }) => {
+  const t = useT();
   const dialect = DIALECTS[useProjectStore((s) => s.project?.dialect ?? 'postgresql')];
   const { id, onDelete, onUpdate } = relationship;
   const fields = [
-    { key: 'onDelete', label: 'Al eliminar (ON DELETE)', value: onDelete, enabled: true },
-    { key: 'onUpdate', label: 'Al actualizar (ON UPDATE)', value: onUpdate, enabled: dialect.supportsOnUpdate },
+    { key: 'onDelete', label: t('rel.onDelete'), value: onDelete, enabled: true },
+    { key: 'onUpdate', label: t('rel.onUpdate'), value: onUpdate, enabled: dialect.supportsOnUpdate },
   ] as const;
 
   return (
@@ -31,7 +33,7 @@ const InspectorReferentialActions = ({ relationship }: { relationship: Relations
               </option>
             ))}
           </select>
-          {!enabled && <p className="text-[0.86em] text-muted">{dialect.name} no lo soporta</p>}
+          {!enabled && <p className="text-[0.86em] text-muted">{t('rel.notSupported', { dialect: dialect.name })}</p>}
         </div>
       ))}
     </div>

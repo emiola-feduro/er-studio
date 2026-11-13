@@ -1,3 +1,4 @@
+import { formatList, t as translate } from '../i18n';
 import { DIALECTS } from '../domain/dialects';
 import { generateRows, randomCellValue } from '../domain/random-values';
 import { nextAutoValue } from '../domain/records';
@@ -29,7 +30,7 @@ export const addEntity = (position?: Position) => {
   const project = useProjectStore.getState().project;
   if (!project) return;
   const regular = project.entities.filter((e) => e.kind === 'entity');
-  const name = nextName('entidad', project.entities.map((e) => e.name));
+  const name = nextName(translate('entity.newName'), project.entities.map((e) => e.name));
   const fallback = { x: (regular.length % 4) * 320, y: Math.floor(regular.length / 4) * 300 };
   const entity = createEntity(
     project.dialect,
@@ -90,7 +91,7 @@ export const duplicateEntity = (id: string) => {
   const copy: Entity = {
     ...structuredClone(source),
     id: uid(),
-    name: nextName(`${source.name}_copia`, project.entities.map((e) => e.name)),
+    name: nextName(translate('entity.copyName', { name: source.name }), project.entities.map((e) => e.name)),
     position: { x: source.position.x + 40, y: source.position.y + 40 },
     attributes: source.attributes.map((a) => ({ ...a, id: uid() })),
     indexes: [],
@@ -106,7 +107,7 @@ export const addAttribute = (entityId: string) =>
     const entity = entityIn(draft, entityId);
     if (!entity) return;
     entity.attributes.push(
-      createAttribute(draft.dialect, { name: nextName('campo', entity.attributes.map((a) => a.name)) }),
+      createAttribute(draft.dialect, { name: nextName(translate('attr.newName'), entity.attributes.map((a) => a.name)) }),
     );
   });
 
@@ -297,14 +298,11 @@ export const addRandomRows = (tableId: string, count: number) => {
   if (missingRefs.length) {
     useUiStore
       .getState()
-      .notify(`Las FK quedaron vacías porque ${missingRefs.join(' y ')} no tiene registros. Agrégalos primero.`, 'error');
+      .notify(translate('records.missingRefs', { names: formatList(missingRefs) }), 'error');
   } else if (rows.length < count) {
     useUiStore
       .getState()
-      .notify(
-        `Se añadieron ${rows.length} de ${count}. Es una relación uno a uno y no quedan registros referenciados libres.`,
-        'error',
-      );
+      .notify(translate('records.partial', { added: rows.length, count }), 'error');
   }
   return rows.length;
 };
@@ -314,7 +312,7 @@ export const randomizeCell = (tableId: string, rowId: string, columnId: string) 
   if (!project) return;
   const value = randomCellValue(project, getDerived(project).schema, tableId, rowId, columnId);
   if (value === null) {
-    useUiStore.getState().notify('No hay valores disponibles para esta columna.', 'error');
+    useUiStore.getState().notify(translate('records.noValues'), 'error');
     return;
   }
   mutate((draft) => {
@@ -338,8 +336,8 @@ export const setDialect = (dialect: DialectId) => {
   const { notify } = useUiStore.getState();
   notify(
     kept.length
-      ? `Tipos convertidos a ${DIALECTS[dialect].name}. Se mantuvieron sin cambio: ${kept.join(', ')}.`
-      : `Tipos convertidos a ${DIALECTS[dialect].name}.`,
+      ? translate('actions.dialectChangedKept', { dialect: DIALECTS[dialect].name, kept: kept.join(', ') })
+      : translate('actions.dialectChanged', { dialect: DIALECTS[dialect].name }),
   );
 };
 
@@ -368,7 +366,7 @@ export const linkAttributeAsFk = (fromEntityId: string, attributeId: string, toE
   const { notify, select } = useUiStore.getState();
   if (!project || !from || !to || !attribute) return undefined;
   if (from.kind !== 'entity' || to.kind !== 'entity') {
-    notify('Las FK se crean entre entidades, no con tablas intermedias.', 'error');
+    notify(translate('actions.fkOnlyEntities'), 'error');
     return undefined;
   }
   const keyAttributes = from.attributes.filter((a) => a.pk);
@@ -388,8 +386,8 @@ export const linkAttributeAsFk = (fromEntityId: string, attributeId: string, toE
   const fk = schema.foreignKeys.find((f) => f.relationshipId === rel.id);
   const column = fk && schema.tables.find((t) => t.id === fk.tableId)?.columns.find((c) => c.id === fk.columnIds[0]);
   notify(
-    `FK ${column?.name ?? ''} creada en ${to.name}, apuntando a ${from.name}.${attribute.name}.` +
-      (madeUnique ? ` ${attribute.name} ahora es UNIQUE para poder referenciarlo.` : ''),
+    translate('actions.fkCreated', { column: column?.name ?? '', table: to.name, source: `${from.name}.${attribute.name}` }) +
+      (madeUnique ? translate('actions.fkMadeUnique', { name: attribute.name }) : ''),
   );
   return rel.id;
 };

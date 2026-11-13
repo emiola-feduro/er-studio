@@ -1,3 +1,5 @@
+import type { MessageKey } from '../../../i18n';
+import useT from '../../../hooks/ui/use-t';
 import type { Theme } from '../../../lib/themes/themes';
 
 type SettingsDialogThemeCardProps = {
@@ -8,7 +10,8 @@ type SettingsDialogThemeCardProps = {
 
 /** Miniature of the theme drawn with its own colors, independent of the current theme. */
 const SettingsDialogThemeCard = ({ theme, active, onSelect }: SettingsDialogThemeCardProps) => {
-  const { name, colors, radius, borderWidth } = theme;
+  const t = useT();
+  const { id, colors, radius, borderWidth } = theme;
   const { canvas, node, nodeHeader, nodeBorder, edge, accent, fg, surface, pk, fk } = colors;
 
   return (
@@ -36,7 +39,7 @@ const SettingsDialogThemeCard = ({ theme, active, onSelect }: SettingsDialogThem
         <div className="absolute right-3 bottom-2 h-2 w-6" style={{ background: accent, borderRadius: radius }} />
       </div>
       <div className="px-2.5 py-1.5 font-medium" style={{ background: surface, color: fg }}>
-        {name}
+        {t(`theme.${id}` as MessageKey)}
       </div>
     </button>
   );

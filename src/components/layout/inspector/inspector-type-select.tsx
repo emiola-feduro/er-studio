@@ -1,3 +1,5 @@
+import { TYPE_GROUP_KEYS } from '../../../lib/labels';
+import useT from '../../../hooks/ui/use-t';
 import { useMemo } from 'react';
 import { DIALECTS, findType } from '../../../domain/dialects';
 import type { Attribute } from '../../../domain/types';
@@ -12,6 +14,7 @@ type InspectorTypeSelectProps = {
 };
 
 const InspectorTypeSelect = ({ entityId, attribute }: InspectorTypeSelectProps) => {
+  const t = useT();
   const dialectId = useProjectStore((s) => s.project?.dialect ?? 'postgresql');
   const dialect = DIALECTS[dialectId];
   const { id, type } = attribute;
@@ -42,7 +45,7 @@ const InspectorTypeSelect = ({ entityId, attribute }: InspectorTypeSelectProps) 
   return (
     <>
       <label htmlFor={`attr-type-${id}`} className="sr-only">
-        Tipo de dato
+        {t('attr.dataType')}
       </label>
       <select
         id={`attr-type-${id}`}
@@ -51,7 +54,7 @@ const InspectorTypeSelect = ({ entityId, attribute }: InspectorTypeSelectProps) 
         onChange={(e) => onChange(e.target.value)}
       >
         {groups.map(([group, names]) => (
-          <optgroup key={group} label={group}>
+          <optgroup key={group} label={t(TYPE_GROUP_KEYS[group] ?? 'typeGroup.other')}>
             {names.map((n) => (
               <option key={n} value={n}>
                 {n}
@@ -59,7 +62,7 @@ const InspectorTypeSelect = ({ entityId, attribute }: InspectorTypeSelectProps) 
             ))}
           </optgroup>
         ))}
-        <option value={CUSTOM}>{known ? 'Personalizado' : `${type} (personalizado)`}</option>
+        <option value={CUSTOM}>{known ? t('attr.custom') : t('attr.customLabel', { type })}</option>
       </select>
     </>
   );

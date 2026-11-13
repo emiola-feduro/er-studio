@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import { Copy, Trash2 } from 'lucide-react';
 import type { Column, DataRow, DialectId } from '../../../domain/types';
 import { deleteRow, duplicateRow } from '../../../lib/actions';
@@ -15,6 +16,7 @@ type RecordsViewRowProps = {
 };
 
 const RecordsViewRow = ({ tableId, row, index, columns, dialect, errors, hasSuggestions }: RecordsViewRowProps) => {
+  const t = useT();
   const { id, values } = row;
 
   return (
@@ -37,10 +39,10 @@ const RecordsViewRow = ({ tableId, row, index, columns, dialect, errors, hasSugg
       ))}
       <td className="border-b border-line px-1 align-top">
         <div className="flex">
-          <IconButton label={`Duplicar registro ${index + 1}`} size="sm" onClick={() => duplicateRow(tableId, id)}>
+          <IconButton label={t('records.duplicateRow', { index: index + 1 })} size="sm" onClick={() => duplicateRow(tableId, id)}>
             <Copy size={14} />
           </IconButton>
-          <IconButton label={`Eliminar registro ${index + 1}`} tone="danger" size="sm" onClick={() => deleteRow(tableId, id)}>
+          <IconButton label={t('records.deleteRow', { index: index + 1 })} tone="danger" size="sm" onClick={() => deleteRow(tableId, id)}>
             <Trash2 size={14} />
           </IconButton>
         </div>

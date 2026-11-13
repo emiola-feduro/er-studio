@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import { useState } from 'react';
 import type useRecordsTable from '../../../hooks/data/use-records-table';
 import useExportRecords from '../../../hooks/data/use-export-records';
@@ -12,6 +13,7 @@ import RecordsViewGenerate from './records-view-generate';
 type RecordsData = ReturnType<typeof useRecordsTable>;
 
 const RecordsViewToolbar = ({ data }: { data: RecordsData }) => {
+  const t = useT();
   const { table, rows, cellIssues, totalIssues } = data;
   const { exportRecords, busy } = useExportRecords();
   const [confirming, setConfirming] = useState(false);
@@ -21,17 +23,17 @@ const RecordsViewToolbar = ({ data }: { data: RecordsData }) => {
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-line bg-surface px-4 py-2">
       <Button variant="primary" size="sm" onClick={() => addRow(table.id)}>
-        Añadir registro
+        {t('records.addRow')}
       </Button>
       <RecordsViewGenerate tableId={table.id} />
       <span className="text-muted tabular-nums">
-        {rows.length} {rows.length === 1 ? 'registro' : 'registros'}
+        {t('records.rowCount', { count: rows.length })}
       </span>
-      {tableErrors > 0 ? <Pill tone="danger">{tableErrors} con errores</Pill> : rows.length > 0 && <Pill tone="success">Sin errores</Pill>}
+      {tableErrors > 0 ? <Pill tone="danger">{t('records.withErrors', { count: tableErrors })}</Pill> : rows.length > 0 && <Pill tone="success">{t('records.noErrors')}</Pill>}
       <div className="ml-auto flex items-center gap-2">
         {rows.length > 0 && (
           <Button size="sm" variant="ghost" onClick={() => setConfirming(true)}>
-            Vaciar tabla
+            {t('records.clear')}
           </Button>
         )}
         <Menu
@@ -42,26 +44,26 @@ const RecordsViewToolbar = ({ data }: { data: RecordsData }) => {
               aria-expanded={open}
               onClick={toggle}
               disabled={busy}
-              title={totalIssues ? `${totalIssues} errores en total` : undefined}
+              title={totalIssues ? t('records.totalErrors', { count: totalIssues }) : undefined}
             >
-              {busy ? 'Exportando' : 'Exportar registros'}
+              {busy ? t('records.exporting') : t('records.export')}
             </Button>
           )}
           items={[
-            { label: `CSV de ${table.name} (.csv)`, onSelect: () => void exportRecords('csv-table', table.id) },
-            { label: 'Todas las tablas a Excel (.xlsx)', onSelect: () => void exportRecords('xlsx'), separatorBefore: true },
-            { label: 'Todas las tablas a CSV (.zip)', onSelect: () => void exportRecords('csv-zip') },
-            { label: 'Todas las tablas a JSON (.json)', onSelect: () => void exportRecords('json') },
-            { label: 'Todas las tablas como INSERT (.sql)', onSelect: () => void exportRecords('sql') },
+            { label: t('records.exportCsvTable', { name: table.name }), onSelect: () => void exportRecords('csv-table', table.id) },
+            { label: t('records.exportXlsx'), onSelect: () => void exportRecords('xlsx'), separatorBefore: true },
+            { label: t('records.exportCsv'), onSelect: () => void exportRecords('csv-zip') },
+            { label: t('records.exportJson'), onSelect: () => void exportRecords('json') },
+            { label: t('records.exportSql'), onSelect: () => void exportRecords('sql') },
           ]}
         />
         <PanelsRestoreButton />
       </div>
       <ConfirmDialog
         open={confirming}
-        title="Vaciar tabla"
-        message={`Se eliminarán los ${rows.length} registros de "${table.name}". Puedes recuperarlos con Deshacer.`}
-        confirmLabel="Vaciar tabla"
+        title={t('records.clear')}
+        message={t('records.clearMessage', { count: rows.length, name: table.name })}
+        confirmLabel={t('records.clear')}
         onCancel={() => setConfirming(false)}
         onConfirm={() => {
           setConfirming(false);

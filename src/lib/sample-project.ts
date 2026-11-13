@@ -1,10 +1,11 @@
+import { t } from '../i18n';
 import { createAttribute, createEntity, createProject, createRelationship, syncJunctions, uid } from '../domain/model';
 import type { Project } from '../domain/types';
 
 /** A small starter model so the first visit shows every kind of relationship. */
 export const createSampleProject = (): Project => {
   const dialect = 'postgresql';
-  const project = createProject('Tienda de ejemplo', dialect);
+  const project = createProject(t('projects.sampleName'), dialect);
   const attr = (name: string, type: string, extra: Parameters<typeof createAttribute>[1] = {}) =>
     createAttribute(dialect, { name, type, length: undefined, ...extra });
 

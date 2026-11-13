@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import { Trash2 } from 'lucide-react';
 import { DIALECTS } from '../../../domain/dialects';
 import type { Table, TableIndex } from '../../../domain/types';
@@ -16,6 +17,7 @@ type InspectorIndexItemProps = {
 };
 
 const InspectorIndexItem = ({ entityId, index, table, resolvedName }: InspectorIndexItemProps) => {
+  const t = useT();
   const dialect = DIALECTS[useProjectStore((s) => s.project?.dialect ?? 'postgresql')];
   const { id, name, nameIsCustom, unique, method, where } = index;
   const update = (patch: Partial<TableIndex>, key?: string) => updateIndex(entityId, id, patch, key);
@@ -25,7 +27,7 @@ const InspectorIndexItem = ({ entityId, index, table, resolvedName }: InspectorI
       <div className="flex items-end gap-2">
         <div className="min-w-0 flex-1 space-y-1">
           <label htmlFor={`idx-name-${id}`} className="block font-medium">
-            Nombre
+            {t('common.name')}
           </label>
           <SuggestionInput
             id={`idx-name-${id}`}
@@ -35,17 +37,17 @@ const InspectorIndexItem = ({ entityId, index, table, resolvedName }: InspectorI
             onChange={(value) => update({ name: value, nameIsCustom: value.trim() !== '' }, `idx-name:${id}`)}
           />
         </div>
-        <IconButton label="Eliminar índice" tone="danger" size="sm" onClick={() => deleteIndex(entityId, id)} className="mb-0.5">
+        <IconButton label={t('index.delete')} tone="danger" size="sm" onClick={() => deleteIndex(entityId, id)} className="mb-0.5">
           <Trash2 size={15} />
         </IconButton>
       </div>
       <InspectorIndexColumns entityId={entityId} index={index} table={table} />
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Checkbox label="Único" checked={unique} onChange={(v) => update({ unique: v })} />
+        <Checkbox label={t('index.unique')} checked={unique} onChange={(v) => update({ unique: v })} />
         {dialect.indexMethods.length > 0 && (
           <div className="flex items-center gap-2">
             <label htmlFor={`idx-method-${id}`} className="text-muted">
-              Método
+              {t('index.method')}
             </label>
             <select
               id={`idx-method-${id}`}
@@ -53,7 +55,7 @@ const InspectorIndexItem = ({ entityId, index, table, resolvedName }: InspectorI
               value={method ?? ''}
               onChange={(e) => update({ method: e.target.value || undefined })}
             >
-              <option value="">Por defecto</option>
+              <option value="">{t('common.defaultOption')}</option>
               {dialect.indexMethods.map((m) => (
                 <option key={m} value={m}>
                   {m}
@@ -66,12 +68,12 @@ const InspectorIndexItem = ({ entityId, index, table, resolvedName }: InspectorI
       {dialect.supportsPartialIndex && (
         <div className="space-y-1">
           <label htmlFor={`idx-where-${id}`} className="block font-medium">
-            Condición WHERE (índice parcial)
+            {t('index.where')}
           </label>
           <input
             id={`idx-where-${id}`}
             className="field field-sm font-canvas"
-            placeholder="estado = 'activo'"
+            placeholder={t('index.wherePlaceholder')}
             value={where ?? ''}
             onChange={(e) => update({ where: e.target.value || undefined }, `idx-where:${id}`)}
           />

@@ -1,3 +1,4 @@
+import { t as translate } from '../i18n';
 import { sortTables } from './ddl';
 import { DIALECTS, findType, isSerial, quoteIdent, quoteLiteral } from './dialects';
 import { validateValue } from './records';
@@ -90,7 +91,7 @@ const tableInserts = (dialect: DialectId, table: Table, rows: DataRow[], counter
   }
   const identity = dialect === 'sqlserver' && columns.some((c) => c.autoIncrement);
   return [
-    `-- ${table.name}: ${rows.length} ${rows.length === 1 ? 'registro' : 'registros'}`,
+    translate('ddl.tableRows', { table: table.name, count: rows.length }),
     ...(identity ? [`SET IDENTITY_INSERT ${t} ON;`] : []),
     ...statements,
     ...(identity ? [`SET IDENTITY_INSERT ${t} OFF;`] : []),
@@ -110,7 +111,7 @@ export const generateInserts = (project: Project, schema: Schema, standalone = t
   let rowCount = 0;
 
   if (standalone) {
-    blocks.push(`-- Registros de ${project.name || 'Proyecto'}\n-- Gestor: ${DIALECTS[dialect].name}`);
+    blocks.push(translate('ddl.recordsHeader', { project: project.name || translate('common.project'), dialect: DIALECTS[dialect].name }));
     const use = useDatabase(dialect, project.databaseName);
     if (use) blocks.push(use);
     if (dialect === 'sqlite') blocks.push('PRAGMA foreign_keys = ON;');
@@ -123,7 +124,7 @@ export const generateInserts = (project: Project, schema: Schema, standalone = t
     blocks.push(block);
     rowCount += rows.length;
   }
-  if (rowCount === 0) blocks.push('-- No hay registros.');
+  if (rowCount === 0) blocks.push(translate('ddl.noRecords'));
   return { sql: `${blocks.join('\n\n')}\n`, rowCount, invalidCells: counter.invalid };
 };
 

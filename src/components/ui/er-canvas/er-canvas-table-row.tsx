@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import { Handle, Position } from '@xyflow/react';
 import { displayType } from '../../../domain/dialects';
 import type { Column, DialectId } from '../../../domain/types';
@@ -16,6 +17,7 @@ type ErCanvasTableRowProps = {
 };
 
 const ErCanvasTableRow = ({ column, dialect, highlighted, indexed, linkable }: ErCanvasTableRowProps) => {
+  const t = useT();
   const { id, name, pk, origin, nullable, unique, autoIncrement, fkId } = column;
   const isFk = origin === 'fk';
   const setHoveredFk = useUiStore((s) => s.setHoveredFk);
@@ -62,7 +64,7 @@ const ErCanvasTableRow = ({ column, dialect, highlighted, indexed, linkable }: E
           type="source"
           position={Position.Right}
           className="attr-handle"
-          title={`Arrastra ${name} hasta otra entidad para crear una FK`}
+          title={t('canvas.attrHandleHint', { name })}
         />
       )}
     </div>

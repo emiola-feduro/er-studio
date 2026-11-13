@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import { useCallback, useState } from 'react';
 import { generateInserts, recordsToJson, tableToCsv } from '../../domain/records-export';
 import type { Project } from '../../domain/types';
@@ -14,29 +15,29 @@ const BOM = '﻿';
 
 const run = async (format: RecordsFormat, project: Project, tableId?: string) => {
   const { schema } = getDerived(project);
-  const base = `${slug(project.name)}-registros`;
+  const base = `${slug(project.name)}-${slug(t('export.fileSuffixRecords'))}`;
   const issues = getRecordIssues(project);
-  const invalidNote = (count: number) => (count > 0 ? ` ${count} celdas con valores no válidos se exportaron tal cual.` : '');
+  const invalidNote = (count: number) => (count > 0 ? t('export.invalidCells', { count }) : '');
 
   switch (format) {
     case 'xlsx': {
       downloadBlob(`${base}.xlsx`, await buildWorkbook(project, schema, issues));
-      return issues.total > 0 ? `Excel exportado. ${issues.total} celdas con errores van marcadas en rojo con una nota.` : 'Excel exportado.';
+      return issues.total > 0 ? t('export.excelDoneWithErrors', { count: issues.total }) : t('export.excelDone');
     }
     case 'sql': {
       const { sql, rowCount, invalidCells } = generateInserts(project, schema);
       downloadText(`${base}.sql`, sql, 'application/sql');
-      return `${rowCount} registros exportados como INSERT.${invalidNote(invalidCells)}`;
+      return t('export.insertDone', { count: rowCount }) + invalidNote(invalidCells);
     }
     case 'json':
       downloadText(`${base}.json`, recordsToJson(project, schema), 'application/json');
-      return 'Registros exportados a JSON.';
+      return t('export.jsonDone');
     case 'csv-table': {
       const table = schema.tables.find((t) => t.id === tableId);
       if (!table) return null;
       const rows = project.records?.[table.id] ?? [];
       downloadText(`${slug(table.name)}.csv`, BOM + tableToCsv(table, rows), 'text/csv;charset=utf-8');
-      return `${table.name} exportada a CSV.`;
+      return t('export.csvTableDone', { name: table.name });
     }
     case 'csv-zip': {
       const { zipSync, strToU8 } = await import('fflate');
@@ -46,7 +47,7 @@ const run = async (format: RecordsFormat, project: Project, tableId?: string) =>
       );
       const zip = zipSync(files);
       downloadBlob(`${base}-csv.zip`, new Blob([zip], { type: 'application/zip' }));
-      return `${schema.tables.length} archivos CSV exportados en un .zip.`;
+      return t('export.csvZipDone', { count: schema.tables.length });
     }
   }
 };
@@ -64,7 +65,7 @@ const useExportRecords = () => {
       const message = await run(format, project, tableId);
       if (message) notify(message);
     } catch {
-      notify('No se pudieron exportar los registros.', 'error');
+      notify(t('export.recordsFailed'), 'error');
     } finally {
       setBusy(false);
     }

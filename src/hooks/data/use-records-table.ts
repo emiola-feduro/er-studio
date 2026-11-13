@@ -33,7 +33,7 @@ const useRecordsTable = () => {
   );
 
   const table = tables.find((t) => t.id === recordsTableId) ?? tables[0];
-  const issues = useMemo(() => (project ? getRecordIssues(project) : null), [project]);
+  const issues = useMemo(() => (project ? getRecordIssues(project) : null), [project, derived]);
   const rows = (table && project?.records?.[table.id]) || NO_ROWS;
 
   return {

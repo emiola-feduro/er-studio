@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import type { Entity } from '../../../domain/types';
 import useDerived from '../../../hooks/data/use-derived';
 import InspectorAttributeList from './inspector-attribute-list';
@@ -9,6 +10,7 @@ import InspectorJunction from './inspector-junction';
 import InspectorSection from './inspector-section';
 
 const InspectorEntity = ({ entity }: { entity: Entity }) => {
+  const t = useT();
   const derived = useDerived();
   const { id, kind } = entity;
   const table = derived?.schema.tables.find((t) => t.id === id);
@@ -22,7 +24,7 @@ const InspectorEntity = ({ entity }: { entity: Entity }) => {
       {table && <InspectorFkColumns table={table} />}
       {table && <InspectorIndexList entity={entity} table={table} />}
       {issues.length > 0 && (
-        <InspectorSection title={`Avisos (${issues.length})`}>
+        <InspectorSection title={t('common.warningsTitle', { count: issues.length })}>
           <InspectorIssueList issues={issues} />
         </InspectorSection>
       )}

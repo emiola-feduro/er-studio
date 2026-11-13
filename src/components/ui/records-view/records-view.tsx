@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import useRecordsTable from '../../../hooks/data/use-records-table';
 import RecordsViewEmpty from './records-view-empty';
 import RecordsViewGrid from './records-view-grid';
@@ -5,13 +6,14 @@ import RecordsViewTabs from './records-view-tabs';
 import RecordsViewToolbar from './records-view-toolbar';
 
 const RecordsView = () => {
+  const t = useT();
   const data = useRecordsTable();
   const { tables, table, rows } = data;
 
   if (tables.length === 0) {
     return (
       <div className="flex h-full items-center justify-center bg-bg p-8">
-        <p className="text-muted">Crea una entidad en el diagrama para empezar a agregar registros.</p>
+        <p className="text-muted">{t('records.noTables')}</p>
       </div>
     );
   }

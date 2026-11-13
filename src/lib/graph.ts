@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import type { Edge, Node } from '@xyflow/react';
 import { relationshipKind } from '../domain/model';
 import type { DialectId, EndMarker, ForeignKey, Project, Schema, Table } from '../domain/types';
@@ -44,8 +45,8 @@ const junctionLabel = (project: Project, table: Table) => {
   const rel = project.relationships.find((r) => r.id === entity?.junction?.relationshipId);
   if (!rel) return undefined;
   const kind = relationshipKind(rel);
-  if (kind === 'ternaria' || kind === 'n-aria') return kind === 'ternaria' ? 'Ternaria' : `${rel.participants.length}-aria`;
-  return kind === 'recursiva' ? 'N:M recursiva' : 'N:M';
+  if (kind === 'ternaria' || kind === 'n-aria') return kind === 'ternaria' ? t('relKind.ternaryLabel') : t('relKind.naryCount', { count: rel.participants.length });
+  return kind === 'recursiva' ? t('relKind.recursiveNM') : 'N:M';
 };
 
 export const buildNodes = ({ project, schema, selectedId, hoveredFkId, issueCounts }: NodeInput): TableNodeType[] => {

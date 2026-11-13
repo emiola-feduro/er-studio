@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import { Search, X } from 'lucide-react';
 
 type SearchInputProps = {
@@ -10,6 +11,7 @@ type SearchInputProps = {
 };
 
 const SearchInput = ({ id, label, value, onChange, placeholder, autoFocus = false }: SearchInputProps) => {
+  const t = useT();
   return (
     <div className="relative">
       <label htmlFor={id} className="sr-only">
@@ -35,7 +37,7 @@ const SearchInput = ({ id, label, value, onChange, placeholder, autoFocus = fals
       {value && (
         <button
           type="button"
-          aria-label="Borrar búsqueda"
+          aria-label={t('common.clearSearch')}
           onClick={() => onChange('')}
           className="absolute top-1/2 right-1.5 -translate-y-1/2 rounded p-1 text-muted hover:bg-surface-2 hover:text-fg"
         >

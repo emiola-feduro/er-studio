@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import type { ReactNode } from 'react';
 import usePanels from '../../../hooks/ui/use-panels';
 import { PANELS } from '../../../stores/use-preferences-store';
@@ -9,15 +10,16 @@ type PanelsMenuProps = {
 
 /** Shows or hides each panel, plus the shortcut that leaves only the diagram. */
 const PanelsMenu = ({ trigger }: PanelsMenuProps) => {
+  const t = useT();
   const { isVisible, setVisible, focusMode, setFocusMode } = usePanels();
 
   return (
     <Menu
       trigger={trigger}
       items={[
-        { label: 'Solo diagrama', hint: 'F', checked: focusMode, onSelect: () => setFocusMode(!focusMode) },
+        { label: t('panels.focus'), hint: 'F', checked: focusMode, onSelect: () => setFocusMode(!focusMode) },
         ...PANELS.map(({ id, label, shortcut }, i) => ({
-          label,
+          label: t(label),
           hint: `Alt+${shortcut}`,
           checked: isVisible(id),
           separatorBefore: i === 0,

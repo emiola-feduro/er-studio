@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import type { Entity, Table } from '../../../domain/types';
 import { addIndex } from '../../../lib/actions';
 import Button from '../../ui/button/button';
@@ -10,19 +11,20 @@ type InspectorIndexListProps = {
 };
 
 const InspectorIndexList = ({ entity, table }: InspectorIndexListProps) => {
+  const t = useT();
   const { id, indexes } = entity;
 
   return (
     <InspectorSection
-      title="Índices"
+      title={t('index.title')}
       action={
         <Button size="sm" onClick={() => addIndex(id)}>
-          Añadir índice
+          {t('index.add')}
         </Button>
       }
     >
       {indexes.length === 0 ? (
-        <p className="text-muted">Sin índices</p>
+        <p className="text-muted">{t('index.none')}</p>
       ) : (
         <ul className="space-y-3">
           {indexes.map((index) => (

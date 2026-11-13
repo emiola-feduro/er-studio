@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import Button from '../button/button';
 import Modal from '../modal/modal';
 
@@ -11,6 +12,7 @@ type ConfirmDialogProps = {
 };
 
 const ConfirmDialog = ({ open, title, message, confirmLabel, onConfirm, onCancel }: ConfirmDialogProps) => {
+  const t = useT();
   return (
     <Modal
       title={title}
@@ -19,7 +21,7 @@ const ConfirmDialog = ({ open, title, message, confirmLabel, onConfirm, onCancel
       width="max-w-md"
       footer={
         <>
-          <Button onClick={onCancel}>Cancelar</Button>
+          <Button onClick={onCancel}>{t('common.cancel')}</Button>
           <Button variant="primary" className="bg-danger! border-danger! text-white!" onClick={onConfirm}>
             {confirmLabel}
           </Button>

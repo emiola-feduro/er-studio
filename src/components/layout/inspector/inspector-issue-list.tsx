@@ -1,10 +1,12 @@
+import useT from '../../../hooks/ui/use-t';
 import type { Issue } from '../../../domain/types';
 import useUiStore from '../../../stores/use-ui-store';
 import Pill from '../../ui/pill/pill';
 
 const InspectorIssueList = ({ issues }: { issues: Issue[] }) => {
+  const t = useT();
   const select = useUiStore((s) => s.select);
-  if (issues.length === 0) return <p className="text-success">Sin avisos.</p>;
+  if (issues.length === 0) return <p className="text-success">{t('common.noWarnings')}</p>;
 
   return (
     <ul className="space-y-2">
@@ -16,7 +18,7 @@ const InspectorIssueList = ({ issues }: { issues: Issue[] }) => {
             : null;
         const content = (
           <>
-            <Pill tone={level === 'error' ? 'danger' : 'warning'}>{level === 'error' ? 'Error' : 'Aviso'}</Pill>
+            <Pill tone={level === 'error' ? 'danger' : 'warning'}>{level === 'error' ? t('common.error') : t('common.warning')}</Pill>
             <span className="flex-1 leading-snug">{message}</span>
           </>
         );

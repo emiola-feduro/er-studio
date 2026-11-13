@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 type SidebarModelItemProps = {
   label: string;
   meta: string;
@@ -7,6 +8,7 @@ type SidebarModelItemProps = {
 };
 
 const SidebarModelItem = ({ label, meta, issues, active, onSelect }: SidebarModelItemProps) => {
+  const t = useT();
   return (
     <li>
       <button
@@ -20,7 +22,7 @@ const SidebarModelItem = ({ label, meta, issues, active, onSelect }: SidebarMode
           <span className="block truncate text-[0.86em] text-muted">{meta}</span>
         </span>
         {issues > 0 && (
-          <span className="shrink-0 rounded-full bg-danger-soft px-1.5 text-[0.8em] font-semibold text-danger" title={`${issues} avisos`}>
+          <span className="shrink-0 rounded-full bg-danger-soft px-1.5 text-[0.8em] font-semibold text-danger" title={t('common.warningsCount', { count: issues })}>
             {issues}
           </span>
         )}

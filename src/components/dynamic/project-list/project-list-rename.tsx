@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import { useState, type FormEvent } from 'react';
 import useProjectStore from '../../../stores/use-project-store';
 
@@ -8,6 +9,7 @@ type ProjectListRenameProps = {
 };
 
 const ProjectListRename = ({ id, name, onDone }: ProjectListRenameProps) => {
+  const t = useT();
   const renameProject = useProjectStore((s) => s.renameProject);
   const [value, setValue] = useState(name);
 
@@ -21,7 +23,7 @@ const ProjectListRename = ({ id, name, onDone }: ProjectListRenameProps) => {
     <li className="px-1 py-1">
       <form onSubmit={submit}>
         <label htmlFor={`rename-${id}`} className="sr-only">
-          Nuevo nombre
+          {t('projects.newName')}
         </label>
         <input
           id={`rename-${id}`}

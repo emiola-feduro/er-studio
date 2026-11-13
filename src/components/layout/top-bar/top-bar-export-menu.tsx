@@ -1,3 +1,5 @@
+import { t as translate } from '../../../i18n';
+import useT from '../../../hooks/ui/use-t';
 import useExportImage from '../../../hooks/canvas/use-export-image';
 import useExportRecords from '../../../hooks/data/use-export-records';
 import useImportProject from '../../../hooks/data/use-import-project';
@@ -17,10 +19,11 @@ const withProject = (fn: (project: Project) => void) => () => {
 const downloadSql = (project: Project, withRecords: boolean) => {
   const ddl = getDdl(project).sql;
   const sql = withRecords ? `${ddl}\n${generateInserts(project, getDerived(project).schema, false).sql}` : ddl;
-  downloadText(`${slug(project.name)}${withRecords ? '-completo' : ''}.sql`, sql, 'application/sql');
+  downloadText(`${slug(project.name)}${withRecords ? `-${slug(translate('export.fileSuffixFull'))}` : ''}.sql`, sql, 'application/sql');
 };
 
 const TopBarExportMenu = () => {
+  const t = useT();
   const exportImage = useExportImage();
   const importProject = useImportProject();
   const { exportRecords } = useExportRecords();
@@ -29,25 +32,25 @@ const TopBarExportMenu = () => {
     <Menu
       trigger={({ open, toggle }) => (
         <Button size="sm" aria-haspopup="menu" aria-expanded={open} onClick={toggle}>
-          Exportar
+          {t('export.button')}
         </Button>
       )}
       items={[
-        { label: 'Script SQL (.sql)', onSelect: withProject((p) => downloadSql(p, false)) },
-        { label: 'Script SQL con registros (.sql)', onSelect: withProject((p) => downloadSql(p, true)) },
-        { label: 'Imagen PNG', onSelect: () => void exportImage('png') },
-        { label: 'Imagen SVG', onSelect: () => void exportImage('svg') },
-        { label: 'Copiar imagen PNG', onSelect: () => void exportImage('copy-png') },
-        { label: 'Registros como INSERT (.sql)', onSelect: () => void exportRecords('sql'), separatorBefore: true },
-        { label: 'Registros a Excel (.xlsx)', onSelect: () => void exportRecords('xlsx') },
-        { label: 'Registros a CSV (.zip)', onSelect: () => void exportRecords('csv-zip') },
-        { label: 'Registros a JSON (.json)', onSelect: () => void exportRecords('json') },
+        { label: t('export.sql'), onSelect: withProject((p) => downloadSql(p, false)) },
+        { label: t('export.sqlWithRecords'), onSelect: withProject((p) => downloadSql(p, true)) },
+        { label: t('export.png'), onSelect: () => void exportImage('png') },
+        { label: t('export.svg'), onSelect: () => void exportImage('svg') },
+        { label: t('export.copyPng'), onSelect: () => void exportImage('copy-png') },
+        { label: t('export.recordsSql'), onSelect: () => void exportRecords('sql'), separatorBefore: true },
+        { label: t('export.recordsXlsx'), onSelect: () => void exportRecords('xlsx') },
+        { label: t('export.recordsCsv'), onSelect: () => void exportRecords('csv-zip') },
+        { label: t('export.recordsJson'), onSelect: () => void exportRecords('json') },
         {
-          label: 'Proyecto JSON',
+          label: t('export.projectJson'),
           onSelect: withProject((p) => downloadText(`${slug(p.name)}.er.json`, serializeProject(p), 'application/json')),
           separatorBefore: true,
         },
-        { label: 'Importar proyecto JSON', onSelect: importProject },
+        { label: t('export.importJson'), onSelect: importProject },
       ]}
     />
   );

@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import { X } from 'lucide-react';
 import { useState, type KeyboardEvent } from 'react';
 import { ddlType } from '../../../domain/dialects';
@@ -12,6 +13,7 @@ type InspectorEnumValuesProps = {
 
 /** Editor for the allowed values of an ENUM column, shown as removable chips. */
 const InspectorEnumValues = ({ entityId, attribute }: InspectorEnumValuesProps) => {
+  const t = useT();
   const dialect = useProjectStore((s) => s.project?.dialect ?? 'postgresql');
   const { id, name, enumValues = [] } = attribute;
   const [draft, setDraft] = useState('');
@@ -45,7 +47,7 @@ const InspectorEnumValues = ({ entityId, attribute }: InspectorEnumValuesProps) 
             {value}
             <button
               type="button"
-              aria-label={`Quitar ${value}`}
+              aria-label={t('enum.remove', { value })}
               onClick={() => setValues(enumValues.filter((v) => v !== value))}
               className="rounded p-0.5 text-muted hover:bg-surface hover:text-danger"
             >
@@ -54,7 +56,7 @@ const InspectorEnumValues = ({ entityId, attribute }: InspectorEnumValuesProps) 
           </span>
         ))}
         <label htmlFor={`enum-add-${id}`} className="sr-only">
-          Añadir valor permitido a {name}
+          {t('enum.addTo', { name })}
         </label>
         <input
           id={`enum-add-${id}`}
@@ -62,13 +64,13 @@ const InspectorEnumValues = ({ entityId, attribute }: InspectorEnumValuesProps) 
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={onKeyDown}
           onBlur={add}
-          placeholder={enumValues.length ? 'Añadir valor' : 'APPROVED, PENDING, REJECTED'}
+          placeholder={enumValues.length ? t('enum.add') : 'APPROVED, PENDING, REJECTED'}
           className="min-w-24 flex-1 bg-transparent px-1 py-0.5 font-canvas outline-none"
         />
       </div>
       {enumValues.length > 0 && (
         <p className="text-[0.9em] text-muted">
-          Se crea como <span className="font-canvas font-semibold text-fg">{ddlType(dialect, attribute)}</span> con CHECK.
+          {t('enum.storedAs', { type: ddlType(dialect, attribute) })}
         </p>
       )}
     </div>

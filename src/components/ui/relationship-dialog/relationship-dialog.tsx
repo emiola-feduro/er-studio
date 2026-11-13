@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import useRelationshipForm from '../../../hooks/model/use-relationship-form';
 import Button from '../button/button';
 import Modal from '../modal/modal';
@@ -6,42 +7,43 @@ import RelationshipDialogEntities from './relationship-dialog-entities';
 import RelationshipDialogPreview from './relationship-dialog-preview';
 
 const RelationshipDialog = () => {
+  const t = useT();
   const form = useRelationshipForm();
   const { open, close, entities, arity, changeArity, preset, setPreset, ids, create, valid, recursive } = form;
 
   return (
     <Modal
-      title="Nueva relación"
+      title={t('relDialog.title')}
       open={open}
       onClose={close}
       footer={
         <>
-          <Button onClick={close}>Cancelar</Button>
+          <Button onClick={close}>{t('common.cancel')}</Button>
           <Button variant="primary" disabled={!valid} onClick={create}>
-            Crear relación
+            {t('relDialog.create')}
           </Button>
         </>
       }
     >
       {entities.length === 0 ? (
-        <p>Primero crea al menos una entidad.</p>
+        <p>{t('relDialog.needEntity')}</p>
       ) : (
         <div className="space-y-5">
           <SegmentedControl
-            label="Participantes"
+            label={t('rel.participants')}
             value={arity}
             onChange={changeArity}
             options={[
-              { value: 'binary', label: 'Binaria o recursiva' },
-              { value: 'nary', label: 'Ternaria o más' },
+              { value: 'binary', label: t('relDialog.binary') },
+              { value: 'nary', label: t('relDialog.ternary') },
             ]}
           />
           <RelationshipDialogEntities form={form} />
           {arity === 'binary' && (
             <div className="space-y-2">
-              <span className="block font-medium">Cardinalidad</span>
+              <span className="block font-medium">{t('rel.cardinality')}</span>
               <SegmentedControl
-                label="Cardinalidad"
+                label={t('rel.cardinality')}
                 value={preset}
                 onChange={setPreset}
                 options={[

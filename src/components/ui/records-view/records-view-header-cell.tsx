@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import type { Column, DialectId } from '../../../domain/types';
 import { columnTypeLabel } from '../../../lib/record-inputs';
 import usePreferencesStore from '../../../stores/use-preferences-store';
@@ -10,6 +11,7 @@ type RecordsViewHeaderCellProps = {
 };
 
 const RecordsViewHeaderCell = ({ column, dialect, refTable }: RecordsViewHeaderCellProps) => {
+  const t = useT();
   const { name, pk, origin, nullable, unique, autoIncrement } = column;
   const showIcons = usePreferencesStore((s) => s.showConstraintIcons);
   const kinds = [pk && 'pk', origin === 'fk' && 'fk', !nullable && !pk && 'nn', unique && 'uq', autoIncrement && 'ai'].filter(
@@ -28,7 +30,7 @@ const RecordsViewHeaderCell = ({ column, dialect, refTable }: RecordsViewHeaderC
             <span className="text-[0.9em] font-semibold">{kinds.map((k) => CONSTRAINTS[k].text).join(' ')}</span>
           ))}
       </span>
-      {refTable && <span className="block text-[0.9em] text-muted">ref. {refTable}</span>}
+      {refTable && <span className="block text-[0.9em] text-muted">{t('records.refShort')} {refTable}</span>}
     </th>
   );
 };

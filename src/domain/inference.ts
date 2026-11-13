@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { fkTypeFor } from './dialects';
 import { isRecursive, needsJunction, participantLabel } from './model';
 import type {
@@ -93,7 +94,7 @@ const buildPlacements = (project: Project, issues: Issue[]): Placement[] => {
     if (recursive && rel.identifying) {
       issues.push({
         level: 'warning',
-        message: 'Una relación recursiva no puede ser identificadora; se trata como no identificadora.',
+        message: t('issue.recursiveIdentifying'),
         relationshipId: rel.id,
       });
     }
@@ -186,7 +187,7 @@ export const buildSchema = (project: Project): Schema => {
     if (resolving.has(entityId)) {
       issues.push({
         level: 'error',
-        message: `Ciclo de relaciones identificadoras alrededor de "${entity.name}".`,
+        message: t('issue.identifyingCycle', { name: entity.name }),
         entityId,
       });
       return ownPk(entityId);
@@ -212,7 +213,7 @@ export const buildSchema = (project: Project): Schema => {
     if (!attr.unique && !(attr.pk && ownKey.length === 1)) {
       issues.push({
         level: 'error',
-        message: `La FK de "${holder.name}" apunta a "${refEntity.name}.${attr.name}", que no es UNIQUE ni la llave primaria.`,
+        message: t('issue.fkNotUnique', { holder: holder.name, target: `${refEntity.name}.${attr.name}` }),
         entityId: holder.id,
         relationshipId: pl.rel.id,
       });
@@ -231,7 +232,7 @@ export const buildSchema = (project: Project): Schema => {
     if (refPk.length === 0) {
       issues.push({
         level: 'error',
-        message: `"${refEntity.name}" no tiene llave primaria; no se puede crear la FK desde "${holder.name}".`,
+        message: t('issue.noPkForFk', { ref: refEntity.name, holder: holder.name }),
         entityId: refEntity.id,
         relationshipId: pl.rel.id,
       });
@@ -324,8 +325,8 @@ export const buildSchema = (project: Project): Schema => {
         level: entity.kind === 'junction' ? 'error' : 'warning',
         message:
           entity.kind === 'junction'
-            ? `La tabla intermedia "${entity.name}" usa PK propia pero no tiene ningún atributo marcado como PK.`
-            : `"${entity.name}" no tiene llave primaria.`,
+            ? t('issue.junctionNoPk', { name: entity.name })
+            : t('issue.noPk', { name: entity.name }),
         entityId: entity.id,
       });
     }
@@ -336,7 +337,7 @@ export const buildSchema = (project: Project): Schema => {
       if (kept.length < index.columns.length) {
         issues.push({
           level: 'warning',
-          message: `El índice "${index.name || 'sin nombre'}" de "${entity.name}" referencia columnas que ya no existen.`,
+          message: t('issue.indexMissingColumns', { index: index.name || t('common.unnamed'), table: entity.name }),
           entityId: entity.id,
         });
       }

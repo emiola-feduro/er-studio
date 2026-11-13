@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import { useCallback, useRef } from 'react';
 import { parseProjectFile } from '../../lib/project-file';
 import useProjectStore from '../../stores/use-project-store';
@@ -13,9 +14,9 @@ const useImportProject = () => {
     try {
       const project = parseProjectFile(await file.text());
       await useProjectStore.getState().importProject(project);
-      notify(`Proyecto "${project.name}" importado.`);
+      notify(t('export.imported', { name: project.name }));
     } catch (error) {
-      notify(error instanceof Error ? error.message : 'No se pudo importar el archivo.', 'error');
+      notify(error instanceof Error ? error.message : t('export.importFailed'), 'error');
     }
   }, []);
 

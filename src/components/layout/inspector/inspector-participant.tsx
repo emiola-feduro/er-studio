@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import { Trash2 } from 'lucide-react';
 import type { Cardinality, Entity, Participant } from '../../../domain/types';
 import { removeParticipant, updateParticipant } from '../../../lib/actions';
@@ -15,6 +16,7 @@ type InspectorParticipantProps = {
 };
 
 const InspectorParticipant = ({ relationshipId, participant, entities, canRemove }: InspectorParticipantProps) => {
+  const t = useT();
   const { id, entityId, role, cardinality, optional, constraintName, refAttributeId } = participant;
   const update = (patch: Partial<Participant>, key?: string) => updateParticipant(relationshipId, id, patch, key);
   const derived = useDerived();
@@ -31,7 +33,7 @@ const InspectorParticipant = ({ relationshipId, participant, entities, canRemove
     <li className="space-y-2.5 rounded-theme border-(length:--bw) border-line p-3">
       <div className="flex items-center gap-2">
         <label htmlFor={`p-entity-${id}`} className="sr-only">
-          Entidad
+          {t('rel.entity')}
         </label>
         <select id={`p-entity-${id}`} className="field field-sm flex-1 font-semibold" value={entityId} onChange={(e) => update({ entityId: e.target.value })}>
           {entities.map((e) => (
@@ -41,28 +43,28 @@ const InspectorParticipant = ({ relationshipId, participant, entities, canRemove
           ))}
         </select>
         {canRemove && (
-          <IconButton label="Quitar participante" tone="danger" size="sm" onClick={() => removeParticipant(relationshipId, id)}>
+          <IconButton label={t('rel.removeParticipant')} tone="danger" size="sm" onClick={() => removeParticipant(relationshipId, id)}>
             <Trash2 size={15} />
           </IconButton>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <SegmentedControl<Cardinality>
-          label="Cardinalidad"
+          label={t('rel.cardinality')}
           size="sm"
           value={cardinality}
           onChange={(v) => update({ cardinality: v })}
           options={[
-            { value: '1', label: 'Uno' },
-            { value: 'N', label: 'Muchos' },
+            { value: '1', label: t('rel.one') },
+            { value: 'N', label: t('rel.many') },
           ]}
         />
-        <Checkbox label="Opcional" checked={optional} onChange={(v) => update({ optional: v })} title="Mínimo cero: la FK hacia esta entidad admite NULL" />
+        <Checkbox label={t('rel.optional')} checked={optional} onChange={(v) => update({ optional: v })} title={t('rel.optionalHint')} />
       </div>
       {showTarget && (
         <div className="space-y-1">
           <label htmlFor={`p-ref-${id}`} className="block text-[0.9em] text-muted">
-            Columna referenciada
+            {t('rel.referencedColumn')}
           </label>
           <select
             id={`p-ref-${id}`}
@@ -70,7 +72,7 @@ const InspectorParticipant = ({ relationshipId, participant, entities, canRemove
             value={refAttributeId ?? ''}
             onChange={(e) => update({ refAttributeId: e.target.value || undefined })}
           >
-            <option value="">Llave primaria</option>
+            <option value="">{t('rel.primaryKey')}</option>
             {entity?.attributes
               .filter((a) => uniqueTargets.includes(a) || a.id === refAttributeId)
               .map((a) => (
@@ -84,25 +86,25 @@ const InspectorParticipant = ({ relationshipId, participant, entities, canRemove
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
           <label htmlFor={`p-role-${id}`} className="block text-[0.9em] text-muted">
-            Rol
+            {t('rel.role')}
           </label>
           <input
             id={`p-role-${id}`}
             className="field field-sm"
-            placeholder="jefe, seguidor"
+            placeholder={t('rel.rolePlaceholder')}
             value={role ?? ''}
             onChange={(e) => update({ role: e.target.value || undefined }, `p-role:${id}`)}
           />
         </div>
         <div className="space-y-1">
           <label htmlFor={`p-fk-${id}`} className="block text-[0.9em] text-muted">
-            Nombre de la FK
+            {t('rel.fkName')}
           </label>
           <SuggestionInput
             id={`p-fk-${id}`}
             className="field field-sm font-canvas"
             suggestion={generatedFkName}
-            placeholder="automático"
+            placeholder={t('rel.automatic')}
             value={constraintName ?? ''}
             onChange={(value) => update({ constraintName: value || undefined }, `p-fk:${id}`)}
           />

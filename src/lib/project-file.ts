@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { DIALECTS } from '../domain/dialects';
 import { syncJunctions, uid } from '../domain/model';
 import type { Project } from '../domain/types';
@@ -14,7 +15,7 @@ export const parseProjectFile = (text: string): Project => {
   try {
     data = JSON.parse(text);
   } catch {
-    throw new Error('El archivo no es JSON válido.');
+    throw new Error(t('file.invalidJson'));
   }
   const wrapper = data as { format?: string; project?: Project };
   const project = wrapper?.format === FORMAT ? wrapper.project : (data as Project);
@@ -25,7 +26,7 @@ export const parseProjectFile = (text: string): Project => {
     !Array.isArray(project.relationships) ||
     !(project.dialect in DIALECTS)
   ) {
-    throw new Error('El archivo no tiene el formato de un proyecto de ER Studio.');
+    throw new Error(t('file.notAProject'));
   }
   const now = Date.now();
   const imported: Project = {

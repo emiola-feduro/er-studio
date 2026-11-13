@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import { Dices } from 'lucide-react';
 import { canRandomize } from '../../../domain/random-values';
 import type { Column, DialectId } from '../../../domain/types';
@@ -17,6 +18,7 @@ type RecordsViewCellProps = {
 };
 
 const RecordsViewCell = ({ tableId, rowId, column, dialect, value, error, listId }: RecordsViewCellProps) => {
+  const t = useT();
   const { id: columnId, name } = column;
   const inputId = `cell-${rowId}-${columnId}`;
   const errorId = `${inputId}-error`;
@@ -39,7 +41,7 @@ const RecordsViewCell = ({ tableId, rowId, column, dialect, value, error, listId
         />
         {canRandomize(dialect, column) && (
           <IconButton
-            label={`Valor aleatorio para ${name}`}
+            label={t('records.randomValue', { name })}
             size="sm"
             className="opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
             onClick={() => randomizeCell(tableId, rowId, columnId)}

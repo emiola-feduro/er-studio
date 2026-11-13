@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { DIALECTS, findType, isSerial, lengthLimit, type Generic } from './dialects';
 import type { Column, DataRow, DialectId, Project, Schema, Table } from './types';
 
@@ -67,12 +68,12 @@ export const validateValue = (
   const { generic } = def;
 
   if (def.integer || def.serial) {
-    if (!INTEGER.test(value)) return 'Debe ser un número entero.';
+    if (!INTEGER.test(value)) return t('value.integer');
     const range = intRange(dialect, column.type, generic);
-    if (range === 'digits38') return value.replace(/^[+-]/, '').length > 38 ? 'Máximo 38 dígitos.' : null;
+    if (range === 'digits38') return value.replace(/^[+-]/, '').length > 38 ? t('value.maxDigits') : null;
     if (range) {
       const n = BigInt(value);
-      if (n < range[0] || n > range[1]) return `Fuera de rango para ${column.type} (${range[0]} a ${range[1]}).`;
+      if (n < range[0] || n > range[1]) return t('value.range', { type: column.type, min: String(range[0]), max: String(range[1]) });
     }
     return null;
   }
@@ -80,68 +81,68 @@ export const validateValue = (
   switch (generic) {
     case 'enum': {
       const allowed = column.enumValues ?? [];
-      return allowed.includes(raw) ? null : `Valores permitidos: ${allowed.join(', ') || 'ninguno definido'}.`;
+      return allowed.includes(raw) ? null : t('value.allowed', { values: allowed.join(', ') || t('value.noneDefined') });
     }
     case 'decimal': {
-      if (!DECIMAL.test(value)) return 'Debe ser un número decimal (usa punto como separador).';
+      if (!DECIMAL.test(value)) return t('value.decimal');
       const { precision, scale } = column;
       if (precision == null) return null;
       const [intPart, fracPart = ''] = value.replace(/^[+-]/, '').split('.');
       const s = scale ?? 0;
       const intDigits = intPart.replace(/^0+(?=\d)/, '').replace(/^0$/, '').length;
-      if (fracPart.length > s) return `Máximo ${s} decimales.`;
-      if (intDigits > precision - s) return `Máximo ${precision - s} dígitos antes del punto (${column.type}(${precision},${s})).`;
+      if (fracPart.length > s) return t('value.maxScale', { scale: s });
+      if (intDigits > precision - s) return t('value.maxIntDigits', { digits: precision - s, type: `${column.type}(${precision},${s})` });
       return null;
     }
     case 'real':
     case 'double':
     case 'money':
-      return DECIMAL.test(value) || /^[+-]?\d+(\.\d+)?e[+-]?\d+$/i.test(value) ? null : 'Debe ser un número.';
+      return DECIMAL.test(value) || /^[+-]?\d+(\.\d+)?e[+-]?\d+$/i.test(value) ? null : t('value.number');
     case 'bool':
-      return BOOLEAN_VALUES.has(value.toLowerCase()) ? null : 'Usa true, false, 1 o 0.';
+      return BOOLEAN_VALUES.has(value.toLowerCase()) ? null : t('value.boolean');
     case 'char':
     case 'varchar':
     case 'nchar':
     case 'nvarchar': {
       const limit = lengthLimit(dialect, column);
       const size = [...raw].length;
-      return limit != null && size > limit ? `Máximo ${limit} caracteres (tiene ${size}).` : null;
+      return limit != null && size > limit ? t('value.maxChars', { limit, size }) : null;
     }
     case 'date':
-      if (dialect === 'oracle') return validDateTime(value, false) ? null : 'Usa el formato AAAA-MM-DD o AAAA-MM-DD HH:MM:SS.';
-      return validDate(value) ? null : 'Usa una fecha válida con formato AAAA-MM-DD.';
+      if (dialect === 'oracle') return validDateTime(value, false) ? null : t('value.dateOrDateTime');
+      return validDate(value) ? null : t('value.date');
     case 'time':
-      return TIME.test(value) ? null : 'Usa el formato HH:MM o HH:MM:SS.';
+      return TIME.test(value) ? null : t('value.time');
     case 'datetime':
-      return validDateTime(value, false) ? null : 'Usa el formato AAAA-MM-DD HH:MM:SS.';
+      return validDateTime(value, false) ? null : t('value.dateTime');
     case 'timestamptz':
-      return validDateTime(value, true) ? null : 'Usa AAAA-MM-DD HH:MM:SS, con zona opcional (+02:00 o Z).';
+      return validDateTime(value, true) ? null : t('value.dateTimeZone');
     case 'year': {
-      if (!/^\d{4}$/.test(value)) return 'Usa un año de 4 dígitos.';
+      if (!/^\d{4}$/.test(value)) return t('value.year');
       const year = Number(value);
-      return dialect === 'mysql' && (year < 1901 || year > 2155) ? 'MySQL acepta años entre 1901 y 2155.' : null;
+      return dialect === 'mysql' && (year < 1901 || year > 2155) ? t('value.mysqlYear') : null;
     }
     case 'uuid':
-      return UUID.test(value) ? null : 'Debe ser un UUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).';
+      return UUID.test(value) ? null : t('value.uuid');
     case 'json':
       try {
         JSON.parse(value);
         return null;
       } catch {
-        return 'No es JSON válido.';
+        return t('value.json');
       }
     case 'xml':
-      return value.startsWith('<') && value.endsWith('>') ? null : 'Debe ser XML (empieza con < y termina con >).';
+      return value.startsWith('<') && value.endsWith('>') ? null : t('value.xml');
     case 'inet':
-      return IPV4.test(value) || (value.includes(':') && IPV6.test(value)) ? null : 'Debe ser una dirección IP.';
+      return IPV4.test(value) || (value.includes(':') && IPV6.test(value)) ? null : t('value.ip');
     case 'binary':
     case 'varbinary':
     case 'blob': {
       const hex = HEX.exec(value);
-      if (!hex) return value.startsWith('0x') || value.startsWith('\\x') ? 'Hexadecimal inválido.' : null;
-      if (hex[2].length % 2 !== 0) return 'El hexadecimal debe tener un número par de dígitos.';
+      if (!hex) return value.startsWith('0x') || value.startsWith('\\x') ? t('value.hex') : null;
+      if (hex[2].length % 2 !== 0) return t('value.hexEven');
       const limit = lengthLimit(dialect, column);
-      return limit != null && hex[2].length / 2 > limit ? `Máximo ${limit} bytes.` : null;
+      return limit != null && hex[2].length / 2 > limit ? t('value.maxBytes', { limit }) : null;
     }
     default:
       return null;
@@ -198,7 +199,7 @@ export const validateRecords = (project: Project, schema: Schema): RecordIssues 
     for (const row of rows) {
       if (columnIds.some((id) => isBlank(row, id))) continue;
       const key = tuple(table, row, columnIds);
-      if (seen.has(key)) for (const id of columnIds) add(table, row.id, id, `Valor repetido: ${label} debe ser único.`);
+      if (seen.has(key)) for (const id of columnIds) add(table, row.id, id, t('value.duplicate', { label }));
       else seen.set(key, row.id);
     }
   };
@@ -212,7 +213,7 @@ export const validateRecords = (project: Project, schema: Schema): RecordIssues 
         const raw = row.values[column.id] ?? '';
         if (!raw.trim()) {
           const required = !column.nullable && !isGenerated(dialect, column) && !column.defaultValue?.trim();
-          if (required) add(table, row.id, column.id, column.pk ? 'La llave primaria es obligatoria.' : 'Campo obligatorio (NOT NULL).');
+          if (required) add(table, row.id, column.id, column.pk ? t('value.pkRequired') : t('value.required'));
           continue;
         }
         const error = validateValue(dialect, column, raw);
@@ -220,7 +221,7 @@ export const validateRecords = (project: Project, schema: Schema): RecordIssues 
       }
     }
 
-    if (table.pk) checkUnique(table, rows, table.pk.columnIds, table.pk.columnIds.length > 1 ? 'la combinación de la PK' : 'la PK');
+    if (table.pk) checkUnique(table, rows, table.pk.columnIds, table.pk.columnIds.length > 1 ? t('value.pkCombination') : t('value.pk'));
     for (const column of table.columns) if (column.unique && !column.pk) checkUnique(table, rows, [column.id], column.name);
     for (const uq of table.uniques) checkUnique(table, rows, uq.columnIds, uq.name);
 
@@ -233,12 +234,12 @@ export const validateRecords = (project: Project, schema: Schema): RecordIssues 
         const blanks = fk.columnIds.filter((id) => isBlank(row, id));
         if (blanks.length === fk.columnIds.length) continue;
         if (blanks.length > 0) {
-          for (const id of blanks) add(table, row.id, id, 'FK compuesta incompleta.');
+          for (const id of blanks) add(table, row.id, id, t('value.fkIncomplete'));
           continue;
         }
         if (!existing.has(tuple(table, row, fk.columnIds))) {
           const values = fk.columnIds.map((id) => row.values[id]).join(', ');
-          for (const id of fk.columnIds) add(table, row.id, id, `No existe un registro en ${ref.name} con (${values}).`);
+          for (const id of fk.columnIds) add(table, row.id, id, t('value.fkMissing', { table: ref.name, values }));
         }
       }
     }

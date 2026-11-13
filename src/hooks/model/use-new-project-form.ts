@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import { useState, type FormEvent } from 'react';
 import { maxEntities, MIN_ENTITIES, THEMES } from '../../domain/random-model';
 import type { DialectId } from '../../domain/types';
@@ -7,7 +8,6 @@ import useUiStore from '../../stores/use-ui-store';
 
 export type StartWith = 'empty' | 'random';
 
-const DEFAULT_NAME = 'Nuevo proyecto';
 export const MAX_RECORDS = 500;
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, Math.round(value) || min));
@@ -16,7 +16,7 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 const useNewProjectForm = (onDone: () => void) => {
   const createProject = useProjectStore((s) => s.createProject);
   const addProject = useProjectStore((s) => s.addProject);
-  const [name, setName] = useState(DEFAULT_NAME);
+  const [name, setName] = useState(() => t('projects.defaultName'));
   const [nameTouched, setNameTouched] = useState(false);
   const [dialect, setDialect] = useState<DialectId>('postgresql');
   const [databaseName, setDatabaseName] = useState('');
@@ -33,7 +33,7 @@ const useNewProjectForm = (onDone: () => void) => {
   const random = startWith === 'random';
 
   const reset = () => {
-    setName(DEFAULT_NAME);
+    setName(t('projects.defaultName'));
     setNameTouched(false);
     setDatabaseName('');
     setBusy(false);
@@ -64,7 +64,7 @@ const useNewProjectForm = (onDone: () => void) => {
       reset();
     } catch {
       setBusy(false);
-      useUiStore.getState().notify('No se pudo crear el proyecto.', 'error');
+      useUiStore.getState().notify(t('projects.createFailed'), 'error');
     }
   };
 

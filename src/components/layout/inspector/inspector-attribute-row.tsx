@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { Attribute } from '../../../domain/types';
@@ -17,6 +18,7 @@ type InspectorAttributeRowProps = {
 };
 
 const InspectorAttributeRow = ({ entityId, attribute, isFirst, isLast }: InspectorAttributeRowProps) => {
+  const t = useT();
   const { id, name, pk } = attribute;
   const [expanded, setExpanded] = useState(false);
 
@@ -24,7 +26,7 @@ const InspectorAttributeRow = ({ entityId, attribute, isFirst, isLast }: Inspect
     <li className={`rounded-[calc(var(--radius)*0.75)] ${expanded ? 'bg-surface-2' : ''}`}>
       <div className="flex items-center gap-1">
         <IconButton
-          label={expanded ? `Ocultar detalles de ${name}` : `Mostrar detalles de ${name}`}
+          label={expanded ? t('attr.hideDetails', { name }) : t('attr.showDetails', { name })}
           size="sm"
           aria-expanded={expanded}
           onClick={() => setExpanded((v) => !v)}
@@ -35,7 +37,7 @@ const InspectorAttributeRow = ({ entityId, attribute, isFirst, isLast }: Inspect
           PK
         </span>
         <label htmlFor={`attr-name-${id}`} className="sr-only">
-          Nombre del atributo
+          {t('attr.name')}
         </label>
         <input
           id={`attr-name-${id}`}
@@ -45,7 +47,7 @@ const InspectorAttributeRow = ({ entityId, attribute, isFirst, isLast }: Inspect
         />
         <InspectorTypeSelect entityId={entityId} attribute={attribute} />
         <InspectorLengthField entityId={entityId} attribute={attribute} />
-        <IconButton label={`Eliminar ${name}`} tone="danger" size="sm" onClick={() => deleteAttribute(entityId, id)}>
+        <IconButton label={t('attr.delete', { name })} tone="danger" size="sm" onClick={() => deleteAttribute(entityId, id)}>
           <Trash2 size={15} />
         </IconButton>
       </div>

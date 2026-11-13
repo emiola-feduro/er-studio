@@ -1,3 +1,5 @@
+import { RELATIONSHIP_KIND_KEYS } from '../../../lib/labels';
+import useT from '../../../hooks/ui/use-t';
 import { relationshipKind } from '../../../domain/model';
 import type { Entity } from '../../../domain/types';
 import { setJunctionKeepUnique, setJunctionPkMode } from '../../../lib/actions';
@@ -9,6 +11,7 @@ import SegmentedControl from '../../ui/segmented-control/segmented-control';
 import InspectorSection from './inspector-section';
 
 const InspectorJunction = ({ entity }: { entity: Entity }) => {
+  const t = useT();
   const { id, junction } = entity;
   const relationship = useProjectStore((s) => s.project?.relationships.find((r) => r.id === junction?.relationshipId));
   const select = useUiStore((s) => s.select);
@@ -17,32 +20,32 @@ const InspectorJunction = ({ entity }: { entity: Entity }) => {
 
   return (
     <InspectorSection
-      title="Llave primaria"
+      title={t('junction.primaryKey')}
       action={
         relationship && (
           <Button size="sm" variant="ghost" onClick={() => select({ kind: 'relationship', id: relationship.id })}>
-            Ver relación {relationshipKind(relationship)}
+            {t('junction.viewRelationship', { kind: t(RELATIONSHIP_KIND_KEYS[relationshipKind(relationship)]) })}
           </Button>
         )
       }
     >
       <div className="space-y-3">
         <SegmentedControl
-          label="Tipo de llave primaria"
+          label={t('junction.pkType')}
           value={pkMode}
           onChange={(mode) => setJunctionPkMode(id, mode)}
           options={[
-            { value: 'composite', label: 'Compuesta por las FKs' },
-            { value: 'surrogate', label: 'PK propia' },
+            { value: 'composite', label: t('junction.composite') },
+            { value: 'surrogate', label: t('junction.surrogate') },
           ]}
         />
         {pkMode === 'composite' ? (
           <p className="leading-relaxed text-muted">
-            Para ampliar la PK, marca PK en un atributo propio de esta tabla (por ejemplo una fecha).
+            {t('junction.extendHint')}
           </p>
         ) : (
           <Checkbox
-            label="Mantener UNIQUE sobre las FKs"
+            label={t('junction.keepUnique')}
             checked={keepUniqueOnFks}
             onChange={(checked) => setJunctionKeepUnique(id, checked)}
           />

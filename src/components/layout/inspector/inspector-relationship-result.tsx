@@ -1,14 +1,16 @@
+import useT from '../../../hooks/ui/use-t';
 import useDerived from '../../../hooks/data/use-derived';
 import useUiStore from '../../../stores/use-ui-store';
 
 /** Lists the FKs this relationship produces, as they will appear in the DDL. */
 const InspectorRelationshipResult = ({ relationshipId }: { relationshipId: string }) => {
+  const t = useT();
   const derived = useDerived();
   const setHoveredFk = useUiStore((s) => s.setHoveredFk);
   if (!derived) return null;
   const { schema } = derived;
   const fks = schema.foreignKeys.filter((fk) => fk.relationshipId === relationshipId);
-  if (fks.length === 0) return <p className="text-muted">Esta relación todavía no genera llaves foráneas.</p>;
+  if (fks.length === 0) return <p className="text-muted">{t('rel.noFks')}</p>;
   const table = (id: string) => schema.tables.find((t) => t.id === id);
   const cols = (tableId: string, ids: string[]) => ids.map((id) => table(tableId)?.columns.find((c) => c.id === id)?.name ?? '?').join(', ');
 
@@ -27,7 +29,7 @@ const InspectorRelationshipResult = ({ relationshipId }: { relationshipId: strin
             <div>
               {table(fk.tableId)?.name}({cols(fk.tableId, fk.columnIds)}) {'->'} {table(fk.refTableId)?.name}({cols(fk.refTableId, fk.refColumnIds)})
             </div>
-            <div className="text-muted">{nullable ? 'Admite NULL' : 'NOT NULL'}</div>
+            <div className="text-muted">{nullable ? t('rel.nullable') : 'NOT NULL'}</div>
           </li>
         );
       })}

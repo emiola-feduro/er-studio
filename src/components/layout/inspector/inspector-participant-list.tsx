@@ -1,9 +1,11 @@
+import useT from '../../../hooks/ui/use-t';
 import type { Relationship } from '../../../domain/types';
 import { addParticipant } from '../../../lib/actions';
 import useRegularEntities from '../../../hooks/model/use-regular-entities';
 import InspectorParticipant from './inspector-participant';
 
 const InspectorParticipantList = ({ relationship }: { relationship: Relationship }) => {
+  const t = useT();
   const { id, participants } = relationship;
   const entities = useRegularEntities();
 
@@ -21,7 +23,7 @@ const InspectorParticipantList = ({ relationship }: { relationship: Relationship
         ))}
       </ul>
       <label htmlFor={`rel-add-${id}`} className="sr-only">
-        Añadir participante
+        {t('rel.addParticipant')}
       </label>
       <select
         id={`rel-add-${id}`}
@@ -29,7 +31,7 @@ const InspectorParticipantList = ({ relationship }: { relationship: Relationship
         value=""
         onChange={(e) => e.target.value && addParticipant(id, e.target.value)}
       >
-        <option value="">{participants.length === 2 ? 'Añadir participante (convertir en ternaria)' : 'Añadir participante'}</option>
+        <option value="">{participants.length === 2 ? t('rel.addParticipantTernary') : t('rel.addParticipant')}</option>
         {entities.map((e) => (
           <option key={e.id} value={e.id}>
             {e.name}

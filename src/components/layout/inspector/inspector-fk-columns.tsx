@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import { displayType } from '../../../domain/dialects';
 import type { Table } from '../../../domain/types';
 import useProjectStore from '../../../stores/use-project-store';
@@ -6,6 +7,7 @@ import InspectorSection from './inspector-section';
 
 /** Columns that come from relationships. They are read-only here and edited through the relationship. */
 const InspectorFkColumns = ({ table }: { table: Table }) => {
+  const t = useT();
   const dialect = useProjectStore((s) => s.project?.dialect ?? 'postgresql');
   const select = useUiStore((s) => s.select);
   const setHoveredFk = useUiStore((s) => s.setHoveredFk);
@@ -14,7 +16,7 @@ const InspectorFkColumns = ({ table }: { table: Table }) => {
   if (fkColumns.length === 0) return null;
 
   return (
-    <InspectorSection title="Columnas de relaciones">
+    <InspectorSection title={t('entity.fkColumns')}>
       <ul className="space-y-1">
         {fkColumns.map((col) => {
           const fk = foreignKeys.find((f) => f.id === col.fkId);

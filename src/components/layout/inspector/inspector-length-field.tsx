@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import { DIALECTS, findType, maxLengthFor } from '../../../domain/dialects';
 import type { Attribute } from '../../../domain/types';
 import { updateAttribute } from '../../../lib/actions';
@@ -10,6 +11,7 @@ type InspectorLengthFieldProps = {
 
 /** Inline character limit for CHAR, VARCHAR and similar types. */
 const InspectorLengthField = ({ entityId, attribute }: InspectorLengthFieldProps) => {
+  const t = useT();
   const dialectId = useProjectStore((s) => s.project?.dialect ?? 'postgresql');
   const { id, name, type, length } = attribute;
   const def = findType(DIALECTS[dialectId], type);
@@ -20,7 +22,7 @@ const InspectorLengthField = ({ entityId, attribute }: InspectorLengthFieldProps
   return (
     <>
       <label htmlFor={`attr-limit-${id}`} className="sr-only">
-        Límite de caracteres de {name}
+        {t('attr.lengthOf', { name })}
       </label>
       <input
         id={`attr-limit-${id}`}
@@ -28,7 +30,7 @@ const InspectorLengthField = ({ entityId, attribute }: InspectorLengthFieldProps
         min={1}
         max={max}
         inputMode="numeric"
-        title={max ? `Límite de caracteres (máximo ${max})` : 'Límite de caracteres'}
+        title={max ? t('attr.lengthMax', { max }) : t('attr.length')}
         aria-invalid={invalid}
         placeholder={String(def.defaultLength ?? '')}
         className={`field field-sm w-[4.25rem] shrink-0 px-1.5 tabular-nums ${invalid ? 'border-danger!' : ''}`}

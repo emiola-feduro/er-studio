@@ -1,20 +1,22 @@
+import useT from '../../../hooks/ui/use-t';
 import useSidebarResize from '../../../hooks/ui/use-sidebar-resize';
 import { SIDEBAR_WIDTH } from '../../../stores/use-preferences-store';
 
 /** Vertical splitter on the sidebar's right edge. Drag, use the arrow keys, or double click to reset. */
 const SidebarResizeHandle = () => {
+  const t = useT();
   const { width, dragging, onPointerDown, onKeyDown, reset } = useSidebarResize();
 
   return (
     <div
       role="separator"
       aria-orientation="vertical"
-      aria-label="Ancho del panel de proyectos"
+      aria-label={t('sidebar.resize')}
       aria-valuenow={width}
       aria-valuemin={SIDEBAR_WIDTH.min}
       aria-valuemax={SIDEBAR_WIDTH.max}
       tabIndex={0}
-      title="Arrastra para cambiar el ancho. Doble clic para restablecerlo."
+      title={t('sidebar.resizeHint')}
       onPointerDown={onPointerDown}
       onKeyDown={onKeyDown}
       onDoubleClick={reset}

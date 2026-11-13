@@ -1,3 +1,5 @@
+import { RELATIONSHIP_TITLE_KEYS } from '../../../lib/labels';
+import useT from '../../../hooks/ui/use-t';
 import { isRecursive, needsJunction, relationshipKind } from '../../../domain/model';
 import type { Relationship } from '../../../domain/types';
 import useDerived from '../../../hooks/data/use-derived';
@@ -13,9 +15,9 @@ import InspectorReferentialActions from './inspector-referential-actions';
 import InspectorRelationshipResult from './inspector-relationship-result';
 import InspectorSection from './inspector-section';
 
-const kindTitles = { binaria: 'Relación binaria', recursiva: 'Relación recursiva', ternaria: 'Relación ternaria', 'n-aria': 'Relación n-aria' };
 
 const InspectorRelationship = ({ relationship }: { relationship: Relationship }) => {
+  const t = useT();
   const { id, name, identifying, participants, junctionId } = relationship;
   const derived = useDerived();
   const junction = useProjectStore((s) => s.project?.entities.find((e) => e.id === junctionId));
@@ -28,29 +30,29 @@ const InspectorRelationship = ({ relationship }: { relationship: Relationship })
     <>
       <div className="space-y-3 border-b border-line px-4 py-4">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-[1.15em] font-semibold">{kindTitles[relationshipKind(relationship)]}</h2>
+          <h2 className="text-[1.15em] font-semibold">{t(RELATIONSHIP_TITLE_KEYS[relationshipKind(relationship)])}</h2>
           <div className="flex gap-1">
             <Button size="sm" variant="danger" onClick={() => deleteRelationship(id)}>
-              Eliminar
+              {t('common.delete')}
             </Button>
-            <PanelHideButton panel="inspector" label="resumen e inspector" />
+            <PanelHideButton panel="inspector" />
           </div>
         </div>
         <div className="space-y-1.5">
           <label htmlFor={`rel-name-${id}`} className="block font-medium">
-            Nombre (opcional)
+            {t('rel.nameOptional')}
           </label>
           <input
             id={`rel-name-${id}`}
             className="field"
-            placeholder="compra, inscribe, supervisa"
+            placeholder={t('rel.namePlaceholder')}
             value={name ?? ''}
             onChange={(e) => updateRelationship(id, { name: e.target.value || undefined }, `rel-name:${id}`)}
           />
         </div>
         {junction && (
           <p>
-            Tabla intermedia:{' '}
+            {t('rel.junctionTable')}{' '}
             <button type="button" className="font-semibold text-accent underline underline-offset-2" onClick={() => select({ kind: 'entity', id: junction.id })}>
               {junction.name}
             </button>
@@ -58,34 +60,34 @@ const InspectorRelationship = ({ relationship }: { relationship: Relationship })
         )}
       </div>
       <InspectorSection
-        title="Participantes"
+        title={t('rel.participants')}
         action={
           participants.length === 2 && (
             <Button size="sm" variant="ghost" onClick={() => swapParticipants(id)}>
-              Intercambiar
+              {t('rel.swap')}
             </Button>
           )
         }
       >
         <InspectorParticipantList relationship={relationship} />
       </InspectorSection>
-      <InspectorSection title="Llaves foráneas generadas">
+      <InspectorSection title={t('rel.generatedFks')}>
         <InspectorRelationshipResult relationshipId={id} />
         {canBeIdentifying && (
           <div className="mt-3">
             <Checkbox
-              label="Identificadora (la FK forma parte de la PK)"
+              label={t('rel.identifying')}
               checked={identifying}
               onChange={(v) => updateRelationship(id, { identifying: v })}
             />
           </div>
         )}
       </InspectorSection>
-      <InspectorSection title="Acciones referenciales">
+      <InspectorSection title={t('rel.referentialActions')}>
         <InspectorReferentialActions relationship={relationship} />
       </InspectorSection>
       {issues.length > 0 && (
-        <InspectorSection title={`Avisos (${issues.length})`}>
+        <InspectorSection title={t('common.warningsTitle', { count: issues.length })}>
           <InspectorIssueList issues={issues} />
         </InspectorSection>
       )}

@@ -1,3 +1,4 @@
+import useT from '../../../hooks/ui/use-t';
 import { useReactFlow } from '@xyflow/react';
 import useAutoLayout from '../../../hooks/canvas/use-auto-layout';
 import { addEntity } from '../../../lib/actions';
@@ -7,6 +8,7 @@ import Button from '../button/button';
 import Checkbox from '../checkbox/checkbox';
 
 const ErCanvasToolbar = () => {
+  const t = useT();
   const autoLayout = useAutoLayout();
   const { fitView, screenToFlowPosition } = useReactFlow();
   const showFkLabels = useUiStore((s) => s.showFkLabels);
@@ -23,25 +25,25 @@ const ErCanvasToolbar = () => {
 
   return (
     <div className="absolute top-3 left-3 z-10 flex flex-wrap items-center gap-2 rounded-theme border-(length:--bw) border-line bg-surface/90 p-1.5 shadow-theme backdrop-blur-sm">
-      <Button variant="primary" size="sm" onClick={addAtCenter} title="Atajo: E">
-        Nueva entidad
+      <Button variant="primary" size="sm" onClick={addAtCenter} title={t('common.shortcut', { key: 'E' })}>
+        {t('canvas.newEntity')}
       </Button>
       <Button size="sm" onClick={() => openRelationshipDialog()}>
-        Nueva relación
+        {t('canvas.newRelationship')}
       </Button>
       <span className="mx-1 h-5 w-px bg-line" aria-hidden />
       <Button size="sm" variant="ghost" onClick={autoLayout}>
-        Ordenar
+        {t('canvas.arrange')}
       </Button>
       <Button size="sm" variant="ghost" onClick={() => fitView({ padding: 0.15, duration: 250 })}>
-        Ajustar vista
+        {t('canvas.fitView')}
       </Button>
       <span className="mx-1 h-5 w-px bg-line" aria-hidden />
       <span className="px-1">
-        <Checkbox label="Nombres de FK" checked={showFkLabels} onChange={toggleFkLabels} />
+        <Checkbox label={t('canvas.fkNames')} checked={showFkLabels} onChange={toggleFkLabels} />
       </span>
       <span className="px-1">
-        <Checkbox label="Íconos de restricciones" checked={showIcons} onChange={setShowIcons} />
+        <Checkbox label={t('canvas.constraintIcons')} checked={showIcons} onChange={setShowIcons} />
       </span>
     </div>
   );
