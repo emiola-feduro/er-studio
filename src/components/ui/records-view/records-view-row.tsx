@@ -37,7 +37,7 @@ const RecordsViewRow = ({ tableId, row, index, columns, dialect, errors, hasSugg
           />
         </td>
       ))}
-      <td className="border-b border-line px-1 align-top">
+      <td className="border-b border-line px-1 pt-1 align-top">
         <div className="flex">
           <IconButton label={t('records.duplicateRow', { index: index + 1 })} size="sm" onClick={() => duplicateRow(tableId, id)}>
             <Copy size={14} />

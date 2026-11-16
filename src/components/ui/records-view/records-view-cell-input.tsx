@@ -11,11 +11,13 @@ type RecordsViewCellInputProps = {
   error?: string;
   errorId: string;
   listId?: string;
+  /** Leaves room on the right for the button drawn over the input. */
+  withAction?: boolean;
   onChange: (value: string) => void;
 };
 
 /** The control that fits the column type: a list for ENUM and booleans, a typed input for the rest. */
-const RecordsViewCellInput = ({ id, kind, column, dialect, value, error, errorId, listId, onChange }: RecordsViewCellInputProps) => {
+const RecordsViewCellInput = ({ id, kind, column, dialect, value, error, errorId, listId, withAction = false, onChange }: RecordsViewCellInputProps) => {
   const t = useT();
   const { name, nullable, enumValues = [] } = column;
   const common = {
@@ -23,7 +25,7 @@ const RecordsViewCellInput = ({ id, kind, column, dialect, value, error, errorId
     'aria-label': name,
     'aria-invalid': Boolean(error),
     'aria-describedby': error ? errorId : undefined,
-    className: `field field-sm min-w-0 ${error ? 'border-danger! bg-danger-soft' : ''}`,
+    className: `field field-sm min-w-0 ${withAction ? 'pr-8' : ''} ${error ? 'border-danger! bg-danger-soft' : ''}`,
   };
 
   if (kind === 'enum' || kind === 'bool') {

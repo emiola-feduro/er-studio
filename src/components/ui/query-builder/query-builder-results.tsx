@@ -91,7 +91,7 @@ const QueryBuilderResults = ({ runner, dialect, scope, sourceLabel }: QueryBuild
       <table
         ref={tableRef}
         className="table-fixed border-separate border-spacing-0 font-canvas text-[0.88em]"
-        style={{ width: run.columns.reduce((sum, column) => sum + widths.widthOf(column), 0) }}
+        style={{ width: widths.total }}
       >
         <colgroup>
           {run.columns.map((column, index) => (

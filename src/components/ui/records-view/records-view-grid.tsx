@@ -50,11 +50,10 @@ const RecordsViewGrid = ({ data }: { data: RecordsData }) => {
       }),
     [table, rows, dialect, fkTables, t],
   );
-  const widths = useColumnWidths(`records:${table?.id ?? ''}`, fitColumns, tableRef, { extra: 64, headerExtra: 26, min: 72, max: 480 });
+  const widths = useColumnWidths(`records:${table?.id ?? ''}`, fitColumns, tableRef, { extra: 56, headerExtra: 26, min: 72, max: 480 }, 'tbody input', 48 + 80);
 
   if (!table) return null;
   const { id: tableId, columns } = table;
-  const totalWidth = 48 + 80 + columns.reduce((sum, c) => sum + widths.widthOf(c.id), 0);
 
   return (
     <>
@@ -65,7 +64,7 @@ const RecordsViewGrid = ({ data }: { data: RecordsData }) => {
           ))}
         </datalist>
       ))}
-      <table ref={tableRef} className="table-fixed border-separate border-spacing-0 font-canvas text-[13px]" style={{ width: totalWidth }}>
+      <table ref={tableRef} className="table-fixed border-separate border-spacing-0 font-canvas text-[13px]" style={{ width: widths.total }}>
         <colgroup>
           <col style={{ width: 48 }} />
           {columns.map((column) => (

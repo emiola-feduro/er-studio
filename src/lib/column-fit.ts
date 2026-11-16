@@ -28,11 +28,32 @@ export const textMeasurer = (font: string) => {
     let width = cache.get(key);
     if (width === undefined) {
       if (context) {
-        context.font = bold ? `600 ${font.replace(/^(normal|bold|\d{3})\s+/, '')}` : font;
+        context.font = bold ? font.replace(/^(normal|italic|oblique)\s+/, '$1 600 ') : font;
         width = context.measureText(text).width;
       } else width = text.length * size * 0.6;
       cache.set(key, width);
     }
     return width;
   };
+};
+
+/**
+ * Widths shown on screen: when the columns need less than the space there is, each one grows in
+ * proportion so the table fills it; when they need more, they keep their width and the table scrolls.
+ */
+export const fillWidths = (natural: number[], available: number) => {
+  const total = natural.reduce((sum, w) => sum + w, 0);
+  if (!total || total >= available) return natural;
+  const scale = available / total;
+  return natural.map((w) => w * scale);
+};
+
+/**
+ * The width to keep for a column so that, after filling the space, it shows exactly `shown` pixels
+ * (where the pointer is while dragging). `others` is the kept width of the other columns.
+ */
+export const naturalForShown = (shown: number, others: number, available: number) => {
+  // Everything fits without growing: the table scrolls and the width is the one shown.
+  if (shown + others >= available || shown >= available) return shown;
+  return (shown * others) / (available - shown);
 };

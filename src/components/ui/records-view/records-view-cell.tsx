@@ -27,7 +27,8 @@ const RecordsViewCell = ({ tableId, rowId, column, dialect, value, error, listId
 
   return (
     <div className="min-w-0">
-      <div className="group flex items-center gap-0.5">
+      {/* The dice sits inside the input's right end, so the input fills the whole column. */}
+      <div className="group relative">
         <RecordsViewCellInput
           id={inputId}
           kind={cellInputKind(dialect, column)}
@@ -37,13 +38,14 @@ const RecordsViewCell = ({ tableId, rowId, column, dialect, value, error, listId
           error={error}
           errorId={errorId}
           listId={listId}
+          withAction={canRandomize(dialect, column)}
           onChange={(next) => updateCell(tableId, rowId, columnId, next)}
         />
         {canRandomize(dialect, column) && (
           <IconButton
             label={t('records.randomValue', { name })}
             size="sm"
-            className="opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
+            className="absolute top-1/2 right-0.5 -translate-y-1/2 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
             onClick={() => randomizeCell(tableId, rowId, columnId)}
           >
             <Dices size={14} />
