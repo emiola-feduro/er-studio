@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import type { DataRow } from '../../domain/types';
+import { generationOrder } from '../../domain/records';
 import { getRecordIssues } from '../../lib/derived';
 import useProjectStore from '../../stores/use-project-store';
 import useUiStore from '../../stores/use-ui-store';
@@ -15,7 +16,8 @@ const useRecordsTable = () => {
   const setRecordsTable = useUiStore((s) => s.setRecordsTable);
   const selection = useUiStore((s) => s.selection);
   const select = useUiStore((s) => s.select);
-  const tables = useMemo(() => derived?.schema.tables ?? [], [derived]);
+  // In the order the rows must be created: referenced tables first (customers before orders).
+  const tables = useMemo(() => generationOrder(derived?.schema.tables ?? []), [derived]);
 
   // Follow the entity selected in the diagram or sidebar. Only selection changes count,
   // so editing rows (which rebuilds the schema) never moves the user to another tab.

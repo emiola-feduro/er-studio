@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { makeProject } from './fixtures';
 import { buildSchema } from './inference';
 import { createAttribute } from './model';
-import { nextAutoValue, typedValue, validateRecords, validateValue } from './records';
+import { generationOrder, nextAutoValue, typedValue, validateRecords, validateValue } from './records';
 import type { DataRow } from './types';
 
 const col = (type: string, extra: { length?: number; precision?: number; scale?: number } = {}) => ({ type, ...extra });
@@ -142,5 +142,18 @@ describe('helpers', () => {
     expect(typedValue('postgresql', { ...base, type: 'DATE' }, '2024-01-31')).toEqual(new Date('2024-01-31T00:00:00Z'));
     expect(typedValue('postgresql', { ...base, type: 'INTEGER' }, 'abc')).toBe('abc');
     expect(typedValue('postgresql', { ...base, type: 'INTEGER' }, '')).toBeNull();
+  });
+});
+
+describe('generationOrder', () => {
+  const t = (id: string, ...refs: string[]) => ({ id, foreignKeys: refs.map((refTableId) => ({ refTableId })) });
+
+  it('puts referenced tables first, level by level', () => {
+    const order = generationOrder([t('detalle', 'pedido', 'producto'), t('pedido', 'cliente'), t('producto'), t('cliente'), t('empleado', 'empleado')]);
+    expect(order.map((x) => x.id)).toEqual(['producto', 'cliente', 'empleado', 'pedido', 'detalle']);
+  });
+
+  it('does not hang on cycles', () => {
+    expect(generationOrder([t('a', 'b'), t('b', 'a'), t('c', 'a')]).map((x) => x.id)).toHaveLength(3);
   });
 });

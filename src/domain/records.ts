@@ -287,3 +287,30 @@ export const typedValue = (dialect: DialectId, column: Column, raw: string): str
       return raw;
   }
 };
+
+/**
+ * Order in which the tables get their rows: a table comes after every table its foreign keys point
+ * to (customers before orders, orders before order lines). Tables of the same level keep the model's
+ * order. References to itself and cycles do not block a table; a cycle takes the level of its first member.
+ */
+export const generationOrder = <T extends { id: string; foreignKeys: { refTableId: string }[] }>(tables: T[]): T[] => {
+  const byId = new Map(tables.map((t) => [t.id, t]));
+  const level = new Map<string, number>();
+  const visiting = new Set<string>();
+  const depth = (table: T): number => {
+    const known = level.get(table.id);
+    if (known !== undefined) return known;
+    if (visiting.has(table.id)) return 0;
+    visiting.add(table.id);
+    let value = 0;
+    for (const fk of table.foreignKeys) {
+      const ref = byId.get(fk.refTableId);
+      if (ref && ref.id !== table.id) value = Math.max(value, depth(ref) + 1);
+    }
+    visiting.delete(table.id);
+    level.set(table.id, value);
+    return value;
+  };
+  const position = new Map(tables.map((t, i) => [t.id, i]));
+  return [...tables].sort((a, b) => depth(a) - depth(b) || position.get(a.id)! - position.get(b.id)!);
+};
