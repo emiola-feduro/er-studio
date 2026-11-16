@@ -838,8 +838,6 @@ export const en: Messages = {
   // Run queries and aliases
   'query.run': "Run",
   'query.runTitle': "Run (Ctrl+Enter)",
-  'query.editSql': "Edit SQL",
-  'query.useGenerated': "Back to the generated query",
   'query.sqlLabel': "Query SQL",
   'query.results': "Results",
   'query.notRun': "Run the query to see the results.",
@@ -860,4 +858,21 @@ export const en: Messages = {
   'query.aliasProblem.invalid': "Use letters, digits and _. Using {alias}.",
   'query.aliasProblem.reserved': "It is a reserved word. Using {alias}.",
   'query.aliasProblem.duplicate': "Another table uses it. Using {alias}.",
+
+  // Column widths
+  'columns.resize': "Width of column {name}",
+  'columns.resizeHint': "Drag to change the width. Double click to fit the content.",
+
+  // Query tabs
+  'query.tabs': "Query",
+  'query.tabGenerated': "Generated",
+  'query.tabEditor': "Editor",
+  'query.toEditor': "Copy to editor",
+  'query.replaceTitle': "Replace the editor SQL",
+  'query.replaceMessage': "The editor already has SQL. It is replaced by the generated query.",
+  'query.replace': "Replace",
+  'query.editorPlaceholder': "Write a SELECT on the tables of the model. Ctrl+Enter runs it.",
+  'query.fromGenerated': "from the generated query",
+  'query.fromEditor': "from the editor",
+  'query.clearEditor': "Clear",
 };

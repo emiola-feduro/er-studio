@@ -23,7 +23,7 @@ const RecordsViewCellInput = ({ id, kind, column, dialect, value, error, errorId
     'aria-label': name,
     'aria-invalid': Boolean(error),
     'aria-describedby': error ? errorId : undefined,
-    className: `field field-sm ${error ? 'border-danger! bg-danger-soft' : ''}`,
+    className: `field field-sm min-w-0 ${error ? 'border-danger! bg-danger-soft' : ''}`,
   };
 
   if (kind === 'enum' || kind === 'bool') {

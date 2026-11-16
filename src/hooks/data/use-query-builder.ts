@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { buildSelect, planJoins, renameAliases, type JoinType, type QueryPlan, type QuerySpec } from '../../domain/query-builder';
 import type { WhereColumn } from '../../domain/query-where';
 import useProjectStore from '../../stores/use-project-store';
-import useQueryStore, { EMPTY_QUERY } from '../../stores/use-query-store';
+import useQueryStore, { EMPTY_QUERY, type QueryTab } from '../../stores/use-query-store';
 import useDerived from './use-derived';
 
 /** State of the query builder and the SQL it produces. Each project keeps its own query. */
@@ -12,7 +12,9 @@ const useQueryBuilder = () => {
   const projectId = project?.id ?? '';
   const stored = useQueryStore((s) => s.specs[projectId]);
   const setStored = useQueryStore((s) => s.setSpec);
-  const customSql = useQueryStore((s) => s.customSql[projectId]);
+  const customSql = useQueryStore((s) => s.customSql[projectId]) ?? '';
+  const tab = useQueryStore((s) => s.tabs[projectId]) ?? 'generated';
+  const setTab = (next: QueryTab) => projectId && useQueryStore.getState().setTab(projectId, next);
   const setCustomSql = (sql: string | undefined) => projectId && useQueryStore.getState().setCustomSql(projectId, sql);
 
   const tables = derived?.schema.tables ?? [];
@@ -45,10 +47,7 @@ const useQueryBuilder = () => {
     setColumns(tableId, on ? all.filter((id) => current.includes(id) || id === columnId) : current.filter((id) => id !== columnId));
   };
   const update = (patch: Partial<QuerySpec>) => setSpec((s) => ({ ...s, ...patch }));
-  const clear = () => {
-    setSpec(() => EMPTY_QUERY);
-    setCustomSql(undefined);
-  };
+  const clear = () => setSpec(() => EMPTY_QUERY);
 
   /** Sets a table's alias (empty goes back to the automatic one) and renames it in the WHERE. */
   const setAlias = (tableId: string, alias: string) => {
@@ -87,6 +86,8 @@ const useQueryBuilder = () => {
     whereColumns,
     customSql,
     setCustomSql,
+    tab,
+    setTab,
     projectName: project?.name ?? '',
   };
 };

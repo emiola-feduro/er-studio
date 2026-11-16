@@ -838,8 +838,6 @@ export const fr: Messages = {
   // Run queries and aliases
   'query.run': "Exécuter",
   'query.runTitle': "Exécuter (Ctrl+Entrée)",
-  'query.editSql': "Modifier le SQL",
-  'query.useGenerated': "Revenir à la requête générée",
   'query.sqlLabel': "SQL de la requête",
   'query.results': "Résultats",
   'query.notRun': "Exécutez la requête pour voir les résultats.",
@@ -860,4 +858,21 @@ export const fr: Messages = {
   'query.aliasProblem.invalid': "Utilisez des lettres, des chiffres et _. {alias} est utilisé.",
   'query.aliasProblem.reserved': "C’est un mot réservé. {alias} est utilisé.",
   'query.aliasProblem.duplicate': "Une autre table l’utilise. {alias} est utilisé.",
+
+  // Column widths
+  'columns.resize': "Largeur de la colonne {name}",
+  'columns.resizeHint': "Faites glisser pour changer la largeur. Double-cliquez pour l’ajuster au contenu.",
+
+  // Query tabs
+  'query.tabs': "Requête",
+  'query.tabGenerated': "Générée",
+  'query.tabEditor': "Éditeur",
+  'query.toEditor': "Copier dans l’éditeur",
+  'query.replaceTitle': "Remplacer le SQL de l’éditeur",
+  'query.replaceMessage': "L’éditeur contient déjà du SQL. Il est remplacé par la requête générée.",
+  'query.replace': "Remplacer",
+  'query.editorPlaceholder': "Écrivez un SELECT sur les tables du modèle. Ctrl+Entrée l’exécute.",
+  'query.fromGenerated': "de la requête générée",
+  'query.fromEditor': "de l’éditeur",
+  'query.clearEditor': "Vider",
 };

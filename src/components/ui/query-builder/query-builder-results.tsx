@@ -1,14 +1,21 @@
+import { useMemo, useRef } from 'react';
 import type useQueryRun from '../../../hooks/data/use-query-run';
+import useColumnWidths, { type FitColumn } from '../../../hooks/ui/use-column-widths';
 import useT from '../../../hooks/ui/use-t';
 import { DIALECTS } from '../../../domain/dialects';
 import type { DialectId } from '../../../domain/types';
 import type { SqlValue } from '../../../domain/query-data';
 import useUiStore from '../../../stores/use-ui-store';
 import Button from '../button/button';
+import ColumnResizeHandle from '../column-resize-handle/column-resize-handle';
 
 type QueryBuilderResultsProps = {
   runner: ReturnType<typeof useQueryRun>;
   dialect: DialectId;
+  /** Where the column widths are kept (one set per project). */
+  scope: string;
+  /** Which query the rows came from: the generated one or the editor. */
+  sourceLabel?: string;
 };
 
 const MAX_ROWS = 500;
@@ -19,9 +26,21 @@ const csvField = (value: SqlValue) => {
 };
 
 /** Rows returned by the last run, or the state that explains why there are none. */
-const QueryBuilderResults = ({ runner, dialect }: QueryBuilderResultsProps) => {
+const QueryBuilderResults = ({ runner, dialect, scope, sourceLabel }: QueryBuilderResultsProps) => {
   const t = useT();
   const { status, run, ranSql, stale, noRecords, readOnly } = runner;
+  const tableRef = useRef<HTMLTableElement>(null);
+  const ok = run && !('error' in run) ? run : undefined;
+  const fitColumns = useMemo(
+    (): FitColumn[] =>
+      (ok?.columns ?? []).map((column, index) => ({
+        key: column,
+        header: [column],
+        values: ok!.rows.slice(0, MAX_ROWS).map((row) => (row[index] === null ? 'NULL' : String(row[index]))),
+      })),
+    [ok],
+  );
+  const widths = useColumnWidths(scope, fitColumns, tableRef, { extra: 28, min: 56, max: 480 });
 
   const copyCsv = async () => {
     if (!run || 'error' in run) return;
@@ -69,12 +88,22 @@ const QueryBuilderResults = ({ runner, dialect }: QueryBuilderResultsProps) => {
     if (run.rows.length === 0) return message(t('query.noRows'));
     const shown = run.rows.slice(0, MAX_ROWS);
     return (
-      <table className="w-max min-w-full border-collapse font-canvas text-[0.88em]">
+      <table
+        ref={tableRef}
+        className="table-fixed border-separate border-spacing-0 font-canvas text-[0.88em]"
+        style={{ width: run.columns.reduce((sum, column) => sum + widths.widthOf(column), 0) }}
+      >
+        <colgroup>
+          {run.columns.map((column, index) => (
+            <col key={index} style={{ width: widths.widthOf(column) }} />
+          ))}
+        </colgroup>
         <thead className="sticky top-0 z-10 bg-surface">
           <tr>
             {run.columns.map((column, index) => (
-              <th key={index} scope="col" className="border-b border-line px-3 py-1.5 text-left font-semibold whitespace-nowrap">
+              <th key={index} scope="col" className="relative truncate border-b border-l border-line px-3 py-1.5 text-left font-semibold first:border-l-0" title={column}>
                 {column}
+                <ColumnResizeHandle column={column} width={widths.widthOf(column)} onResize={(w) => widths.resize(column, w)} onFit={() => widths.fit(column)} />
               </th>
             ))}
           </tr>
@@ -85,7 +114,8 @@ const QueryBuilderResults = ({ runner, dialect }: QueryBuilderResultsProps) => {
               {row.map((value, c) => (
                 <td
                   key={c}
-                  className={`border-b border-line/60 px-3 py-1 whitespace-nowrap ${typeof value === 'number' ? 'text-right tabular-nums' : ''} ${value === null ? 'text-muted italic' : ''}`}
+                  title={value === null ? undefined : String(value)}
+                  className={`truncate border-b border-l border-line/60 px-3 py-1 first:border-l-0 ${typeof value === 'number' ? 'text-right tabular-nums' : ''} ${value === null ? 'text-muted italic' : ''}`}
                 >
                   {value === null ? 'NULL' : String(value)}
                 </td>
@@ -103,6 +133,7 @@ const QueryBuilderResults = ({ runner, dialect }: QueryBuilderResultsProps) => {
     <section aria-label={t('query.results')} className="flex min-h-0 flex-1 flex-col border-t border-line">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2">
         <h3 className="font-semibold">{t('query.results')}</h3>
+        {sourceLabel && run && <span className="text-muted">{sourceLabel}</span>}
         {done && (
           <span data-testid="query-row-count" className="text-muted">
             {t('query.rows', { count: done.rows.length, ms: done.ms < 1 ? '<1' : Math.round(done.ms) })}

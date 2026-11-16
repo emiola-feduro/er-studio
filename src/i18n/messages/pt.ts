@@ -838,8 +838,6 @@ export const pt: Messages = {
   // Run queries and aliases
   'query.run': "Executar",
   'query.runTitle': "Executar (Ctrl+Enter)",
-  'query.editSql': "Editar SQL",
-  'query.useGenerated': "Voltar à consulta gerada",
   'query.sqlLabel': "SQL da consulta",
   'query.results': "Resultados",
   'query.notRun': "Execute a consulta para ver os resultados.",
@@ -860,4 +858,21 @@ export const pt: Messages = {
   'query.aliasProblem.invalid': "Use letras, números e _. Usando {alias}.",
   'query.aliasProblem.reserved': "É uma palavra reservada. Usando {alias}.",
   'query.aliasProblem.duplicate': "Outra tabela já usa. Usando {alias}.",
+
+  // Column widths
+  'columns.resize': "Largura da coluna {name}",
+  'columns.resizeHint': "Arraste para mudar a largura. Clique duas vezes para ajustar ao conteúdo.",
+
+  // Query tabs
+  'query.tabs': "Consulta",
+  'query.tabGenerated': "Gerada",
+  'query.tabEditor': "Editor",
+  'query.toEditor': "Copiar para o editor",
+  'query.replaceTitle': "Substituir o SQL do editor",
+  'query.replaceMessage': "O editor já tem SQL. Ele será substituído pela consulta gerada.",
+  'query.replace': "Substituir",
+  'query.editorPlaceholder': "Escreva um SELECT sobre as tabelas do modelo. Ctrl+Enter executa.",
+  'query.fromGenerated': "da consulta gerada",
+  'query.fromEditor': "do editor",
+  'query.clearEditor': "Limpar",
 };

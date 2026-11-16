@@ -26,7 +26,7 @@ const RecordsViewCell = ({ tableId, rowId, column, dialect, value, error, listId
   const length = [...value].length;
 
   return (
-    <div className="min-w-36">
+    <div className="min-w-0">
       <div className="group flex items-center gap-0.5">
         <RecordsViewCellInput
           id={inputId}

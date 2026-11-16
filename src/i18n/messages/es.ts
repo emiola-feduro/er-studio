@@ -874,8 +874,6 @@ export const es = {
   // Run queries and aliases
   'query.run': "Ejecutar",
   'query.runTitle': "Ejecutar (Ctrl+Enter)",
-  'query.editSql': "Editar SQL",
-  'query.useGenerated': "Volver a la consulta generada",
   'query.sqlLabel': "SQL de la consulta",
   'query.results': "Resultados",
   'query.notRun': "Ejecuta la consulta para ver los resultados.",
@@ -896,6 +894,23 @@ export const es = {
   'query.aliasProblem.invalid': "Usa letras, números y _. Se usa {alias}.",
   'query.aliasProblem.reserved': "Es una palabra reservada. Se usa {alias}.",
   'query.aliasProblem.duplicate': "Ya lo usa otra tabla. Se usa {alias}.",
+
+  // Column widths
+  'columns.resize': "Ancho de la columna {name}",
+  'columns.resizeHint': "Arrastra para cambiar el ancho. Doble clic para ajustarlo al contenido.",
+
+  // Query tabs
+  'query.tabs': "Consulta",
+  'query.tabGenerated': "Generada",
+  'query.tabEditor': "Editor",
+  'query.toEditor': "Copiar al editor",
+  'query.replaceTitle': "Reemplazar el SQL del editor",
+  'query.replaceMessage': "El editor ya tiene SQL. Se reemplaza por la consulta generada.",
+  'query.replace': "Reemplazar",
+  'query.editorPlaceholder': "Escribe un SELECT sobre las tablas del modelo. Ctrl+Enter lo ejecuta.",
+  'query.fromGenerated': "de la consulta generada",
+  'query.fromEditor': "del editor",
+  'query.clearEditor': "Vaciar",
 } as const;
 
 export type Messages = { [K in keyof typeof es]: string };
