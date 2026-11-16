@@ -1,6 +1,7 @@
 import type useQueryBuilder from '../../../hooks/data/use-query-builder';
 import useT from '../../../hooks/ui/use-t';
 import Checkbox from '../checkbox/checkbox';
+import QueryBuilderAliasInput from './query-builder-alias-input';
 
 type Builder = ReturnType<typeof useQueryBuilder>;
 
@@ -16,9 +17,9 @@ const QueryBuilderTables = ({ builder }: { builder: Builder }) => {
         {tables.map((table) => {
           const order = spec.tableIds.indexOf(table.id);
           return (
-            <div key={table.id} className="flex items-center justify-between gap-2">
+            <div key={table.id} className="flex items-start justify-between gap-2">
               <Checkbox label={table.name} checked={order >= 0} onChange={(on) => toggleTable(table.id, on)} />
-              {order >= 0 && <span className="font-canvas text-[0.85em] text-muted">{result.plan.aliases[table.id]}</span>}
+              {order >= 0 && <QueryBuilderAliasInput builder={builder} tableId={table.id} tableName={table.name} />}
             </div>
           );
         })}

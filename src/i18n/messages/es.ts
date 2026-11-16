@@ -870,6 +870,32 @@ export const es = {
   // Query WHERE connectors
   'query.meaning.and': "y además",
   'query.meaning.or': "o bien",
+
+  // Run queries and aliases
+  'query.run': "Ejecutar",
+  'query.runTitle': "Ejecutar (Ctrl+Enter)",
+  'query.editSql': "Editar SQL",
+  'query.useGenerated': "Volver a la consulta generada",
+  'query.sqlLabel': "SQL de la consulta",
+  'query.results': "Resultados",
+  'query.notRun': "Ejecuta la consulta para ver los resultados.",
+  'query.loadingEngine': "Cargando el motor SQL...",
+  'query.rows': "{count} filas en {ms} ms",
+  'query.rows.one': "1 fila en {ms} ms",
+  'query.noRows': "La consulta no devolvió filas.",
+  'query.truncated': "Mostrando {shown} de {count} filas.",
+  'query.noRecords': "Las tablas elegidas no tienen registros.",
+  'query.goToRecords': "Ir a Registros",
+  'query.stale': "La consulta o los registros cambiaron desde la última ejecución.",
+  'query.ranSql': "SQL ejecutado",
+  'query.sqliteNote': "Se ejecuta con SQLite en el navegador; las funciones de {dialect} se traducen.",
+  'query.notSelect': "Solo se puede ejecutar una consulta SELECT o WITH, de una sola sentencia.",
+  'query.copyCsv': "Copiar como CSV",
+  'query.csvCopied': "Resultados copiados como CSV.",
+  'query.alias': "Alias de {table}",
+  'query.aliasProblem.invalid': "Usa letras, números y _. Se usa {alias}.",
+  'query.aliasProblem.reserved': "Es una palabra reservada. Se usa {alias}.",
+  'query.aliasProblem.duplicate': "Ya lo usa otra tabla. Se usa {alias}.",
 } as const;
 
 export type Messages = { [K in keyof typeof es]: string };

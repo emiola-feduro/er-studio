@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { buildSelect, type JoinType, type QuerySpec } from '../../domain/query-builder';
+import { buildSelect, planJoins, renameAliases, type JoinType, type QueryPlan, type QuerySpec } from '../../domain/query-builder';
 import type { WhereColumn } from '../../domain/query-where';
 import useProjectStore from '../../stores/use-project-store';
 import useQueryStore, { EMPTY_QUERY } from '../../stores/use-query-store';
@@ -12,6 +12,8 @@ const useQueryBuilder = () => {
   const projectId = project?.id ?? '';
   const stored = useQueryStore((s) => s.specs[projectId]);
   const setStored = useQueryStore((s) => s.setSpec);
+  const customSql = useQueryStore((s) => s.customSql[projectId]);
+  const setCustomSql = (sql: string | undefined) => projectId && useQueryStore.getState().setCustomSql(projectId, sql);
 
   const tables = derived?.schema.tables ?? [];
   // Tables deleted since the query was built drop out of it.
@@ -23,7 +25,7 @@ const useQueryBuilder = () => {
   const setSpec = (update: (spec: QuerySpec) => QuerySpec) => projectId && setStored(projectId, update);
 
   const result = useMemo(
-    () => (derived && project ? buildSelect(derived.schema, project.dialect, spec) : { sql: '', plan: { joins: [], unreachable: [], aliases: {} } }),
+    () => (derived && project ? buildSelect(derived.schema, project.dialect, spec) : { sql: '', plan: { joins: [], unreachable: [], aliases: {}, aliasProblems: {} } as QueryPlan }),
     [derived, project, spec],
   );
 
@@ -43,7 +45,22 @@ const useQueryBuilder = () => {
     setColumns(tableId, on ? all.filter((id) => current.includes(id) || id === columnId) : current.filter((id) => id !== columnId));
   };
   const update = (patch: Partial<QuerySpec>) => setSpec((s) => ({ ...s, ...patch }));
-  const clear = () => setSpec(() => EMPTY_QUERY);
+  const clear = () => {
+    setSpec(() => EMPTY_QUERY);
+    setCustomSql(undefined);
+  };
+
+  /** Sets a table's alias (empty goes back to the automatic one) and renames it in the WHERE. */
+  const setAlias = (tableId: string, alias: string) => {
+    if (!derived || !project) return;
+    const aliases = { ...spec.aliases };
+    if (alias.trim()) aliases[tableId] = alias.trim();
+    else delete aliases[tableId];
+    const next = { ...spec, aliases };
+    const after = planJoins(derived.schema, next, project.dialect).aliases;
+    const renames = Object.fromEntries(Object.entries(result.plan.aliases).map(([id, old]) => [old, after[id] ?? old]));
+    setSpec((s) => ({ ...s, aliases, where: s.where ? renameAliases(s.where, renames) : s.where }));
+  };
 
   /** Columns of every table in the query, written alias.column, for the WHERE. */
   const whereColumns = useMemo(
@@ -54,7 +71,24 @@ const useQueryBuilder = () => {
     [result.plan.aliases, tables],
   );
 
-  return { dialect: project?.dialect, tables, spec, result, toggleTable, setJoinType, setColumns, toggleColumn, update, clear, whereColumns, projectName: project?.name ?? '' };
+  return {
+    project,
+    dialect: project?.dialect,
+    tables,
+    spec,
+    result,
+    toggleTable,
+    setJoinType,
+    setColumns,
+    toggleColumn,
+    update,
+    clear,
+    setAlias,
+    whereColumns,
+    customSql,
+    setCustomSql,
+    projectName: project?.name ?? '',
+  };
 };
 
 export default useQueryBuilder;

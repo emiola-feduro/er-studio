@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createSampleProject } from '../lib/sample-project';
 import { buildSchema } from './inference';
-import { buildSelect } from './query-builder';
+import { renameAliases, buildSelect } from './query-builder';
 
 const setup = () => {
   const project = createSampleProject();
@@ -66,5 +66,30 @@ describe('buildSelect', () => {
     void project;
     const { plan } = buildSelect(schema, 'postgresql', { tableIds: [id('pedido'), id('cliente')] });
     expect(plan.joins[0].type).toBe('INNER');
+  });
+});
+
+describe('typed aliases', () => {
+  it('uses typed aliases everywhere and falls back when one cannot be used', () => {
+    const { schema, id } = setup();
+    const spec = {
+      tableIds: [id('cliente'), id('producto')],
+      aliases: { [id('cliente')]: 'c', [id('producto')]: 'select' },
+      orderBy: [{ tableId: id('cliente'), columnId: schema.tables.find((t) => t.id === id('cliente'))!.columns[0].id, direction: 'ASC' as const }],
+    };
+    const { sql, plan } = buildSelect(schema, 'postgresql', spec);
+    expect(sql).toContain('FROM cliente c\n');
+    expect(sql).toContain('ON pe.cliente_id = c.id');
+    expect(sql).toContain('ORDER BY c.id ASC');
+    expect(plan.aliases[id('producto')]).toBe('pr');
+    expect(plan.aliasProblems).toEqual({ [id('producto')]: 'reserved' });
+    const duplicate = buildSelect(schema, 'postgresql', { ...spec, aliases: { [id('cliente')]: 'x', [id('producto')]: 'X' } }).plan;
+    expect(duplicate.aliasProblems[id('producto')]).toBe('duplicate');
+    expect(buildSelect(schema, 'postgresql', { ...spec, aliases: { [id('cliente')]: '1a' } }).plan.aliasProblems[id('cliente')]).toBe('invalid');
+  });
+
+  it('renames aliases in an expression without touching strings', () => {
+    expect(renameAliases("cl.nombre = 'cl.x' AND pr.precio > 0 AND xcl.y = 1", { cl: 'c' })).toBe("c.nombre = 'cl.x' AND pr.precio > 0 AND xcl.y = 1");
+    expect(renameAliases('a.x = b.y', { a: 'b', b: 'a' })).toBe('b.x = a.y');
   });
 });

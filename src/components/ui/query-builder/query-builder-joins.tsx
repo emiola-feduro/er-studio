@@ -2,6 +2,7 @@ import type useQueryBuilder from '../../../hooks/data/use-query-builder';
 import type { JoinType } from '../../../domain/query-builder';
 import useT from '../../../hooks/ui/use-t';
 import SegmentedControl from '../segmented-control/segmented-control';
+import QueryBuilderAliasInput from './query-builder-alias-input';
 
 type Builder = ReturnType<typeof useQueryBuilder>;
 
@@ -18,8 +19,13 @@ const QueryBuilderJoins = ({ builder }: { builder: Builder }) => {
         {joins.map((join) => (
           <li key={join.tableId} className="space-y-1.5 rounded-[calc(var(--radius)*0.75)] bg-surface-2 p-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="font-medium">
-                {tables.find((x) => x.id === join.tableId)?.name} <span className="font-canvas text-muted">{join.alias}</span>
+              <span className="flex items-start gap-2 font-medium">
+                {tables.find((x) => x.id === join.tableId)?.name}
+                {join.bridge ? (
+                  <QueryBuilderAliasInput builder={builder} tableId={join.tableId} tableName={tables.find((x) => x.id === join.tableId)?.name ?? ''} />
+                ) : (
+                  <span className="font-canvas font-normal text-muted">{join.alias}</span>
+                )}
               </span>
               <SegmentedControl<JoinType>
                 label={t('query.joins')}

@@ -20,6 +20,7 @@
     "lucide-react": "0.468.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
+    "sql.js": "1.12.0",
     "yaml": "2.6.1",
     "zustand": "5.0.3"
   },
@@ -27,6 +28,7 @@
     "@tailwindcss/vite": "4.1.11",
     "@types/react": "18.3.18",
     "@types/react-dom": "18.3.5",
+    "@types/sql.js": "1.4.9",
     "@vitejs/plugin-react": "4.3.4",
     "fake-indexeddb": "6.0.0",
     "tailwindcss": "4.1.11",

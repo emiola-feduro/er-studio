@@ -19,6 +19,8 @@ export type QuerySpec = {
   orderBy?: { tableId: string; columnId: string; direction: 'ASC' | 'DESC' }[];
   limit?: number;
   distinct?: boolean;
+  /** Aliases typed by the person, per table id; the others are made from the initials. */
+  aliases?: Record<string, string>;
 };
 
 export type JoinStep = {
@@ -32,13 +34,47 @@ export type JoinStep = {
   bridge: boolean;
 };
 
-export type QueryPlan = { base?: { tableId: string; alias: string }; joins: JoinStep[]; unreachable: string[]; aliases: Record<string, string> };
+export type AliasProblem = 'invalid' | 'reserved' | 'duplicate';
 
-/** Short alias from the initials of the table name (pedidos_productos → pp), unique and not a SQL word. */
-const makeAliases = (tables: Table[]) => {
+export type QueryPlan = {
+  base?: { tableId: string; alias: string };
+  joins: JoinStep[];
+  unreachable: string[];
+  aliases: Record<string, string>;
+  /** Typed aliases that could not be used, so the automatic one took their place. */
+  aliasProblems: Record<string, AliasProblem>;
+};
+
+const ALIAS = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+/** Why a typed alias cannot be used, if it cannot. */
+export const aliasProblem = (alias: string, taken: Set<string>): AliasProblem | undefined => {
+  if (!ALIAS.test(alias)) return 'invalid';
+  if (RESERVED_WORDS.has(alias.toUpperCase())) return 'reserved';
+  if (taken.has(alias.toLowerCase())) return 'duplicate';
+  return undefined;
+};
+
+/**
+ * Aliases for the tables of the query: the typed ones when they can be used, else a short one from
+ * the initials of the table name (pedidos_productos → pp), unique and not a SQL word.
+ */
+const makeAliases = (tables: Table[], typed: Record<string, string> = {}) => {
   const aliases: Record<string, string> = {};
+  const problems: Record<string, AliasProblem> = {};
   const used = new Set<string>();
   for (const table of tables) {
+    const alias = typed[table.id]?.trim();
+    if (!alias) continue;
+    const problem = aliasProblem(alias, used);
+    if (problem) problems[table.id] = problem;
+    else {
+      aliases[table.id] = alias;
+      used.add(alias.toLowerCase());
+    }
+  }
+  for (const table of tables) {
+    if (aliases[table.id]) continue;
     const parts = table.name.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
     let base = parts.length > 1 ? parts.map((p) => p[0]).join('') : (parts[0] ?? 't').slice(0, 2);
     if (!/^[a-z]/.test(base)) base = `t${base}`;
@@ -47,7 +83,22 @@ const makeAliases = (tables: Table[]) => {
     used.add(alias);
     aliases[table.id] = alias;
   }
-  return aliases;
+  return { aliases, problems };
+};
+
+/**
+ * Applies alias changes (old → new) to an expression all at once, so swaps work, and leaves quoted
+ * strings alone: "cl.nombre = 'cl.x'" with cl → c gives "c.nombre = 'cl.x'".
+ */
+export const renameAliases = (expression: string, renames: Record<string, string>) => {
+  const changes = Object.entries(renames).filter(([from, to]) => from && to && from !== to);
+  if (!changes.length) return expression;
+  const lookup = new Map(changes.map(([from, to]) => [from.toLowerCase(), to]));
+  const names = changes.map(([from]) => from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const pattern = new RegExp(`('(?:[^']|'')*')|\\b(${names})\\.`, 'gi');
+  return expression.replace(pattern, (match, quoted: string | undefined, name: string | undefined) =>
+    quoted || !name ? match : `${lookup.get(name.toLowerCase())}.`,
+  );
 };
 
 /** Shortest chain of foreign keys from any table already joined to the target. */
@@ -76,7 +127,7 @@ const findPath = (schema: Schema, joined: Set<string>, target: string): ForeignK
 export const planJoins = (schema: Schema, spec: QuerySpec, dialect: DialectId): QueryPlan => {
   const tables = new Map(schema.tables.map((t) => [t.id, t]));
   const chosen = spec.tableIds.filter((id) => tables.has(id));
-  const plan: QueryPlan = { joins: [], unreachable: [], aliases: {} };
+  const plan: QueryPlan = { joins: [], unreachable: [], aliases: {}, aliasProblems: {} };
   if (chosen.length === 0) return plan;
 
   const joined = new Set([chosen[0]]);
@@ -96,7 +147,9 @@ export const planJoins = (schema: Schema, spec: QuerySpec, dialect: DialectId): 
   }
 
   const involved = [chosen[0], ...steps.map((s) => s.tableId)].map((id) => tables.get(id)!);
-  plan.aliases = makeAliases(involved);
+  const made = makeAliases(involved, spec.aliases);
+  plan.aliases = made.aliases;
+  plan.aliasProblems = made.problems;
   const q = (tableId: string, columnId: string) => {
     const table = tables.get(tableId)!;
     return `${plan.aliases[tableId]}.${quoteIdent(dialect, table.columns.find((c) => c.id === columnId)?.name ?? '?')}`;

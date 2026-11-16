@@ -98,7 +98,8 @@ const useExpressionCompletion = (value: string, onChange: (value: string) => voi
       setActive((i) => (Math.min(i, options.length - 1) + step + options.length) % options.length);
       return;
     }
-    if ((event.key === 'Enter' || (event.key === 'Tab' && !event.shiftKey)) && open) {
+    // Ctrl+Enter is left to the view (it runs the query).
+    if (((event.key === 'Enter' && !event.ctrlKey && !event.metaKey) || (event.key === 'Tab' && !event.shiftKey)) && open) {
       event.preventDefault();
       apply(options[current]);
     }
