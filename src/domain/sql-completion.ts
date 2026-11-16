@@ -31,7 +31,7 @@ const CLAUSE_KEYWORDS = ['SELECT', 'FROM', 'WHERE', 'GROUP BY', 'ORDER BY', 'HAV
 const FUNCTIONS = ['COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'COALESCE', 'NULLIF', 'UPPER', 'LOWER', 'LENGTH', 'TRIM', 'SUBSTR', 'ROUND', 'ABS', 'CAST', 'DATE', 'REPLACE'];
 
 const WORDS_NOT_ALIAS = new Set(
-  'ON WHERE JOIN LEFT RIGHT INNER OUTER FULL CROSS GROUP ORDER HAVING LIMIT UNION AS SET USING NATURAL OFFSET FETCH WINDOW'.split(' '),
+  'ON WHERE JOIN LEFT RIGHT INNER OUTER FULL CROSS GROUP ORDER HAVING LIMIT UNION AS SET USING NATURAL OFFSET FETCH WINDOW FROM SELECT AND OR NOT IN IS LIKE BETWEEN ASC DESC'.split(' '),
 );
 
 type TableRef = { table: Table; alias?: string };
@@ -127,8 +127,61 @@ export const sqlCompletions = (text: string, caret: number, schema: Schema, dial
   const result = (items: SqlCompletion[]) => ({ from, to, items: rank(items, partial) });
 
   const keyword = (label: string): SqlCompletion => ({ label, insert: `${label} `, kind: 'keyword' });
+
+  // After AS the person is naming something: nothing to suggest.
+  if (prev === 'AS') return none;
+
+  // The text without the word being typed, so it does not count as already written.
+  const wordStart = from - (qualifier ? qualifier.length + 1 : 0);
+  const rest = `${code.slice(0, wordStart)} ${code.slice(to)}`;
+
+  /** "qualifier.column" pairs written anywhere in the query, by qualifier. */
+  const qualified = new Map<string, Set<string>>();
+  for (const m of rest.matchAll(/\b([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)/g)) {
+    const key = m[1].toLowerCase();
+    if (!qualified.has(key)) qualified.set(key, new Set());
+    qualified.get(key)!.add(m[2].toLowerCase());
+  }
+
+  /** Columns already in the SELECT list the cursor is in, so they are not offered twice. */
+  const selectStart = [...codeBefore.matchAll(/\bSELECT\b/gi)].pop()?.index;
+  const usedInSelect = new Set<string>();
+  if (selectStart !== undefined) {
+    const fromAfter = /\bFROM\b/i.exec(code.slice(selectStart));
+    const end = fromAfter ? selectStart + fromAfter.index : code.length;
+    const list = `${code.slice(selectStart + 6, Math.max(selectStart + 6, wordStart))} ${code.slice(Math.min(to, end), end)}`;
+    for (const m of list.matchAll(/(?:\b([A-Za-z_][A-Za-z0-9_]*)\.)?\b([A-Za-z_][A-Za-z0-9_]*)\b(?!\s*\()/g)) {
+      usedInSelect.add(m[1] ? `${m[1]}.${m[2]}`.toLowerCase() : m[2].toLowerCase());
+    }
+  }
+  const alreadySelected = (qualifierName: string | undefined, table: Table, column: Column) => {
+    const col = column.name.toLowerCase();
+    if (!qualifierName) return usedInSelect.has(col);
+    return usedInSelect.has(`${qualifierName.toLowerCase()}.${col}`) || usedInSelect.has(`${table.name.toLowerCase()}.${col}`);
+  };
+
+  /**
+   * Tables the query already points at through "x.column": by name (cliente.id) or by an alias
+   * not declared yet (c.id), which goes to the table that has all the columns used with it.
+   */
+  const declared = new Set(refs.map((r) => (r.alias ?? r.table.name).toLowerCase()));
+  const wanted: { table: Table; alias?: string }[] = [];
+  for (const [name, columns] of qualified) {
+    if (declared.has(name)) continue;
+    const byName = schema.tables.find((t) => t.name.toLowerCase() === name);
+    if (byName) {
+      wanted.push({ table: byName });
+      continue;
+    }
+    const fits = schema.tables.filter((t) => [...columns].every((c) => t.columns.some((col) => col.name.toLowerCase() === c)));
+    const best = fits.find((t) => t.name.toLowerCase().startsWith(name)) ?? fits.find((t) => t.name.toLowerCase()[0] === name[0]) ?? fits[0];
+    if (best) wanted.push({ table: best, alias: name });
+  }
+  const inSelect = clauseAt(codeBefore) === 'SELECT';
   const columnsOf = (ref: TableRef, qualify: boolean): SqlCompletion[] =>
-    ref.table.columns.map((c) => ({
+    ref.table.columns
+      .filter((c) => !inSelect || !alreadySelected(qualify ? (ref.alias ?? ref.table.name) : undefined, ref.table, c))
+      .map((c) => ({
       label: qualify ? `${ref.alias ?? ref.table.name}.${c.name}` : c.name,
       insert: qualify ? `${ref.alias ?? q(ref.table.name)}.${q(c.name)}` : q(c.name),
       kind: 'column',
@@ -140,7 +193,34 @@ export const sqlCompletions = (text: string, caret: number, schema: Schema, dial
     return refs.flatMap((r) => columnsOf(r, qualify));
   };
   const functions = (): SqlCompletion[] => FUNCTIONS.map((f) => ({ label: `${f}()`, insert: `${f}(`, kind: 'function' }));
-  const tables = (): SqlCompletion[] => schema.tables.map((t) => ({ label: t.name, insert: `${q(t.name)} `, kind: 'table' }));
+  /**
+   * Tables for FROM or JOIN, best first: the ones the query already uses through "x.column" (with
+   * the alias it uses), then, after a JOIN, the ones related by a foreign key, then the rest; the
+   * tables already in FROM go last.
+   */
+  const tables = (joining: boolean): SqlCompletion[] => {
+    const items: SqlCompletion[] = [];
+    const seen = new Set<string>();
+    const add = (table: Table, alias?: string) => {
+      const key = `${table.id}:${alias ?? ''}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      items.push({ label: alias ? `${table.name} ${alias}` : table.name, insert: `${q(table.name)}${alias ? ` ${alias}` : ''} `, kind: 'table' });
+    };
+    const inQuery = new Set(refs.map((r) => r.table.id));
+    for (const w of wanted) if (!inQuery.has(w.table.id)) add(w.table, w.alias);
+    if (joining) {
+      for (const fk of schema.foreignKeys) {
+        if (inQuery.has(fk.refTableId) && !inQuery.has(fk.tableId)) add(schema.tables.find((t) => t.id === fk.tableId)!);
+        if (inQuery.has(fk.tableId) && !inQuery.has(fk.refTableId)) add(schema.tables.find((t) => t.id === fk.refTableId)!);
+      }
+    }
+    // A table already offered with the alias the query uses is not offered again without it.
+    const withAlias = new Set(items.map((i) => i.label.split(' ')[0]));
+    for (const table of schema.tables) if (!inQuery.has(table.id) && !withAlias.has(table.name)) add(table);
+    for (const table of schema.tables) if (inQuery.has(table.id)) add(table);
+    return items;
+  };
 
   // "alias." or "table.": that table's columns.
   if (qualifier) {
@@ -148,12 +228,16 @@ export const sqlCompletions = (text: string, caret: number, schema: Schema, dial
       refs.find((r) => r.table.name.toLowerCase() === qualifier.toLowerCase());
     const table = ref?.table ?? schema.tables.find((t) => t.name.toLowerCase() === qualifier.toLowerCase());
     if (!table) return none;
-    return result(table.columns.map((c) => ({ label: c.name, insert: q(c.name), kind: 'column', detail: columnDetail(c) })));
+    return result(
+      table.columns
+        .filter((c) => !inSelect || !alreadySelected(qualifier, table, c))
+        .map((c) => ({ label: c.name, insert: q(c.name), kind: 'column', detail: columnDetail(c) })),
+    );
   }
 
   // After FROM, JOIN or a comma in FROM: the tables.
   const clause = clauseAt(codeBefore);
-  if (prev === 'FROM' || prev === 'JOIN' || (prev === ',' && clause === 'FROM')) return result(tables());
+  if (prev === 'FROM' || prev === 'JOIN' || (prev === ',' && clause === 'FROM')) return result(tables(prev !== 'FROM'));
 
   // Right after "JOIN table [alias]" or after ON: the join conditions from the foreign keys.
   const joined = new RegExp(String.raw`\bJOIN\s+(${IDENT})(?:\s+(?:AS\s+)?(${IDENT}))?\s+(ON\s+)?$`, 'i').exec(head);
@@ -212,7 +296,12 @@ export const sqlCompletions = (text: string, caret: number, schema: Schema, dial
       return result(['SELECT', 'WITH'].map(keyword));
     case 'SELECT': {
       const items = [...queryColumns(), ...functions(), keyword('DISTINCT'), keyword('FROM'), keyword('AS'), keyword('CASE')];
-      if (!refs.length) items.unshift(...schema.tables.flatMap((t) => columnsOf({ table: t }, true)));
+      // No FROM yet: every table's columns, the tables already used in the list first.
+      if (!refs.length) {
+        const used = wanted.map((w) => w.table);
+        const order = [...used, ...schema.tables.filter((t) => !used.includes(t))];
+        items.unshift(...order.flatMap((t) => columnsOf({ table: t, alias: wanted.find((w) => w.table === t)?.alias }, true)));
+      }
       if (!partial && head.trimEnd().toUpperCase().endsWith('SELECT')) items.unshift({ label: '*', insert: '* ', kind: 'column' });
       return result(items);
     }

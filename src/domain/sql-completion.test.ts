@@ -70,4 +70,33 @@ describe('sqlCompletions', () => {
       'pedido:pe',
     ]);
   });
+
+  it('does not offer a column already in the SELECT list', () => {
+    const labels = at('SELECT cliente.id, cliente.nombre, ').labels;
+    expect(labels).not.toContain('cliente.id');
+    expect(labels).not.toContain('cliente.nombre');
+    expect(labels[0]).toBe('cliente.email');
+    expect(at('SELECT c.id, c.| FROM cliente c').labels).toEqual(['nombre', 'email', 'creado_en']);
+    expect(at('SELECT id, | FROM cliente').labels).not.toContain('id');
+  });
+
+  it('offers nothing after AS, where a name is being written', () => {
+    expect(at('SELECT cliente.id AS ').labels).toEqual([]);
+    expect(at('SELECT cliente.id AS id').labels).toEqual([]);
+    expect(at('SELECT * FROM cliente AS ').labels).toEqual([]);
+  });
+
+  it('puts the tables the SELECT uses first in FROM, with their alias', () => {
+    expect(at('SELECT cliente.id, cliente.nombre FROM ').labels[0]).toBe('cliente');
+    expect(at('SELECT c.nombre, c.email FROM ').labels.slice(0, 2)).toEqual(['cliente c', 'pedido']);
+    expect(at('SELECT c.nombre, c.email FROM cliente c JOIN ').labels[0]).toBe('pedido');
+    expect(at('SELECT pr.precio FROM ').labels[0]).toBe('producto pr');
+  });
+
+  it('after JOIN puts related tables first and the ones in the query last', () => {
+    const labels = at('SELECT * FROM cliente c JOIN ').labels;
+    expect(labels[0]).toBe('pedido');
+    expect(labels[labels.length - 1]).toBe('cliente');
+  });
 });
+
