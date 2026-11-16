@@ -10,7 +10,7 @@ export type SuggestionSource = ExpressionSuggestionItem[] | ((before: string, af
 
 export type CompletionOption = ExpressionSuggestionItem & { kind: 'suggestion' | 'column' };
 
-const MAX_OPTIONS = 8;
+const MAX_OPTIONS = 12;
 // Includes dots so qualified names (pr.precio) complete too.
 const PARTIAL_WORD = /([A-Za-z_][A-Za-z0-9_.]*)$/;
 

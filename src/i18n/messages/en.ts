@@ -875,4 +875,13 @@ export const en: Messages = {
   'query.fromGenerated': "from the generated query",
   'query.fromEditor': "from the editor",
   'query.clearEditor': "Clear",
+
+  // Negative WHERE suggestions
+  'query.meaning.notEquals': "other than {value}",
+  'query.meaning.notEqualsValue': "other than a value",
+  'query.meaning.noneOf': "none of several",
+  'query.meaning.notContains': "does not contain",
+  'query.meaning.outsideRange': "outside the range",
+  'query.meaning.beforeDate': "before a date",
+  'query.meaning.value': "value",
 };

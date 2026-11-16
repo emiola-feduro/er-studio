@@ -27,7 +27,14 @@ export type WhereMeaning =
   | 'noValue'
   | 'and'
   | 'or'
-  | 'column';
+  | 'column'
+  | 'notEquals'
+  | 'notEqualsValue'
+  | 'noneOf'
+  | 'notContains'
+  | 'outsideRange'
+  | 'beforeDate'
+  | 'value';
 
 export type WhereColumn = { ref: string; column: Pick<Column, 'name' | 'type' | 'nullable'> & { enumValues?: string[] } };
 
@@ -60,6 +67,8 @@ export const operatorsFor = (dialect: DialectId, column: WhereColumn['column'], 
     const values = column.enumValues ?? [];
     for (const value of values.slice(0, 4)) ops.push({ op: `= ${quoteLiteral(value)}`, meaning: 'equals', detail: value });
     if (values.length > 1) ops.push({ op: `IN (${values.slice(0, 2).map(quoteLiteral).join(', ')})`, meaning: 'oneOf' });
+    if (values.length) ops.push({ op: `<> ${quoteLiteral(values[0])}`, meaning: 'notEquals', detail: values[0] });
+    if (values.length > 1) ops.push({ op: `NOT IN (${values.slice(0, 2).map(quoteLiteral).join(', ')})`, meaning: 'noneOf' });
   } else if (generic === 'bool') {
     const [yes, no] = dialect === 'sqlserver' ? ['1', '0'] : ['TRUE', 'FALSE'];
     ops.push({ op: `= ${yes}`, meaning: 'isTrue' }, { op: `= ${no}`, meaning: 'isFalse' });
@@ -69,6 +78,9 @@ export const operatorsFor = (dialect: DialectId, column: WhereColumn['column'], 
       { op: '> 0', meaning: 'positive' },
       { op: 'BETWEEN 1 AND 100', meaning: 'range' },
       { op: 'IN (1, 2, 3)', meaning: 'oneOf' },
+      { op: '<> 1', meaning: 'notEqualsValue' },
+      { op: 'NOT BETWEEN 1 AND 100', meaning: 'outsideRange' },
+      { op: 'NOT IN (1, 2, 3)', meaning: 'noneOf' },
     );
   } else if (generic && TEXT.includes(generic)) {
     const name = column.name.toLowerCase();
@@ -77,20 +89,38 @@ export const operatorsFor = (dialect: DialectId, column: WhereColumn['column'], 
     if (dialect === 'postgresql') ops.push({ op: `ILIKE ${quoteLiteral(`%${sample}%`)}`, meaning: 'containsCi' });
     ops.push({ op: `LIKE ${quoteLiteral(`${sample}%`)}`, meaning: 'startsWith' }, { op: `= ${quoteLiteral(sample)}`, meaning: 'equalsValue' });
     ops.push({ op: dialect === 'oracle' ? 'IS NOT NULL' : "<> ''", meaning: 'notBlank' });
+    ops.push({ op: `NOT LIKE ${quoteLiteral(`%${sample}%`)}`, meaning: 'notContains' }, { op: `<> ${quoteLiteral(sample)}`, meaning: 'notEqualsValue' });
   } else if (generic && DATES.includes(generic)) {
     const year = new Date().getFullYear();
     ops.push(
       { op: LAST_30_DAYS[dialect], meaning: 'lastDays' },
       { op: `>= ${dateLiteral(dialect, generic, `${year}-01-01`)}`, meaning: 'afterDate' },
       { op: `BETWEEN ${dateLiteral(dialect, generic, `${year}-01-01`)} AND ${dateLiteral(dialect, generic, `${year}-12-31`)}`, meaning: 'range' },
+      { op: `< ${dateLiteral(dialect, generic, `${year}-01-01`)}`, meaning: 'beforeDate' },
+      { op: `NOT BETWEEN ${dateLiteral(dialect, generic, `${year}-01-01`)} AND ${dateLiteral(dialect, generic, `${year}-12-31`)}`, meaning: 'outsideRange' },
     );
   }
   if (column.nullable) ops.push({ op: 'IS NOT NULL', meaning: 'notNull' }, { op: 'IS NULL', meaning: 'noValue' });
   return ops;
 };
 
+/** Values that fit a column, for after "=", "<>" or "!=". */
+const valuesFor = (dialect: DialectId, column: WhereColumn['column'], sample: string): { value: string; detail?: string }[] => {
+  const generic = findType(DIALECTS[dialect], column.type)?.generic;
+  if (isEnum(column.type)) return (column.enumValues ?? []).map((v) => ({ value: quoteLiteral(v), detail: v }));
+  if (generic === 'bool') return dialect === 'sqlserver' ? [{ value: '1' }, { value: '0' }] : [{ value: 'TRUE' }, { value: 'FALSE' }];
+  if (generic && NUMBER.includes(generic)) return [{ value: '1' }, { value: '0' }];
+  if (generic && TEXT.includes(generic)) return [{ value: quoteLiteral(sample) }, { value: "''" }];
+  if (generic && DATES.includes(generic)) return [{ value: dateLiteral(dialect, generic, `${new Date().getFullYear()}-01-01`) }];
+  return [];
+};
+
 // "alias.column" at the end of the text, optionally followed by spaces.
 const TRAILING_REF = /(?:^|[\s(])([A-Za-z_][A-Za-z0-9_]*\.(?:"[^"]+"|`[^`]+`|\[[^\]]+\]|[A-Za-z_][A-Za-z0-9_]*))\s*$/;
+// "alias.column NOT", "alias.column =" (or <>, !=) at the end of the text.
+const REF = String.raw`([A-Za-z_][A-Za-z0-9_]*\.(?:"[^"]+"|\x60[^\x60]+\x60|\[[^\]]+\]|[A-Za-z_][A-Za-z0-9_]*))`;
+const TRAILING_NOT = new RegExp(String.raw`(?:^|[\s(])${REF}\s+NOT\s*$`, 'i');
+const TRAILING_COMPARE = new RegExp(String.raw`(?:^|[\s(])${REF}\s*(=|<>|!=)\s*$`);
 const AFTER_CONNECTOR = /(?:^|\s)(AND|OR|NOT)\s+$|\(\s*$/i;
 // Words after which a condition is still incomplete.
 const INCOMPLETE = /(?:=|<>|!=|<|>|<=|>=|\b(?:LIKE|ILIKE|IN|IS|NOT|BETWEEN|AND|OR))\s*$/i;
@@ -105,6 +135,29 @@ export const whereCompletions = (dialect: DialectId, columns: WhereColumn[], tex
       const first = operatorsFor(dialect, c.column, sample)[0];
       return first ? [{ value: `${c.ref} ${first.op}`, display: `${c.ref} ${first.op}`, meaning: first.meaning, detail: first.detail }] : [];
     });
+  }
+
+  // "column NOT": the negative operators for its type, without repeating NOT.
+  const notMatch = TRAILING_NOT.exec(text);
+  const notTarget = notMatch ? byRef.get(notMatch[1].toLowerCase()) : undefined;
+  if (notTarget) {
+    const head = text.trimEnd();
+    return operatorsFor(dialect, notTarget.column, sample)
+      .filter((o) => o.op.startsWith('NOT '))
+      .map((o) => ({ value: `${head} ${o.op.slice(4)}`, display: `${notTarget.ref} ${o.op}`, meaning: o.meaning, detail: o.detail }));
+  }
+
+  // "column =", "<>" or "!=": values that fit the column.
+  const compare = TRAILING_COMPARE.exec(text);
+  const compareTarget = compare ? byRef.get(compare[1].toLowerCase()) : undefined;
+  if (compareTarget) {
+    const head = text.trimEnd();
+    return valuesFor(dialect, compareTarget.column, sample).map((v) => ({
+      value: `${head} ${v.value}`,
+      display: `${compareTarget.ref} ${compare![2]} ${v.value}`,
+      meaning: 'value' as const,
+      detail: v.detail,
+    }));
   }
 
   // Right after a column: the operators for its type.

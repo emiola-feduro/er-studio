@@ -911,6 +911,15 @@ export const es = {
   'query.fromGenerated': "de la consulta generada",
   'query.fromEditor': "del editor",
   'query.clearEditor': "Vaciar",
+
+  // Negative WHERE suggestions
+  'query.meaning.notEquals': "distinto de {value}",
+  'query.meaning.notEqualsValue': "distinto de un valor",
+  'query.meaning.noneOf': "ninguno de varios",
+  'query.meaning.notContains': "no contiene",
+  'query.meaning.outsideRange': "fuera del rango",
+  'query.meaning.beforeDate': "antes de una fecha",
+  'query.meaning.value': "valor",
 } as const;
 
 export type Messages = { [K in keyof typeof es]: string };

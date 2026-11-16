@@ -43,4 +43,19 @@ describe('WHERE completions', () => {
   it('only suggests IS NULL for nullable columns', () => {
     expect(operatorsFor('postgresql', columns[0].column, 'x').some((o) => o.op === 'IS NULL')).toBe(false);
   });
+
+  it('offers negative conditions', () => {
+    expect(values('pr.precio ')).toEqual(expect.arrayContaining(['pr.precio <> 1', 'pr.precio NOT BETWEEN 1 AND 100', 'pr.precio NOT IN (1, 2, 3)']));
+    expect(values('c.email ')).toEqual(expect.arrayContaining(["c.email NOT LIKE '%texto%'", "c.email <> 'texto'"]));
+    expect(values('pe.estado ')).toEqual(expect.arrayContaining(["pe.estado <> 'pendiente'", "pe.estado NOT IN ('pendiente', 'pagado')"]));
+    expect(values('pe.fecha ')).toEqual(expect.arrayContaining([expect.stringMatching(/^pe\.fecha NOT BETWEEN /), expect.stringMatching(/^pe\.fecha < /)]));
+  });
+
+  it('continues after NOT and after a comparison', () => {
+    expect(values('pr.precio NOT ')).toEqual(['pr.precio NOT BETWEEN 1 AND 100', 'pr.precio NOT IN (1, 2, 3)']);
+    expect(values("c.email not")).toEqual(["c.email not LIKE '%texto%'"]);
+    expect(values('pe.estado != ')).toEqual(["pe.estado != 'pendiente'", "pe.estado != 'pagado'"]);
+    expect(values('pe.estado<>')).toEqual(["pe.estado<> 'pendiente'", "pe.estado<> 'pagado'"]);
+    expect(values('pr.precio > 0 AND pr.precio <> ')).toEqual(['pr.precio > 0 AND pr.precio <> 1', 'pr.precio > 0 AND pr.precio <> 0']);
+  });
 });
