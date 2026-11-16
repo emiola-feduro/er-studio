@@ -9,7 +9,7 @@ type ExpressionInputProps = {
   value: string;
   onChange: (value: string) => void;
   /** Whole expressions that fit the column, with what each one means. */
-  suggestions: { value: string; label?: string }[];
+  suggestions: { value: string; label?: string; display?: string }[];
   /** Column names offered while typing a word. */
   columns: string[];
   placeholder?: string;
@@ -86,7 +86,7 @@ const ExpressionInput = ({ id, value, onChange, suggestions, columns, placeholde
               onMouseEnter={() => setActive(i)}
               className={`flex cursor-pointer items-baseline justify-between gap-3 px-2.5 py-1.5 ${i === active ? 'bg-accent-soft' : ''}`}
             >
-              <span className="min-w-0 truncate font-canvas text-[0.92em]">{option.value}</span>
+              <span className="min-w-0 truncate font-canvas text-[0.92em]">{option.display ?? option.value}</span>
               <span className="shrink-0 text-[0.85em] text-muted">{option.kind === 'column' ? t('expr.column') : option.label}</span>
             </li>
           ))}

@@ -40,8 +40,10 @@ const useMenuPosition = (
     };
     update();
     // Scrolling or resizing would detach the menu from its trigger, so it closes instead.
+    // A long value scrolling inside the trigger field (an input) does not move anything.
     const onScroll = (event: Event) => {
-      if (!menuRef.current?.contains(event.target as Node)) onDismiss();
+      const target = event.target as Node;
+      if (!menuRef.current?.contains(target) && !triggerRef.current?.contains(target)) onDismiss();
     };
     window.addEventListener('resize', onDismiss);
     window.addEventListener('scroll', onScroll, true);

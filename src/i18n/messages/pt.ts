@@ -808,4 +808,30 @@ export const pt: Messages = {
   'import.warning.missingTable': "FK para uma tabela que não está no script: {detail}",
   'import.warning.junctionFk': "FK extra em uma tabela associativa: {detail}",
   'newProject.import': "Importar DDL ou DBML",
+
+  // Query WHERE completions
+  'query.meaning.positive': "maior que zero",
+  'query.meaning.range': "intervalo",
+  'query.meaning.equalsValue': "igual a um valor",
+  'query.meaning.oneOf': "um entre vários",
+  'query.meaning.contains': "contém",
+  'query.meaning.containsCi': "contém, sem diferenciar maiúsculas",
+  'query.meaning.startsWith': "começa com",
+  'query.meaning.endsWith': "termina com",
+  'query.meaning.notBlank': "não vazio",
+  'query.meaning.lastDays': "últimos 30 dias",
+  'query.meaning.afterDate': "desde uma data",
+  'query.meaning.isTrue': "verdadeiro",
+  'query.meaning.isFalse': "falso",
+  'query.meaning.equals': "somente {value}",
+  'query.meaning.notNull': "com valor",
+  'query.meaning.noValue': "sem valor",
+  'query.meaning.column': "coluna",
+  'query.sample': "texto",
+  'query.unknown': "Não são colunas nem aliases da consulta: {names}",
+  'query.limitHint': "0 significa sem limite",
+
+  // Query WHERE connectors
+  'query.meaning.and': "e também",
+  'query.meaning.or': "ou então",
 };

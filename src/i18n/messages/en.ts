@@ -808,4 +808,30 @@ export const en: Messages = {
   'import.warning.missingTable': "FK to a table that is not in the script: {detail}",
   'import.warning.junctionFk': "Extra FK in a junction table: {detail}",
   'newProject.import': "Import DDL or DBML",
+
+  // Query WHERE completions
+  'query.meaning.positive': "greater than zero",
+  'query.meaning.range': "range",
+  'query.meaning.equalsValue': "equal to a value",
+  'query.meaning.oneOf': "one of several",
+  'query.meaning.contains': "contains",
+  'query.meaning.containsCi': "contains, ignoring case",
+  'query.meaning.startsWith': "starts with",
+  'query.meaning.endsWith': "ends with",
+  'query.meaning.notBlank': "not empty",
+  'query.meaning.lastDays': "last 30 days",
+  'query.meaning.afterDate': "since a date",
+  'query.meaning.isTrue': "true",
+  'query.meaning.isFalse': "false",
+  'query.meaning.equals': "only {value}",
+  'query.meaning.notNull': "has a value",
+  'query.meaning.noValue': "no value",
+  'query.meaning.column': "column",
+  'query.sample': "text",
+  'query.unknown': "Not columns or aliases of the query: {names}",
+  'query.limitHint': "0 means no limit",
+
+  // Query WHERE connectors
+  'query.meaning.and': "and also",
+  'query.meaning.or': "or else",
 };

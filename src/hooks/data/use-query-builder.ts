@@ -1,18 +1,27 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { buildSelect, type JoinType, type QuerySpec } from '../../domain/query-builder';
+import type { WhereColumn } from '../../domain/query-where';
 import useProjectStore from '../../stores/use-project-store';
+import useQueryStore, { EMPTY_QUERY } from '../../stores/use-query-store';
 import useDerived from './use-derived';
 
-/** State of the query builder and the SQL it produces. Starts over when another project opens. */
+/** State of the query builder and the SQL it produces. Each project keeps its own query. */
 const useQueryBuilder = () => {
   const project = useProjectStore((s) => s.project);
   const derived = useDerived();
-  const [spec, setSpec] = useState<QuerySpec>({ tableIds: [], limit: 100 });
-  const projectId = project?.id;
-
-  useEffect(() => setSpec({ tableIds: [], limit: 100 }), [projectId]);
+  const projectId = project?.id ?? '';
+  const stored = useQueryStore((s) => s.specs[projectId]);
+  const setStored = useQueryStore((s) => s.setSpec);
 
   const tables = derived?.schema.tables ?? [];
+  // Tables deleted since the query was built drop out of it.
+  const spec = useMemo((): QuerySpec => {
+    const base = stored ?? EMPTY_QUERY;
+    const ids = new Set(tables.map((t) => t.id));
+    return base.tableIds.every((id) => ids.has(id)) ? base : { ...base, tableIds: base.tableIds.filter((id) => ids.has(id)) };
+  }, [stored, tables]);
+  const setSpec = (update: (spec: QuerySpec) => QuerySpec) => projectId && setStored(projectId, update);
+
   const result = useMemo(
     () => (derived && project ? buildSelect(derived.schema, project.dialect, spec) : { sql: '', plan: { joins: [], unreachable: [], aliases: {} } }),
     [derived, project, spec],
@@ -34,14 +43,14 @@ const useQueryBuilder = () => {
     setColumns(tableId, on ? all.filter((id) => current.includes(id) || id === columnId) : current.filter((id) => id !== columnId));
   };
   const update = (patch: Partial<QuerySpec>) => setSpec((s) => ({ ...s, ...patch }));
-  const clear = () => setSpec({ tableIds: [], limit: 100 });
+  const clear = () => setSpec(() => EMPTY_QUERY);
 
-  /** Qualified column names (alias.column) offered while typing the WHERE. */
-  const qualifiedColumns = Object.entries(result.plan.aliases).flatMap(([tableId, alias]) =>
-    (tables.find((t) => t.id === tableId)?.columns ?? []).map((c) => `${alias}.${c.name}`),
+  /** Columns of every table in the query, written alias.column, for the WHERE. */
+  const whereColumns: WhereColumn[] = Object.entries(result.plan.aliases).flatMap(([tableId, alias]) =>
+    (tables.find((t) => t.id === tableId)?.columns ?? []).map((c) => ({ ref: `${alias}.${c.name}`, column: c })),
   );
 
-  return { dialect: project?.dialect, tables, spec, result, toggleTable, setJoinType, setColumns, toggleColumn, update, clear, qualifiedColumns, projectName: project?.name ?? '' };
+  return { dialect: project?.dialect, tables, spec, result, toggleTable, setJoinType, setColumns, toggleColumn, update, clear, whereColumns, projectName: project?.name ?? '' };
 };
 
 export default useQueryBuilder;

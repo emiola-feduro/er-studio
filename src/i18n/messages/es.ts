@@ -844,6 +844,32 @@ export const es = {
   'import.warning.missingTable': "FK hacia una tabla que no está en el script: {detail}",
   'import.warning.junctionFk': "FK extra en una tabla intermedia: {detail}",
   'newProject.import': "Importar DDL o DBML",
+
+  // Query WHERE completions
+  'query.meaning.positive': "mayor que cero",
+  'query.meaning.range': "rango",
+  'query.meaning.equalsValue': "igual a un valor",
+  'query.meaning.oneOf': "uno de varios",
+  'query.meaning.contains': "contiene",
+  'query.meaning.containsCi': "contiene, sin distinguir mayúsculas",
+  'query.meaning.startsWith': "empieza por",
+  'query.meaning.endsWith': "termina en",
+  'query.meaning.notBlank': "no vacío",
+  'query.meaning.lastDays': "últimos 30 días",
+  'query.meaning.afterDate': "desde una fecha",
+  'query.meaning.isTrue': "verdadero",
+  'query.meaning.isFalse': "falso",
+  'query.meaning.equals': "solo {value}",
+  'query.meaning.notNull': "con valor",
+  'query.meaning.noValue': "sin valor",
+  'query.meaning.column': "columna",
+  'query.sample': "texto",
+  'query.unknown': "No son columnas ni alias de la consulta: {names}",
+  'query.limitHint': "0 es sin límite",
+
+  // Query WHERE connectors
+  'query.meaning.and': "y además",
+  'query.meaning.or': "o bien",
 } as const;
 
 export type Messages = { [K in keyof typeof es]: string };

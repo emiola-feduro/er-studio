@@ -1,14 +1,14 @@
 import type useQueryBuilder from '../../../hooks/data/use-query-builder';
 import useT from '../../../hooks/ui/use-t';
 import Checkbox from '../checkbox/checkbox';
-import ExpressionInput from '../expression-input/expression-input';
+import QueryBuilderWhere from './query-builder-where';
 
 type Builder = ReturnType<typeof useQueryBuilder>;
 
 /** WHERE, ORDER BY, LIMIT and DISTINCT. */
 const QueryBuilderOptions = ({ builder }: { builder: Builder }) => {
   const t = useT();
-  const { spec, update, qualifiedColumns, result, tables } = builder;
+  const { spec, update, result, tables } = builder;
   const order = spec.orderBy?.[0];
   const orderValue = order ? `${order.tableId}|${order.columnId}` : '';
   const orderable = Object.entries(result.plan.aliases).flatMap(([tableId, alias]) =>
@@ -17,19 +17,7 @@ const QueryBuilderOptions = ({ builder }: { builder: Builder }) => {
 
   return (
     <section className="space-y-3">
-      <div className="space-y-1.5">
-        <label htmlFor="query-where" className="block font-semibold">
-          {t('query.where')}
-        </label>
-        <ExpressionInput
-          id="query-where"
-          value={spec.where ?? ''}
-          onChange={(where) => update({ where })}
-          suggestions={[]}
-          columns={qualifiedColumns}
-          placeholder={qualifiedColumns[1] ? `${qualifiedColumns[1]} IS NOT NULL` : ''}
-        />
-      </div>
+      <QueryBuilderWhere builder={builder} />
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
         <div className="space-y-1.5">
           <label htmlFor="query-order" className="block font-semibold">
@@ -63,7 +51,7 @@ const QueryBuilderOptions = ({ builder }: { builder: Builder }) => {
           <option value="DESC">{t('query.desc')}</option>
         </select>
       </div>
-      <div className="flex flex-wrap items-end gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <div className="space-y-1.5">
           <label htmlFor="query-limit" className="block font-semibold">
             {t('query.limit')}
@@ -73,9 +61,13 @@ const QueryBuilderOptions = ({ builder }: { builder: Builder }) => {
             type="number"
             min={0}
             className="field field-sm w-28 tabular-nums"
-            value={spec.limit ?? ''}
-            onChange={(e) => update({ limit: e.target.value === '' ? undefined : e.target.valueAsNumber })}
+            aria-describedby="query-limit-hint"
+            value={spec.limit ?? 0}
+            onChange={(e) => update({ limit: e.target.value === '' ? 0 : Math.max(0, e.target.valueAsNumber) })}
           />
+          <span id="query-limit-hint" className="block text-[0.85em] text-muted">
+            {t('query.limitHint')}
+          </span>
         </div>
         <Checkbox label={t('query.distinct')} checked={Boolean(spec.distinct)} onChange={(distinct) => update({ distinct })} />
       </div>

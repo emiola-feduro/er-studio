@@ -4,6 +4,7 @@ import { createProject as newProject, syncJunctions, uid } from '../domain/model
 import type { DialectId, Project, ProjectMeta } from '../domain/types';
 import * as db from '../lib/db';
 import { createSampleProject } from '../lib/sample-project';
+import useQueryStore from './use-query-store';
 
 const HISTORY_LIMIT = 100;
 const COALESCE_MS = 1000;
@@ -159,6 +160,7 @@ const useProjectStore = create<ProjectState>((set, get) => {
     deleteProject: async (id) => {
       clearTimeout(saveTimer);
       await db.deleteProject(id);
+      useQueryStore.getState().forget(id);
       const projects = await db.listProjects();
       set({ projects });
       if (get().project?.id !== id) return;
