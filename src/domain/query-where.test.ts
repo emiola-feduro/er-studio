@@ -27,11 +27,17 @@ describe('WHERE completions', () => {
   });
 
   it('continues with AND or OR after a complete condition, then with the columns', () => {
-    expect(values('pr.precio > 0 ')).toEqual(['pr.precio > 0 AND ', 'pr.precio > 0 OR ']);
+    expect(values('pr.precio > 0 ')).toEqual(['pr.precio > 0\nAND ', 'pr.precio > 0\nOR ']);
+    expect(values('pr.precio > 0\n')).toEqual(['pr.precio > 0\nAND ', 'pr.precio > 0\nOR ']);
     expect(values("c.email LIKE '%a b ")).toEqual([]);
     expect(values('pr.precio > ')).toEqual([]);
-    expect(values('pr.precio > 0 AND ')[0]).toBe('pr.precio > 0 AND pr.precio ');
-    expect(values('pr.precio > 0 AND pe.estado ')).toContain("pr.precio > 0 AND pe.estado = 'pagado'");
+    expect(values('pr.precio > 0\nAND ')[0]).toBe('pr.precio > 0\nAND pr.precio ');
+    expect(values('pr.precio > 0\nAND (')[0]).toBe('pr.precio > 0\nAND (pr.precio ');
+    expect(values('pr.precio > 0\nAND pe.estado ')).toContain("pr.precio > 0\nAND pe.estado = 'pagado'");
+  });
+
+  it('suggests nothing to start with when there is text after the cursor', () => {
+    expect(whereCompletions('postgresql', columns, '', 'x', 'pr.precio > 0')).toEqual([]);
   });
 
   it('only suggests IS NULL for nullable columns', () => {

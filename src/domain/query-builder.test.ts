@@ -51,6 +51,8 @@ describe('buildSelect', () => {
     expect(pg).toContain('WHERE pr.precio > 10\nORDER BY pr.precio DESC\nLIMIT 20;');
     expect(buildSelect(schema, 'sqlserver', spec).sql).toContain('SELECT DISTINCT TOP (20) ');
     expect(buildSelect(schema, 'oracle', spec).sql).toContain('FETCH FIRST 20 ROWS ONLY;');
+    const multi = buildSelect(schema, 'postgresql', { ...spec, where: 'pr.precio > 10\n  AND (cl.nombre LIKE \'A%\'\nOR cl.nombre LIKE \'B%\')' }).sql;
+    expect(multi).toContain("WHERE pr.precio > 10\n  AND (cl.nombre LIKE 'A%'\n  OR cl.nombre LIKE 'B%')\nORDER BY");
   });
 
   it('reports tables that cannot be reached', () => {

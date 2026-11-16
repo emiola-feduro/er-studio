@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { unknownIdentifiers } from '../../domain/constraint-suggestions';
 import { whereCompletions, type WhereColumn } from '../../domain/query-where';
 import type { DialectId } from '../../domain/types';
@@ -10,24 +10,26 @@ const useQueryWhere = (dialect: DialectId | undefined, columns: WhereColumn[], w
   const t = useT();
   const sample = t('query.sample');
 
-  const suggestions = useMemo(
-    () =>
+  // Worked out from the text before the cursor, so conditions can be added anywhere.
+  const suggestions = useCallback(
+    (before: string, after: string) =>
       dialect
-        ? whereCompletions(dialect, columns, where, sample).map((c) => ({
+        ? whereCompletions(dialect, columns, before, sample, after).map((c) => ({
             value: c.value,
             display: c.display,
             label: t(`query.meaning.${c.meaning}` as MessageKey, { value: c.detail ?? '' }),
           }))
         : [],
-    [dialect, columns, where, sample, t],
+    [dialect, columns, sample, t],
   );
+  const placeholder = useMemo(() => suggestions('', '')[0]?.value ?? '', [suggestions]);
 
   const unknown = useMemo(
     () => unknownIdentifiers(where, [...aliases, ...columns.map((c) => c.column.name)]),
     [where, aliases, columns],
   );
 
-  return { suggestions, unknown, refs: columns.map((c) => c.ref) };
+  return { suggestions, placeholder, unknown, refs: columns.map((c) => c.ref) };
 };
 
 export default useQueryWhere;

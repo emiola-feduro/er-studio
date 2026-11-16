@@ -10,7 +10,7 @@ const QueryBuilderWhere = ({ builder }: { builder: Builder }) => {
   const t = useT();
   const { dialect, whereColumns, spec, update, result } = builder;
   const where = spec.where ?? '';
-  const { suggestions, unknown, refs } = useQueryWhere(dialect, whereColumns, where, Object.values(result.plan.aliases));
+  const { suggestions, placeholder, unknown, refs } = useQueryWhere(dialect, whereColumns, where, Object.values(result.plan.aliases));
 
   return (
     <div className="space-y-1.5">
@@ -23,7 +23,8 @@ const QueryBuilderWhere = ({ builder }: { builder: Builder }) => {
         onChange={(value) => update({ where: value })}
         suggestions={suggestions}
         columns={refs}
-        placeholder={suggestions[0]?.value ?? ''}
+        placeholder={placeholder}
+        multiline
         invalid={unknown.length > 0}
         describedBy={unknown.length ? 'query-where-unknown' : undefined}
       />

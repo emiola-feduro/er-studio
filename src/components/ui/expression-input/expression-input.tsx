@@ -1,6 +1,6 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import useExpressionCompletion from '../../../hooks/ui/use-expression-completion';
+import useExpressionCompletion, { type SuggestionSource } from '../../../hooks/ui/use-expression-completion';
 import useMenuPosition from '../../../hooks/ui/use-menu-position';
 import useT from '../../../hooks/ui/use-t';
 
@@ -8,20 +8,34 @@ type ExpressionInputProps = {
   id: string;
   value: string;
   onChange: (value: string) => void;
-  /** Whole expressions that fit the column, with what each one means. */
-  suggestions: { value: string; label?: string; display?: string }[];
+  /** Whole expressions that fit the column, or a function that continues the text before the cursor. */
+  suggestions: SuggestionSource;
   /** Column names offered while typing a word. */
   columns: string[];
   placeholder?: string;
   describedBy?: string;
   invalid?: boolean;
+  /** A textarea for long expressions (several conditions joined with AND and OR). */
+  multiline?: boolean;
 };
 
 /** SQL expression field (CHECK, WHERE) with suggestions and column name completion. */
-const ExpressionInput = ({ id, value, onChange, suggestions, columns, placeholder, describedBy, invalid }: ExpressionInputProps) => {
+const ExpressionInput = ({ id, value, onChange, suggestions, columns, placeholder, describedBy, invalid, multiline = false }: ExpressionInputProps) => {
   const t = useT();
-  const { options, open, active, apply, setActive, onKeyDown, onFocus, onBlur, onInput, close } = useExpressionCompletion(value, onChange, suggestions, columns);
+  const { options, open, active, apply, setActive, onKeyDown, onCaret, nextCaret, onFocus, onBlur, onInput, close } = useExpressionCompletion(
+    value,
+    onChange,
+    suggestions,
+    columns,
+    multiline,
+  );
+  const inputRef = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+  // After accepting an option the cursor goes right after the inserted text.
+  useEffect(() => {
+    if (nextCaret) inputRef.current?.setSelectionRange(nextCaret.position, nextCaret.position);
+  }, [nextCaret]);
   const listId = `${id}-options`;
+  const Field = multiline ? 'textarea' : 'input';
   const fieldRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   // Same floating placement as menus: below the field, or above it when there is no room.
@@ -29,7 +43,8 @@ const ExpressionInput = ({ id, value, onChange, suggestions, columns, placeholde
 
   return (
     <div ref={fieldRef} className="relative">
-      <input
+      <Field
+        ref={inputRef}
         id={id}
         role="combobox"
         aria-expanded={open}
@@ -40,13 +55,15 @@ const ExpressionInput = ({ id, value, onChange, suggestions, columns, placeholde
         aria-invalid={invalid || undefined}
         autoComplete="off"
         spellCheck={false}
-        className={`field field-sm font-canvas ${open ? 'pr-12' : ''}`}
+        rows={multiline ? 4 : undefined}
+        className={`field field-sm font-canvas ${multiline ? 'resize-y leading-relaxed' : ''} ${open ? 'pr-12' : ''}`}
         value={value}
-        placeholder={placeholder ?? suggestions[0]?.value}
+        placeholder={placeholder ?? (Array.isArray(suggestions) ? suggestions[0]?.value : undefined)}
         onChange={(e) => {
           onChange(e.target.value);
-          onInput();
+          onInput(e.target.selectionStart ?? e.target.value.length);
         }}
+        onSelect={(e) => onCaret(e.currentTarget.selectionStart ?? 0, e.currentTarget.selectionEnd ?? 0)}
         onKeyDown={onKeyDown}
         onFocus={onFocus}
         onBlur={onBlur}

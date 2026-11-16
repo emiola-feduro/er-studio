@@ -5,7 +5,7 @@ import type { Column, DialectId } from './types';
  * Suggestions for the WHERE of the query builder that follow what is being typed: a condition per
  * column when the field is empty, operators that fit the type right after a column (BETWEEN for a
  * number, LIKE for text, the last 30 days for a date, the allowed values of an enum), and AND or OR
- * after a complete condition. Each suggestion is the whole new text of the field.
+ * on a new line after a complete condition. Each suggestion is the new text before the cursor.
  */
 
 export type WhereMeaning =
@@ -95,11 +95,12 @@ const AFTER_CONNECTOR = /(?:^|\s)(AND|OR|NOT)\s+$|\(\s*$/i;
 // Words after which a condition is still incomplete.
 const INCOMPLETE = /(?:=|<>|!=|<|>|<=|>=|\b(?:LIKE|ILIKE|IN|IS|NOT|BETWEEN|AND|OR))\s*$/i;
 
-export const whereCompletions = (dialect: DialectId, columns: WhereColumn[], text: string, sample: string): WhereCompletion[] => {
+export const whereCompletions = (dialect: DialectId, columns: WhereColumn[], text: string, sample: string, after = ''): WhereCompletion[] => {
   const byRef = new Map(columns.map((c) => [c.ref.toLowerCase(), c]));
 
   // Empty field: one typical condition per column.
   if (!text.trim()) {
+    if (after.trim()) return [];
     return columns.flatMap((c) => {
       const first = operatorsFor(dialect, c.column, sample)[0];
       return first ? [{ value: `${c.ref} ${first.op}`, display: `${c.ref} ${first.op}`, meaning: first.meaning, detail: first.detail }] : [];
@@ -119,12 +120,12 @@ export const whereCompletions = (dialect: DialectId, columns: WhereColumn[], tex
     return columns.map((c) => ({ value: `${text}${c.ref} `, display: c.ref, meaning: 'column' as const }));
   }
 
-  // After a complete condition and a space: AND or OR.
+  // After a complete condition and a space or a line break: AND or OR, each on its own line.
   if (/\s$/.test(text) && !INCOMPLETE.test(text.trimEnd()) && !/'[^']*$/.test(text.replace(/'[^']*'/g, ''))) {
     const head = text.trimEnd();
     return [
-      { value: `${head} AND `, display: 'AND', meaning: 'and' },
-      { value: `${head} OR `, display: 'OR', meaning: 'or' },
+      { value: `${head}\nAND `, display: 'AND', meaning: 'and' },
+      { value: `${head}\nOR `, display: 'OR', meaning: 'or' },
     ];
   }
   return [];

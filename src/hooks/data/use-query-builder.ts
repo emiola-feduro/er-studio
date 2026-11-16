@@ -46,8 +46,12 @@ const useQueryBuilder = () => {
   const clear = () => setSpec(() => EMPTY_QUERY);
 
   /** Columns of every table in the query, written alias.column, for the WHERE. */
-  const whereColumns: WhereColumn[] = Object.entries(result.plan.aliases).flatMap(([tableId, alias]) =>
-    (tables.find((t) => t.id === tableId)?.columns ?? []).map((c) => ({ ref: `${alias}.${c.name}`, column: c })),
+  const whereColumns = useMemo(
+    (): WhereColumn[] =>
+      Object.entries(result.plan.aliases).flatMap(([tableId, alias]) =>
+        (tables.find((t) => t.id === tableId)?.columns ?? []).map((c) => ({ ref: `${alias}.${c.name}`, column: c })),
+      ),
+    [result.plan.aliases, tables],
   );
 
   return { dialect: project?.dialect, tables, spec, result, toggleTable, setJoinType, setColumns, toggleColumn, update, clear, whereColumns, projectName: project?.name ?? '' };

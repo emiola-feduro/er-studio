@@ -150,7 +150,8 @@ export const buildSelect = (schema: Schema, dialect: DialectId, spec: QuerySpec)
     const conditions = join.on.map(([a, b]) => `${a} = ${b}`).join(' AND ');
     lines.push(`${join.type === 'LEFT' ? 'LEFT JOIN' : 'JOIN'} ${ident(tables.get(join.tableId)!.name)} ${join.alias} ON ${conditions}`);
   }
-  if (spec.where?.trim()) lines.push(`WHERE ${spec.where.trim()}`);
+  // A WHERE written on several lines keeps them, indented under WHERE.
+  if (spec.where?.trim()) lines.push(`WHERE ${spec.where.trim().split(/\s*\n\s*/).join('\n  ')}`);
   const order = (spec.orderBy ?? []).filter((o) => plan.aliases[o.tableId]);
   if (order.length) {
     lines.push(`ORDER BY ${order.map((o) => `${plan.aliases[o.tableId]}.${ident(tables.get(o.tableId)!.columns.find((c) => c.id === o.columnId)?.name ?? '?')} ${o.direction}`).join(', ')}`);
