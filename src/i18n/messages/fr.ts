@@ -871,7 +871,6 @@ export const fr: Messages = {
   'query.replaceTitle': "Remplacer le SQL de l’éditeur",
   'query.replaceMessage': "L’éditeur contient déjà du SQL. Il est remplacé par la requête générée.",
   'query.replace': "Remplacer",
-  'query.editorPlaceholder': "Écrivez un SELECT sur les tables du modèle. Ctrl+Entrée l’exécute.",
   'query.fromGenerated': "de la requête générée",
   'query.fromEditor': "de l’éditeur",
   'query.clearEditor': "Vider",
@@ -884,4 +883,10 @@ export const fr: Messages = {
   'query.meaning.outsideRange': "hors de la plage",
   'query.meaning.beforeDate': "avant une date",
   'query.meaning.value': "valeur",
+
+  // SQL editor completion
+  'completion.table': "table",
+  'completion.function': "fonction",
+  'completion.join': "jointure par FK",
+  'query.editorPlaceholder': "Écrivez un SELECT sur les tables du modèle. Ctrl+Espace affiche des suggestions et Ctrl+Entrée l’exécute.",
 };

@@ -1,5 +1,7 @@
 import { useState, type KeyboardEvent } from 'react';
 import useQueryBuilder from '../../../hooks/data/use-query-builder';
+import useEditorCompletion from '../../../hooks/data/use-editor-completion';
+import useDerived from '../../../hooks/data/use-derived';
 import useQueryRun from '../../../hooks/data/use-query-run';
 import useT from '../../../hooks/ui/use-t';
 import ConfirmDialog from '../confirm-dialog/confirm-dialog';
@@ -22,6 +24,7 @@ const QueryBuilder = () => {
   const { result, spec, project, customSql, setCustomSql, tab, setTab } = builder;
   const runner = useQueryRun(project, spec, customSql, tab);
   const [confirmReplace, setConfirmReplace] = useState(false);
+  const complete = useEditorCompletion(useDerived()?.schema, project?.dialect);
   const sql = tab === 'editor' ? customSql : result.sql;
 
   // Ctrl+Enter (Cmd+Enter on a Mac) runs the open tab's query from anywhere in the view.
@@ -58,7 +61,7 @@ const QueryBuilder = () => {
         <QueryBuilderToolbar builder={builder} runner={runner} sql={sql} onCopyToEditor={() => copyToEditor()} />
         <div className="relative flex max-h-[45%] min-h-28 shrink-0 flex-col overflow-auto">
           {tab === 'editor' ? (
-            <SqlEditor id="query-editor" label={t('query.sqlLabel')} value={customSql} onChange={setCustomSql} placeholder={t('query.editorPlaceholder')} />
+            <SqlEditor id="query-editor" label={t('query.sqlLabel')} value={customSql} onChange={setCustomSql} placeholder={t('query.editorPlaceholder')} complete={complete} />
           ) : result.sql ? (
             <SqlPreviewCode sql={result.sql} />
           ) : (

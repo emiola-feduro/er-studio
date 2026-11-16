@@ -907,7 +907,6 @@ export const es = {
   'query.replaceTitle': "Reemplazar el SQL del editor",
   'query.replaceMessage': "El editor ya tiene SQL. Se reemplaza por la consulta generada.",
   'query.replace': "Reemplazar",
-  'query.editorPlaceholder': "Escribe un SELECT sobre las tablas del modelo. Ctrl+Enter lo ejecuta.",
   'query.fromGenerated': "de la consulta generada",
   'query.fromEditor': "del editor",
   'query.clearEditor': "Vaciar",
@@ -920,6 +919,12 @@ export const es = {
   'query.meaning.outsideRange': "fuera del rango",
   'query.meaning.beforeDate': "antes de una fecha",
   'query.meaning.value': "valor",
+
+  // SQL editor completion
+  'completion.table': "tabla",
+  'completion.function': "función",
+  'completion.join': "unión por FK",
+  'query.editorPlaceholder': "Escribe un SELECT sobre las tablas del modelo. Ctrl+Espacio muestra sugerencias y Ctrl+Enter lo ejecuta.",
 } as const;
 
 export type Messages = { [K in keyof typeof es]: string };
