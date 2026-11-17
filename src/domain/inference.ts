@@ -52,7 +52,7 @@ export const defaultKeyParticipants = (rel: Relationship): Participant[] => {
 export const fkColumnId = (relId: string, participantId: string, refColumnId: string) =>
   `fk:${relId}:${participantId}:${refColumnId}`;
 
-const fkColumnName = (prefix: string, refColumnName: string) =>
+export const fkColumnName = (prefix: string, refColumnName: string) =>
   refColumnName.toLowerCase().startsWith(`${prefix.toLowerCase()}_`) ? refColumnName : `${prefix}_${refColumnName}`;
 
 const buildPlacements = (project: Project, issues: Issue[]): Placement[] => {

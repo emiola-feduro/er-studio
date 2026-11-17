@@ -9,6 +9,7 @@ import useUiStore from '../../../stores/use-ui-store';
 import PanelHideButton from '../../ui/panel-hide-button/panel-hide-button';
 import Button from '../../ui/button/button';
 import Checkbox from '../../ui/checkbox/checkbox';
+import SegmentedControl from '../../ui/segmented-control/segmented-control';
 import InspectorIssueList from './inspector-issue-list';
 import InspectorParticipantList from './inspector-participant-list';
 import InspectorReferentialActions from './inspector-referential-actions';
@@ -25,6 +26,9 @@ const InspectorRelationship = ({ relationship }: { relationship: Relationship })
   const issues = derived?.issues.filter((i) => i.relationshipId === id) ?? [];
   const withJunction = needsJunction(relationship);
   const canBeIdentifying = !withJunction && !isRecursive(relationship);
+  // In a 1:1 the second participant holds the FK; choosing the other table swaps them.
+  const oneToOne = participants.length === 2 && !isRecursive(relationship) && participants.every((p) => p.cardinality === '1');
+  const entityName = (entityId: string) => derived?.schema.tables.find((x) => x.id === entityId)?.name ?? '';
 
   return (
     <>
@@ -72,6 +76,21 @@ const InspectorRelationship = ({ relationship }: { relationship: Relationship })
         <InspectorParticipantList relationship={relationship} />
       </InspectorSection>
       <InspectorSection title={t('rel.generatedFks')}>
+        {oneToOne && (
+          <div className="mb-3 space-y-1.5">
+            <span className="block font-medium">{t('rel.fkSide')}</span>
+            <SegmentedControl<string>
+              label={t('rel.fkSide')}
+              size="sm"
+              value={participants[1].id}
+              onChange={(participantId) => participantId !== participants[1].id && swapParticipants(id)}
+              options={[
+                { value: participants[0].id, label: entityName(participants[0].entityId) },
+                { value: participants[1].id, label: entityName(participants[1].entityId) },
+              ]}
+            />
+          </div>
+        )}
         <InspectorRelationshipResult relationshipId={id} />
         {canBeIdentifying && (
           <div className="mt-3">

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createSampleProject } from '../lib/sample-project';
 import { makeProject } from './fixtures';
 import { buildSchema } from './inference';
 import { createAttribute } from './model';
@@ -302,5 +303,27 @@ describe('FK to a unique attribute', () => {
     rel.participants[0].refAttributeId = nombre.id;
     const issues = validateProject(b.project, buildSchema(b.project));
     expect(issues.some((i) => i.level === 'error' && i.message.includes('no es UNIQUE'))).toBe(true);
+  });
+});
+
+describe('typed FK column names', () => {
+  it('renames FK columns in 1:N, in the N:M junction and after changing the 1:1 side', () => {
+    const project = createSampleProject();
+    const [compra, detalle] = project.relationships;
+    compra.participants[0].fkColumnNames = ['id_cliente'];
+    detalle.participants[0].fkColumnNames = ['id_pedido'];
+    const schema = buildSchema(project);
+    const pedido = schema.tables.find((t) => t.name === 'pedido')!;
+    const junction = schema.tables.find((t) => t.name === 'pedido_producto')!;
+    expect(pedido.columns.map((c) => c.name)).toContain('id_cliente');
+    expect(junction.columns.map((c) => c.name)).toEqual(expect.arrayContaining(['id_pedido', 'producto_id']));
+
+    // 1:1: the second participant holds the FK; swapping moves it to the other table.
+    compra.participants.forEach((p) => (p.cardinality = '1'));
+    const before = buildSchema(project).foreignKeys.find((fk) => fk.relationshipId === compra.id)!;
+    compra.participants.reverse();
+    const after = buildSchema(project).foreignKeys.find((fk) => fk.relationshipId === compra.id)!;
+    expect(after.tableId).toBe(before.refTableId);
+    expect(after.refTableId).toBe(before.tableId);
   });
 });
