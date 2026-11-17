@@ -2,7 +2,15 @@ import useT from '../../../hooks/ui/use-t';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { TableNodeType } from '../../../lib/graph';
 import { NODE_WIDTH } from '../../../lib/graph';
+import { Fragment } from 'react';
 import ErCanvasTableRow from './er-canvas-table-row';
+
+const SPEC_SIDES = [
+  ['t', Position.Top],
+  ['b', Position.Bottom],
+  ['l', Position.Left],
+  ['r', Position.Right],
+] as const;
 
 const ErCanvasTableNode = ({ data, selected }: NodeProps<TableNodeType>) => {
   const t = useT();
@@ -44,6 +52,13 @@ const ErCanvasTableNode = ({ data, selected }: NodeProps<TableNodeType>) => {
           />
         ))}
       </div>
+      {/* Where specialization lines meet the table: the side that faces the circle. */}
+      {SPEC_SIDES.map(([side, position]) => (
+        <Fragment key={side}>
+          <Handle id={`spec-${side}-s`} type="source" position={position} isConnectable={false} className="spec-handle" />
+          <Handle id={`spec-${side}-t`} type="target" position={position} isConnectable={false} className="spec-handle" />
+        </Fragment>
+      ))}
       {!isJunction && (
         <Handle
           id="connect"

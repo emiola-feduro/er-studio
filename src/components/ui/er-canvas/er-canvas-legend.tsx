@@ -39,6 +39,27 @@ const ErCanvasLegend = () => {
         <dd>{t('legend.zeroOrMany')}</dd>
         <dt className="font-semibold">{t('legend.dashed')}</dt>
         <dd>{t('legend.junction')}</dd>
+        <dt>
+          <span className="inline-flex size-4.5 items-center justify-center rounded-full border-2 border-current font-canvas text-[11px] font-bold">d</span>
+        </dt>
+        <dd>{t('legend.disjoint')}</dd>
+        <dt>
+          <span className="inline-flex size-4.5 items-center justify-center rounded-full border-2 border-current font-canvas text-[11px] font-bold">o</span>
+        </dt>
+        <dd>{t('legend.overlapping')}</dd>
+        <dt>
+          <svg aria-hidden width="22" height="10" viewBox="0 0 22 10">
+            <line x1="0" y1="2" x2="22" y2="2" stroke="currentColor" strokeWidth="1.6" />
+            <line x1="0" y1="8" x2="22" y2="8" stroke="currentColor" strokeWidth="1.6" />
+          </svg>
+        </dt>
+        <dd>{t('legend.total')}</dd>
+        <dt>
+          <svg aria-hidden width="14" height="14" viewBox="-7 -7 14 14">
+            <path d="M 5 -5 L 0 -5 A 5 5 0 0 0 0 5 L 5 5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+          </svg>
+        </dt>
+        <dd>{t('legend.subset')}</dd>
       </dl>
     </details>
   );

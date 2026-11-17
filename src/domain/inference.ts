@@ -117,7 +117,7 @@ const buildPlacements = (project: Project, issues: Issue[]): Placement[] => {
   return placements;
 };
 
-const attributeColumn = (attr: Entity['attributes'][number]): Column => ({
+export const attributeColumn = (attr: Entity['attributes'][number]): Column => ({
   id: attr.id,
   name: attr.name,
   type: attr.type,

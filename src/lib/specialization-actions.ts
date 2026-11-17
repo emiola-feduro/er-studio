@@ -1,6 +1,7 @@
 import { t } from '../i18n';
-import { createEntity, freePosition, nextName, uid } from '../domain/model';
-import type { Project, Specialization } from '../domain/types';
+import { createEntity, nextName, uid } from '../domain/model';
+import type { Position, Project, Specialization } from '../domain/types';
+import { estimatedNodeHeight, NODE_WIDTH } from './graph';
 import useProjectStore from '../stores/use-project-store';
 import useUiStore from '../stores/use-ui-store';
 
@@ -52,6 +53,26 @@ export const deleteSpecialization = (id: string) => {
   if (selection?.id === id) select(null);
 };
 
+const MARGIN = 40;
+
+/** First spot under the supertype where a new box does not cover another one, going right and then down. */
+const freeSpotBelow = (project: Project, supertypeId: string, siblings: number): Position => {
+  const boxes = project.entities.map((e) => ({ ...e.position, height: estimatedNodeHeight(e.attributes.length + 1) }));
+  const supertype = project.entities.find((e) => e.id === supertypeId)!;
+  const height = estimatedNodeHeight(1);
+  const overlaps = (x: number, y: number) =>
+    boxes.some((b) => x < b.x + NODE_WIDTH + MARGIN && x + NODE_WIDTH + MARGIN > b.x && y < b.y + b.height + MARGIN && y + height + MARGIN > b.y);
+  const startY = supertype.position.y + estimatedNodeHeight(supertype.attributes.length) + 130;
+  for (let row = 0; row < 12; row += 1) {
+    for (let col = 0; col < 12; col += 1) {
+      const x = supertype.position.x + (siblings + col) * (NODE_WIDTH + MARGIN);
+      const y = startY + row * (height + 2 * MARGIN);
+      if (!overlaps(x, y)) return { x, y };
+    }
+  }
+  return { x: supertype.position.x, y: startY };
+};
+
 /**
  * A new entity below the given one, already its subclass. It has no key of its own: with a table per
  * type it takes the supertype's key.
@@ -62,7 +83,7 @@ export const createSubtypeOf = (supertypeId: string) => {
   if (!project || !supertype) return;
   const name = nextName(t('spec.newSubtype', { name: supertype.name }), project.entities.map((e) => e.name));
   const siblings = specializationOf(project, supertypeId)?.subtypeIds.length ?? 0;
-  const position = freePosition({ x: supertype.position.x + siblings * 320, y: supertype.position.y + 300 }, project.entities.map((e) => e.position));
+  const position = freeSpotBelow(project, supertypeId, siblings);
   const entity = { ...createEntity(project.dialect, name, position), attributes: [] };
   mutate((draft) => {
     draft.entities.push(entity);

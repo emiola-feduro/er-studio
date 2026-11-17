@@ -159,6 +159,18 @@
   background: transparent;
 }
 
+/* Anchors of the specialization lines: never visible, never a place to start a connection. */
+.react-flow__handle.spec-handle {
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .react-flow__handle.connect-handle {
   width: 12px;
   height: 12px;

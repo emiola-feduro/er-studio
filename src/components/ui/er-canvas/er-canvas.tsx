@@ -8,11 +8,13 @@ import ErCanvasContextMenu from './er-canvas-context-menu';
 import ErCanvasEdge from './er-canvas-edge';
 import ErCanvasEmpty from './er-canvas-empty';
 import ErCanvasLegend from './er-canvas-legend';
+import ErCanvasSpecEdge from './er-canvas-spec-edge';
+import ErCanvasSpecNode from './er-canvas-spec-node';
 import ErCanvasTableNode from './er-canvas-table-node';
 import ErCanvasToolbar from './er-canvas-toolbar';
 
-const nodeTypes = { table: ErCanvasTableNode };
-const edgeTypes = { fk: ErCanvasEdge };
+const nodeTypes = { table: ErCanvasTableNode, spec: ErCanvasSpecNode };
+const edgeTypes = { fk: ErCanvasEdge, spec: ErCanvasSpecEdge };
 
 const patterns = {
   dots: BackgroundVariant.Dots,

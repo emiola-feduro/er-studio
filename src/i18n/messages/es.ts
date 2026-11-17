@@ -954,6 +954,17 @@ export const es = {
 
   // New subtype name
   'spec.newSubtype': "{name}_tipo",
+
+  // Specialization diagram
+  'spec.inTable': "en {table}",
+  'spec.circleLabel': "Especialización de {name}",
+  'spec.disjointShort': "disjunta",
+  'spec.overlappingShort': "solapada",
+  'canvas.createSubtype': "Crear subclase",
+  'legend.disjoint': "especialización disjunta",
+  'legend.overlapping': "especialización solapada",
+  'legend.total': "línea doble: total",
+  'legend.subset': "hacia la subclase",
 } as const;
 
 export type Messages = { [K in keyof typeof es]: string };

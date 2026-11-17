@@ -1,4 +1,5 @@
 import { useReactFlow } from '@xyflow/react';
+import { createSubtypeOf } from '../../lib/specialization-actions';
 import { useMemo } from 'react';
 import type { MenuItem } from '../../components/ui/menu/menu-list';
 import { addAttribute, addEntity, addRandomRows, duplicateEntity } from '../../lib/actions';
@@ -53,6 +54,7 @@ const useCanvasContextMenu = (menu: ContextMenuState | null) => {
             },
           },
           ...(isJunction ? [] : [{ label: t('canvas.relateTo'), onSelect: () => ui.openRelationshipDialog([id]) }]),
+          ...(isJunction ? [] : [{ label: t('canvas.createSubtype'), onSelect: () => createSubtypeOf(id) }]),
           { label: t('canvas.viewRecords'), onSelect: showRecords, separatorBefore: true },
           { label: t('agentExport.contextMenu'), onSelect: () => ui.openAgentExport(id) },
           {

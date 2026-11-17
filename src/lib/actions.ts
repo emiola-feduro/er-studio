@@ -68,8 +68,15 @@ export const resetJunctionName = (id: string) =>
 export const moveEntities = (moves: { id: string; position: Position }[]) =>
   mutate((draft) => {
     for (const { id, position } of moves) {
+      const rounded = { x: Math.round(position.x), y: Math.round(position.y) };
+      // The "d" or "o" circle of a specialization moves with the tables.
+      if (id.startsWith('spec-node:')) {
+        const spec = draft.specializations?.find((s) => `spec-node:${s.id}` === id);
+        if (spec) spec.position = rounded;
+        continue;
+      }
       const entity = entityIn(draft, id);
-      if (entity) entity.position = { x: Math.round(position.x), y: Math.round(position.y) };
+      if (entity) entity.position = rounded;
     }
   });
 

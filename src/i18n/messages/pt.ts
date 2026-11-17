@@ -918,4 +918,15 @@ export const pt: Messages = {
 
   // New subtype name
   'spec.newSubtype': "{name}_tipo",
+
+  // Specialization diagram
+  'spec.inTable': "em {table}",
+  'spec.circleLabel': "Especialização de {name}",
+  'spec.disjointShort': "disjunta",
+  'spec.overlappingShort': "sobreposta",
+  'canvas.createSubtype': "Criar subclasse",
+  'legend.disjoint': "especialização disjunta",
+  'legend.overlapping': "especialização sobreposta",
+  'legend.total': "linha dupla: total",
+  'legend.subset': "em direção à subclasse",
 };

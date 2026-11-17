@@ -1,6 +1,6 @@
 import dagre from '@dagrejs/dagre';
 import type { Position, Schema } from '../domain/types';
-import { NODE_WIDTH } from './graph';
+import { estimatedNodeHeight, NODE_WIDTH } from './graph';
 
 export type LayoutNode = { id: string; width: number; height: number };
 /** [referenced table, table holding the FK]: referenced tables end up on the left. */
@@ -22,8 +22,7 @@ export const layoutTables = (nodes: LayoutNode[], edges: LayoutEdge[]): Map<stri
   );
 };
 
-/** Header plus one line per column, close to what the canvas renders before it measures. */
-const estimatedHeight = (columns: number) => 46 + Math.max(1, columns) * 26;
+const estimatedHeight = estimatedNodeHeight;
 
 /** Layout for a schema that has not been drawn yet, such as a freshly generated model. */
 export const layoutSchema = (schema: Schema) =>

@@ -11,7 +11,7 @@ import {
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { linkAttributeAsFk, moveEntities } from '../../lib/actions';
-import { ATTR_HANDLE_PREFIX, buildEdges, buildNodes, type TableNodeType } from '../../lib/graph';
+import { ATTR_HANDLE_PREFIX, buildEdges, buildNodes, buildSpecEdges, SPEC_NODE_PREFIX, type DiagramNode } from '../../lib/graph';
 import useProjectStore from '../../stores/use-project-store';
 import useUiStore from '../../stores/use-ui-store';
 import useDerived from '../data/use-derived';
@@ -36,7 +36,7 @@ const useDiagramGraph = () => {
   const selection = useUiStore((s) => s.selection);
   const hoveredFkId = useUiStore((s) => s.hoveredFkId);
   const showFkLabels = useUiStore((s) => s.showFkLabels);
-  const [nodes, setNodes] = useState<TableNodeType[]>([]);
+  const [nodes, setNodes] = useState<DiagramNode[]>([]);
   const { screenToFlowPosition } = useReactFlow();
 
   const issueCounts = useMemo(() => {
@@ -55,7 +55,7 @@ const useDiagramGraph = () => {
     const next = buildNodes({
       project,
       schema: derived.schema,
-      selectedId: selection?.kind === 'entity' ? selection.id : undefined,
+      selectedId: selection?.kind === 'entity' || selection?.kind === 'specialization' ? selection.id : undefined,
       hoveredFkId,
       issueCounts,
     });
@@ -68,20 +68,23 @@ const useDiagramGraph = () => {
 
   const edges = useMemo(
     () =>
-      derived
-        ? buildEdges({
-            schema: derived.schema,
-            nodes,
-            selectedRelationshipId: selection?.kind === 'relationship' ? selection.id : undefined,
-            hoveredFkId,
-            showLabels: showFkLabels,
-          })
+      derived && project
+        ? [
+            ...buildEdges({
+              schema: derived.schema,
+              nodes,
+              selectedRelationshipId: selection?.kind === 'relationship' ? selection.id : undefined,
+              hoveredFkId,
+              showLabels: showFkLabels,
+            }),
+            ...buildSpecEdges(project, nodes, selection?.kind === 'specialization' ? selection.id : undefined),
+          ]
         : [],
-    [derived, nodes, selection, hoveredFkId, showFkLabels],
+    [derived, project, nodes, selection, hoveredFkId, showFkLabels],
   );
 
   const onNodesChange = useCallback(
-    (changes: NodeChange<TableNodeType>[]) =>
+    (changes: NodeChange<DiagramNode>[]) =>
       setNodes((current) => applyNodeChanges(changes.filter((c) => c.type !== 'select' && c.type !== 'remove'), current)),
     [],
   );
@@ -91,17 +94,22 @@ const useDiagramGraph = () => {
   }, []);
 
   const onNodeClick = useCallback((_: unknown, node: Node) => {
-    useUiStore.getState().select({ kind: 'entity', id: node.id });
+    if (node.id.startsWith(SPEC_NODE_PREFIX)) useUiStore.getState().select({ kind: 'specialization', id: node.id.slice(SPEC_NODE_PREFIX.length) });
+    else useUiStore.getState().select({ kind: 'entity', id: node.id });
   }, []);
 
   const onEdgeClick = useCallback((_: unknown, edge: Edge) => {
+    if (edge.type === 'spec') {
+      useUiStore.getState().select({ kind: 'specialization', id: (edge.data as { specId: string }).specId });
+      return;
+    }
     const fk = derived?.schema.foreignKeys.find((f) => f.id === edge.id);
     if (fk) useUiStore.getState().select({ kind: 'relationship', id: fk.relationshipId });
   }, [derived]);
 
   const onPaneClick = useCallback(() => useUiStore.getState().select(null), []);
 
-  const onEdgeMouseEnter = useCallback((_: unknown, edge: Edge) => useUiStore.getState().setHoveredFk(edge.id), []);
+  const onEdgeMouseEnter = useCallback((_: unknown, edge: Edge) => edge.type === 'fk' && useUiStore.getState().setHoveredFk(edge.id), []);
   const onEdgeMouseLeave = useCallback(() => useUiStore.getState().setHoveredFk(null), []);
 
   /** Right click (or the menu key) on a table opens its actions. */
@@ -109,6 +117,10 @@ const useDiagramGraph = () => {
     event.preventDefault();
     const { x, y } = pointOf(event);
     const ui = useUiStore.getState();
+    if (node.id.startsWith(SPEC_NODE_PREFIX)) {
+      ui.select({ kind: 'specialization', id: node.id.slice(SPEC_NODE_PREFIX.length) });
+      return;
+    }
     ui.select({ kind: 'entity', id: node.id });
     ui.openContextMenu({ x, y, entityId: node.id });
   }, []);

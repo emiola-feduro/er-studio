@@ -13,7 +13,8 @@ const useAutoLayout = () => {
     if (nodes.length === 0) return;
     const positions = layoutTables(
       nodes.map((n) => ({ id: n.id, width: n.measured?.width ?? NODE_WIDTH, height: n.measured?.height ?? 160 })),
-      getEdges().map((e) => [e.target, e.source]),
+      // FK lines go from the referenced table; specialization lines from the supertype down to its subtypes.
+      getEdges().map((e) => (e.type === 'spec' ? [e.source, e.target] : [e.target, e.source])),
     );
     moveEntities([...positions].map(([id, position]) => ({ id, position })));
     requestAnimationFrame(() => fitView({ padding: 0.15, duration: 250 }));
