@@ -1,3 +1,4 @@
+import { specializationDataMoves } from '../../domain/specialization-migration';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { buildSchema } from '../../domain/inference';
 import { diffSchemas } from '../../domain/migration';
@@ -68,7 +69,13 @@ const useModelVersions = () => {
     const to = toId === CURRENT ? project : versions.find((v) => v.id === toId)?.snapshot;
     if (!from || !to) return null;
     const toLabel = toId === CURRENT ? t('versions.current') : versions.find((v) => v.id === toId)!.name;
-    const result = diffSchemas(buildSchema(from.snapshot as typeof project), buildSchema(to as typeof project), to.dialect, { from: from.name, to: toLabel });
+    const fromProject = from.snapshot as typeof project;
+    const toProject = to as typeof project;
+    const fromSchema = buildSchema(fromProject);
+    const toSchema = buildSchema(toProject);
+    // A specialization that changes how it maps to tables copies its rows before the old tables go.
+    const moves = specializationDataMoves(fromProject, toProject, fromSchema, toSchema, to.dialect);
+    const result = diffSchemas(fromSchema, toSchema, to.dialect, { from: from.name, to: toLabel }, moves);
     if (from.snapshot.dialect !== to.dialect) {
       result.warnings.unshift(t('migration.dialectMismatch', { from: DIALECTS[from.snapshot.dialect].name, to: DIALECTS[to.dialect].name }));
     }

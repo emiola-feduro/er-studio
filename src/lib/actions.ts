@@ -417,6 +417,18 @@ export const applyReviewFix = (fix: ReviewFix) => {
     if (fix.kind === 'createIndex') {
       const entity = entityIn(draft, fix.tableId);
       entity?.indexes.push({ id: uid(), name: '', nameIsCustom: false, unique: false, columns: fix.columnIds.map((columnId) => ({ columnId, order: 'ASC' })) });
+    } else if (fix.kind === 'specMapping') {
+      const spec = draft.specializations?.find((s) => s.id === fix.specId);
+      if (spec) spec.mapping = fix.mapping;
+    } else if (fix.kind === 'specFromRelationship') {
+      // The 1:1 becomes a specialization; the supertype's existing one takes the new subclass.
+      const rel = relIn(draft, fix.relationshipId);
+      if (!rel) return;
+      const [parent, child] = rel.participants;
+      draft.relationships = draft.relationships.filter((r) => r.id !== rel.id);
+      const existing = draft.specializations?.find((s) => s.supertypeId === parent.entityId);
+      if (existing) existing.subtypeIds.push(child.entityId);
+      else draft.specializations = [...(draft.specializations ?? []), { id: uid(), supertypeId: parent.entityId, subtypeIds: [child.entityId], total: false, disjoint: false, mapping: 'table-per-type' }];
     } else {
       const attribute = entityIn(draft, fix.entityId)?.attributes.find((a) => a.id === fix.attributeId);
       if (attribute) attribute.unique = true;
@@ -441,6 +453,7 @@ export const restoreVersion = (snapshot: ModelVersion['snapshot']) =>
     draft.dialect = snapshot.dialect;
     draft.entities = structuredClone(snapshot.entities);
     draft.relationships = structuredClone(snapshot.relationships);
+    draft.specializations = structuredClone(snapshot.specializations);
     draft.databaseName = snapshot.databaseName;
     draft.namesLocale = snapshot.namesLocale;
     draft.dismissedFindings = snapshot.dismissedFindings;

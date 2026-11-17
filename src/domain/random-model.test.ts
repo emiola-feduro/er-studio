@@ -30,7 +30,11 @@ describe('generateRandomModel', () => {
       const project = generateRandomModel({ dialect: 'postgresql', entityCount: 3, rng: seededRng(seed) });
       const regular = project.entities.filter((e) => e.kind === 'entity');
       expect(regular).toHaveLength(3);
-      const linked = new Set(project.relationships.flatMap((r) => r.participants.map((p) => p.entityId)));
+      // A relationship or a specialization (superclass and subclasses) connects an entity.
+      const linked = new Set([
+        ...project.relationships.flatMap((r) => r.participants.map((p) => p.entityId)),
+        ...(project.specializations ?? []).flatMap((s) => [s.supertypeId, ...s.subtypeIds]),
+      ]);
       for (const entity of regular) expect(linked.has(entity.id)).toBe(true);
     }
   });
@@ -89,5 +93,18 @@ describe('names language', () => {
     const client = project.entities.find((e) => e.name === 'clients')!;
     const email = client.attributes.find((a) => a.name === 'email')!;
     expect(project.records![client.id][0].values[email.id]).toMatch(/@exemple\.com$/);
+  });
+});
+
+describe('themes with superclasses', () => {
+  it('hospital: persona with paciente and medico, records without errors in every gestor', () => {
+    for (const dialect of ['postgresql', 'mysql', 'sqlite', 'sqlserver', 'oracle'] as const) {
+      const project = generateRandomModel({ dialect, entityCount: 99, themeId: 'hospital', rng: seededRng(7) });
+      expect(project.specializations).toHaveLength(1);
+      fillRandomRecords(project, 12, seededRng(8));
+      const schema = buildSchema(project);
+      expect(schema.issues.filter((i) => i.level === 'error')).toEqual([]);
+      expect(validateRecords(project, schema).total).toBe(0);
+    }
   });
 });

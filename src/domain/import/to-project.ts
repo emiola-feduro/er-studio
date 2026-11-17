@@ -1,3 +1,4 @@
+import { detectSpecializations } from './specializations';
 import type { Locale } from '../../i18n';
 import { DIALECTS, findType, type TypeRef } from '../dialects';
 import { buildSchema, defaultIndexName } from '../inference';
@@ -308,7 +309,10 @@ export const irToProject = (ir: Ir, options: ImportOptions): { project: Project;
     }
   }
 
-  return { project, report: { tables: project.entities.length, relationships: project.relationships.length, indexes: indexCount, warnings } };
+  // Subtables written as "table per type" become a specialization when nothing in the tables changes.
+  detectSpecializations(project);
+
+  return { project, report: { tables: project.entities.length, relationships: project.relationships.length + (project.specializations?.length ?? 0), indexes: indexCount, warnings } };
 };
 
 /** Primary key columns of a plain table: the PRIMARY KEY constraint or the columns marked as key. */

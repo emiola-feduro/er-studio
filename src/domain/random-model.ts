@@ -31,7 +31,10 @@ type RelSpec = {
   name?: string;
 };
 
-export type ThemeSpec = { id: string; name: string; entities: Record<string, AttrSpec[]>; relationships: RelSpec[] };
+/** A superclass and its subclasses in a theme (table per type, partial, so random rows stay valid). */
+type SpecSpec = { supertype: string; subtypes: string[]; disjoint: boolean };
+
+export type ThemeSpec = { id: string; name: string; entities: Record<string, AttrSpec[]>; relationships: RelSpec[]; specializations?: SpecSpec[] };
 
 const text = (name: string, length: number, extra: Partial<AttrSpec> = {}): AttrSpec => ({ name, generic: 'varchar', length, ...extra });
 const money = (name: string, extra: Partial<AttrSpec> = {}): AttrSpec => ({ name, generic: 'decimal', precision: 10, scale: 2, min: '>= 0', ...extra });
@@ -112,8 +115,9 @@ export const THEMES: ThemeSpec[] = [
     id: 'hospital',
     name: 'Hospital',
     entities: {
-      paciente: [...person, date('fecha_nacimiento'), choice('grupo_sanguineo', ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'], { optional: true })],
-      medico: [...person.slice(0, 3), text('licencia', 20, { unique: true })],
+      persona: [...person],
+      paciente: [date('fecha_nacimiento'), choice('grupo_sanguineo', ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'], { optional: true })],
+      medico: [text('licencia', 20, { unique: true })],
       especialidad: [text('nombre', 80, { unique: true })],
       cita: [stamp('fecha_hora'), choice('estado', ['PROGRAMADA', 'ATENDIDA', 'CANCELADA']), text('motivo', 255, { nullable: true, optional: true })],
       medicamento: [text('nombre', 120, { unique: true }), text('presentacion', 60, { optional: true })],
@@ -126,6 +130,8 @@ export const THEMES: ThemeSpec[] = [
       { from: 'cita', to: 'medicamento', preset: 'N:M', name: 'receta', attributes: [text('dosis', 60), int('dias', { optional: true })] },
       { from: 'habitacion', to: 'paciente', preset: '1:N', name: 'hospeda' },
     ],
+    // A doctor can also be a patient: overlapping.
+    specializations: [{ supertype: 'persona', subtypes: ['paciente', 'medico'], disjoint: false }],
   },
   {
     id: 'aerolinea',
@@ -187,14 +193,29 @@ const shuffle = <T,>(rng: Rng, list: readonly T[]) => {
 
 /** Connected subset of the theme's entities, grown from a random start so the diagram has no islands. */
 const connectedSubset = (theme: ThemeSpec, count: number, rng: Rng) => {
-  const names = Object.keys(theme.entities);
-  const chosen = new Set([pick(rng, names)]);
-  while (chosen.size < Math.min(count, names.length)) {
+  // Superclasses come along with their subclasses, not on their own, and count toward the total.
+  const superOf = new Map((theme.specializations ?? []).flatMap((s) => s.subtypes.map((sub) => [sub, s.supertype] as const)));
+  const supertypes = new Set(superOf.values());
+  const names = Object.keys(theme.entities).filter((n) => !supertypes.has(n));
+  const limit = Math.min(count, Object.keys(theme.entities).length);
+  const chosen = new Set<string>();
+  /** Adds a name and its superclass, if both still fit. */
+  const add = (name: string) => {
+    const parent = superOf.get(name);
+    const extra = parent && !chosen.has(parent) ? 1 : 0;
+    if (chosen.size + 1 + extra > limit) return false;
+    chosen.add(name);
+    if (parent) chosen.add(parent);
+    return true;
+  };
+  add(pick(rng, names.filter((n) => !superOf.has(n) || limit > 1)));
+  for (let guard = 0; chosen.size < limit && guard < 200; guard += 1) {
     const frontier = shuffle(rng, theme.relationships)
-      .flatMap((r) => [r.from, r.to].filter((n) => !chosen.has(n) && (chosen.has(r.from) || chosen.has(r.to))));
-    chosen.add(frontier[0] ?? pick(rng, names.filter((n) => !chosen.has(n))));
+      .flatMap((r) => [r.from, r.to].filter((n) => names.includes(n) && !chosen.has(n) && (chosen.has(r.from) || chosen.has(r.to))));
+    const candidates = [...frontier, ...shuffle(rng, names.filter((n) => !chosen.has(n)))];
+    if (!candidates.some(add)) break;
   }
-  return names.filter((n) => chosen.has(n));
+  return Object.keys(theme.entities).filter((n) => chosen.has(n));
 };
 
 const toAttribute = (dialect: DialectId, spec: AttrSpec, locale: Locale): Attribute => {
@@ -258,6 +279,18 @@ export const generateRandomModel = ({ dialect, entityCount, themeId, namesLocale
     if (spec.preset === '1:N' && from.id !== to.id) rel.onDelete = 'CASCADE';
     project.relationships.push(rel);
     if (spec.attributes) junctionAttrs.set(rel.id, attributesFor(dialect, spec.attributes, rng, namesLocale));
+  }
+
+  for (const spec of theme.specializations ?? []) {
+    const supertype = byName.get(spec.supertype);
+    const subtypes = spec.subtypes.map((s) => byName.get(s)).filter((e): e is Entity => Boolean(e));
+    if (!supertype || subtypes.length === 0) continue;
+    // Subclasses take the superclass's key, so their own goes.
+    for (const sub of subtypes) sub.attributes = sub.attributes.filter((a) => !a.pk);
+    project.specializations = [
+      ...(project.specializations ?? []),
+      { id: uid(), supertypeId: supertype.id, subtypeIds: subtypes.map((s) => s.id), total: false, disjoint: spec.disjoint, mapping: 'table-per-type' },
+    ];
   }
 
   syncJunctions(project);

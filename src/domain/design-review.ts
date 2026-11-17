@@ -1,6 +1,6 @@
 import { DIALECTS, findType, isSerial } from './dialects';
 import { singularize } from './naming';
-import type { Column, Project, Schema, Table } from './types';
+import type { Column, Project, Schema, SpecializationMapping, Table } from './types';
 
 /**
  * Design review: good-practice findings on top of the validation errors. Each finding names a rule,
@@ -16,11 +16,17 @@ export type ReviewRule =
   | 'repeatingGroup'
   | 'multiValued'
   | 'partialDependency'
-  | 'wideTable';
+  | 'wideTable'
+  | 'specEmptySubtype'
+  | 'specSparseSingleTable'
+  | 'specConcreteReferenced'
+  | 'specFromOneToOne';
 
 export type ReviewFix =
   | { kind: 'createIndex'; tableId: string; columnIds: string[] }
-  | { kind: 'makeUnique'; entityId: string; attributeId: string };
+  | { kind: 'makeUnique'; entityId: string; attributeId: string }
+  | { kind: 'specMapping'; specId: string; mapping: SpecializationMapping }
+  | { kind: 'specFromRelationship'; relationshipId: string };
 
 export type Finding = {
   /** Stable id, so a dismissed finding stays dismissed while the model does not change it. */
@@ -199,6 +205,73 @@ export const reviewDesign = (project: Project, schema: Schema): Finding[] => {
       severity: 'info',
       tableId: tableIds[0],
       params: { columns: columns.join(', '), tables: tableIds.map((id) => tables.get(id)?.name ?? '?').join(', ') },
+    });
+  }
+  findings.push(...reviewSpecializations(project, schema));
+  return findings;
+};
+
+/** Columns of a single table hierarchy from which the review suggests a table per subclass. */
+const SPARSE_COLUMNS = 6;
+
+/** Findings about superclasses and subclasses, and 1:1 relationships that look like one. */
+const reviewSpecializations = (project: Project, schema: Schema): Finding[] => {
+  const findings: Finding[] = [];
+  const name = (id: string) => project.entities.find((e) => e.id === id)?.name ?? '?';
+  const subtypeOf = new Set((project.specializations ?? []).flatMap((s) => s.subtypeIds));
+  for (const spec of project.specializations ?? []) {
+    const supertype = project.entities.find((e) => e.id === spec.supertypeId);
+    if (!supertype) continue;
+    const inherited = new Set(supertype.attributes.map((a) => a.name.toLowerCase()));
+    const own = (id: string) => (project.entities.find((e) => e.id === id)?.attributes ?? []).filter((a) => !a.pk && !inherited.has(a.name.toLowerCase()));
+    const related = (id: string) => project.relationships.some((r) => r.participants.some((p) => p.entityId === id));
+    for (const subId of spec.subtypeIds) {
+      if (own(subId).length || related(subId)) continue;
+      findings.push({
+        id: `specEmptySubtype:${spec.id}:${subId}`,
+        rule: 'specEmptySubtype',
+        severity: 'info',
+        tableId: spec.mapping === 'single-table' ? spec.supertypeId : subId,
+        params: { table: name(subId), supertype: supertype.name },
+        ...(spec.mapping !== 'single-table' ? { fix: { kind: 'specMapping', specId: spec.id, mapping: 'single-table' } as const } : {}),
+      });
+    }
+    const moved = spec.subtypeIds.reduce((sum, id) => sum + own(id).length, 0);
+    if (spec.mapping === 'single-table' && moved >= SPARSE_COLUMNS) {
+      findings.push({
+        id: `specSparseSingleTable:${spec.id}`,
+        rule: 'specSparseSingleTable',
+        severity: 'info',
+        tableId: spec.supertypeId,
+        params: { table: supertype.name, count: moved },
+        fix: { kind: 'specMapping', specId: spec.id, mapping: 'table-per-type' },
+      });
+    }
+    if (spec.mapping === 'table-per-concrete' && project.relationships.some((r) => r.participants.some((p) => p.entityId === spec.supertypeId))) {
+      findings.push({
+        id: `specConcreteReferenced:${spec.id}`,
+        rule: 'specConcreteReferenced',
+        severity: 'warning',
+        tableId: spec.supertypeId,
+        params: { table: supertype.name },
+        fix: { kind: 'specMapping', specId: spec.id, mapping: 'table-per-type' },
+      });
+    }
+  }
+  // A 1:1 identifying relationship whose holder has no key of its own: a subclass written by hand.
+  for (const rel of project.relationships) {
+    if (rel.participants.length !== 2 || rel.junctionId || !rel.identifying || rel.participants[0].cardinality !== '1') continue;
+    const [parent, child] = rel.participants;
+    const holder = project.entities.find((e) => e.id === child.entityId);
+    if (!holder || holder.id === parent.entityId || subtypeOf.has(holder.id) || holder.attributes.some((a) => a.pk)) continue;
+    if (!schema.tables.some((t) => t.id === holder.id)) continue;
+    findings.push({
+      id: `specFromOneToOne:${rel.id}`,
+      rule: 'specFromOneToOne',
+      severity: 'info',
+      tableId: holder.id,
+      params: { table: holder.name, supertype: name(parent.entityId) },
+      fix: { kind: 'specFromRelationship', relationshipId: rel.id },
     });
   }
   return findings;

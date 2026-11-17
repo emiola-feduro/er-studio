@@ -5,6 +5,7 @@ import { makeProject } from './fixtures';
 import { buildSchema } from './inference';
 import { changeDialect, uid } from './model';
 import { diffSchemas } from './migration';
+import { specializationDataMoves } from './specialization-migration';
 import type { DialectId, Entity, Project, Specialization, SpecializationMapping } from './types';
 
 let SQL: SqlJsStatic;
@@ -210,3 +211,77 @@ describe('attributes named like the supertype ones', () => {
   });
 });
 
+describe('data moves between mappings', () => {
+  const migrate = (fromProject: Project, toProject: Project) => {
+    const a = buildSchema(fromProject);
+    const b = buildSchema(toProject);
+    return diffSchemas(a, b, 'sqlite', { from: 'a', to: 'b' }, specializationDataMoves(fromProject, toProject, a, b, 'sqlite')).sql;
+  };
+  const seed = (db: InstanceType<SqlJsStatic['Database']>, sql: string[]) => sql.forEach((s) => db.run(s));
+
+  it('table per type to single table keeps the subclass values (SQLite)', () => {
+    const before = hierarchy('table-per-type', {}, 'sqlite').project;
+    const after = structuredClone(before);
+    after.specializations![0].mapping = 'single-table';
+    const db = new SQL.Database();
+    db.run(generateDdl(buildSchema(before), 'sqlite').sql);
+    seed(db, [
+      "INSERT INTO ciudad (id, nombre) VALUES (1, 'Quito');",
+      "INSERT INTO persona (id, nombre, tipo, ciudad_id) VALUES (1, 'Ana', 'empleado', 1), (2, 'Luis', 'cliente', 1);",
+      "INSERT INTO empleado (id, salario, ciudad_id) VALUES (1, '900', 1);",
+      "INSERT INTO cliente (id, credito) VALUES (2, '50');",
+    ]);
+    const sql = migrate(before, after);
+    expect(sql.indexOf('UPDATE persona')).toBeLessThan(sql.indexOf('DROP TABLE empleado'));
+    db.run(sql);
+    expect(db.exec('SELECT id, salario, credito FROM persona ORDER BY id')[0].values).toEqual([
+      [1, '900', null],
+      [2, null, '50'],
+    ]);
+  });
+
+  it('single table to table per type moves the rows into the subclass tables (SQLite)', () => {
+    const before = hierarchy('single-table', {}, 'sqlite').project;
+    const after = structuredClone(before);
+    after.specializations![0].mapping = 'table-per-type';
+    const db = new SQL.Database();
+    db.run(generateDdl(buildSchema(before), 'sqlite').sql);
+    const persona = buildSchema(before).tables.find((x) => x.name === 'persona')!;
+    const columns = persona.columns.map((c) => c.name);
+    expect(columns).toEqual(expect.arrayContaining(['salario', 'credito']));
+    const empCity = persona.columns.filter((c) => c.name.startsWith('ciudad_id')).map((c) => c.name);
+    seed(db, [
+      "INSERT INTO ciudad (id, nombre) VALUES (1, 'Quito');",
+      `INSERT INTO persona (id, nombre, tipo, ${empCity.join(', ')}, salario) VALUES (1, 'Ana', 'empleado', ${empCity.map(() => '1').join(', ')}, '900');`,
+      `INSERT INTO persona (id, nombre, tipo, ${empCity[0]}, credito) VALUES (2, 'Luis', 'cliente', 1, '50');`,
+    ]);
+    db.run(migrate(before, after));
+    expect(db.exec('SELECT id, salario FROM empleado')[0].values).toEqual([[1, '900']]);
+    expect(db.exec('SELECT id, credito FROM cliente')[0].values).toEqual([[2, '50']]);
+  });
+});
+
+
+describe('exports', () => {
+  it('OpenAPI: subclasses extend the superclass with allOf, and a discriminator maps them', async () => {
+    const { buildOpenApi } = await import('./openapi');
+    const { project } = hierarchy('table-per-type');
+    const doc = buildOpenApi(project, buildSchema(project));
+    const schemas = doc.components.schemas as Record<string, Record<string, unknown>>;
+    expect(schemas.Empleado.allOf).toEqual([{ $ref: '#/components/schemas/Persona' }, expect.objectContaining({ properties: expect.objectContaining({ salario: expect.anything() }) })]);
+    expect((schemas.Empleado.allOf as Record<string, unknown>[])[1].properties).not.toHaveProperty('id');
+    expect(schemas.Persona.discriminator).toEqual({ propertyName: 'tipo', mapping: { empleado: '#/components/schemas/Empleado', cliente: '#/components/schemas/Cliente' } });
+  });
+
+  it('agent export lists the specialization with its mapping and discriminator', async () => {
+    const { buildModelSpec, toAgentMarkdown } = await import('./model-spec');
+    const { project } = hierarchy('single-table', { total: true });
+    const spec = buildModelSpec(project, buildSchema(project));
+    expect(spec.specializations).toEqual([
+      { superclass: 'persona', subclasses: ['empleado', 'cliente'], total: true, disjoint: true, mapping: 'single-table', discriminator: { column: 'tipo', values: { empleado: 'empleado', cliente: 'cliente' } } },
+    ]);
+    const md = toAgentMarkdown(spec, {});
+    expect(md).toContain('persona → empleado, cliente: total, disjunta, Una sola tabla.');
+    expect(md).toContain('SINGLE_TABLE');
+  });
+});

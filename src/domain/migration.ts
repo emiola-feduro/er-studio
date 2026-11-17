@@ -63,7 +63,21 @@ const fkSignature = (fk: ForeignKey) =>
 const indexSignature = (index: TableIndex, table: Table) =>
   [index.name, index.unique, index.method ?? '', (index.where ?? '').trim(), ...index.columns.map((c) => `${table.columns.find((x) => x.id === c.columnId)?.name}:${c.order}`)].join('|');
 
-export const diffSchemas = (from: Schema, to: Schema, dialect: DialectId, labels: { from: string; to: string } = { from: '', to: '' }): Migration => {
+/** Statements that copy rows between tables, and the tables they read from. */
+export type DataMoves = { sql: string[]; sourceTableIds: string[] };
+
+/**
+ * `dataMoves` copy rows between tables (a specialization that changes how it maps to tables). With
+ * them, tables and columns are dropped only after the copy; in SQLite, a rebuilt table the rows are
+ * read from is rebuilt after the copy, the others before, and CHECKs wait until the end.
+ */
+export const diffSchemas = (
+  from: Schema,
+  to: Schema,
+  dialect: DialectId,
+  labels: { from: string; to: string } = { from: '', to: '' },
+  dataMoves: DataMoves = { sql: [], sourceTableIds: [] },
+): Migration => {
   const d = DIALECTS[dialect];
   const q = (name: string) => quoteIdent(dialect, name);
   const warnings: string[] = [];
@@ -140,6 +154,7 @@ export const diffSchemas = (from: Schema, to: Schema, dialect: DialectId, labels
     dropIndex: [] as string[],
     dropConstraint: [] as string[],
     dropTable: [] as string[],
+    dropColumn: [] as string[],
     renameTable: [] as string[],
     createTable: [] as string[],
     columns: [] as string[],
@@ -257,7 +272,8 @@ export const diffSchemas = (from: Schema, to: Schema, dialect: DialectId, labels
     }
     for (const change of tableChanges) {
       changes.push({ kind: change.kind, table: table.name, detail: change.detail, destructive: change.destructive });
-      (change.kind === 'changePk' ? stmt.pk : stmt.columns).push(...change.sql);
+      const target = change.kind === 'changePk' ? stmt.pk : change.kind === 'dropColumn' ? stmt.dropColumn : stmt.columns;
+      target.push(...change.sql);
     }
   }
 
@@ -287,6 +303,7 @@ export const diffSchemas = (from: Schema, to: Schema, dialect: DialectId, labels
   }
   // FKs of removed tables pointing elsewhere go away with the table; FKs from kept tables to removed ones were dropped above.
   const rebuilt: string[] = [];
+  const rebuiltSources: string[] = [];
   for (const id of rebuild) {
     const table = newTables.get(id)!;
     const old = oldTables.get(id)!;
@@ -294,7 +311,7 @@ export const diffSchemas = (from: Schema, to: Schema, dialect: DialectId, labels
     const copy = table.columns.filter((c) => old.columns.some((o) => o.id === c.id));
     changes.push({ kind: 'rebuildTable', table: table.name });
     const create = createTable({ ...table, name: temp }, dialect, newTables, warnings);
-    rebuilt.push(
+    (dataMoves.sourceTableIds.includes(id) ? rebuiltSources : rebuilt).push(
       [
         t('migration.sqliteRebuild', { table: table.name }),
         create,
@@ -306,23 +323,21 @@ export const diffSchemas = (from: Schema, to: Schema, dialect: DialectId, labels
     );
   }
 
-  const blocks = [
-    stmt.dropFk,
-    stmt.dropIndex,
-    stmt.dropConstraint,
-    stmt.dropTable,
-    stmt.renameTable,
-    stmt.createTable,
-    stmt.columns,
-    rebuilt,
-    stmt.pk,
-    stmt.addConstraint,
-    stmt.addFk,
-    stmt.addIndex,
-  ].filter((b) => b.length);
-  if (rebuilt.length) {
+  // Without data to move, drops come first; with it, new tables and columns come first so the rows
+  // can be copied, and only then are the old ones dropped.
+  const blocks = (
+    dataMoves.sql.length
+      ? [stmt.dropFk, stmt.dropIndex, stmt.dropConstraint, stmt.renameTable, stmt.createTable, stmt.columns, rebuilt, dataMoves.sql, rebuiltSources, stmt.dropColumn, stmt.dropTable, stmt.pk, stmt.addConstraint, stmt.addFk, stmt.addIndex]
+      : [stmt.dropFk, stmt.dropIndex, stmt.dropConstraint, stmt.dropTable, stmt.renameTable, stmt.createTable, stmt.dropColumn, stmt.columns, rebuilt, stmt.pk, stmt.addConstraint, stmt.addFk, stmt.addIndex]
+  ).filter((b) => b.length);
+  if (rebuilt.length || rebuiltSources.length) {
     blocks.unshift(['PRAGMA foreign_keys = OFF;']);
     blocks.push(['PRAGMA foreign_keys = ON;']);
+  }
+  // While rows move, a rebuilt SQLite table already has the CHECKs the copied rows will satisfy only at the end.
+  if (dialect === 'sqlite' && dataMoves.sql.length) {
+    blocks.unshift(['PRAGMA ignore_check_constraints = ON;']);
+    blocks.push(['PRAGMA ignore_check_constraints = OFF;']);
   }
   const header = t('migration.header', { from: labels.from, to: labels.to, dialect: d.name });
   const body = blocks.length ? blocks.map((b) => b.join('\n')).join('\n\n') : t('migration.noChanges');

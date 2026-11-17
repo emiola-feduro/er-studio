@@ -13,6 +13,9 @@ type InspectorReviewListProps = {
   linkTables?: boolean;
 };
 
+/** "Una sola tabla" inside a sentence: "Usar una sola tabla". */
+const lowerFirst = (text: string) => text.charAt(0).toLocaleLowerCase() + text.slice(1);
+
 /** Design review findings with their quick fix and a way to ignore them. */
 const InspectorReviewList = ({ findings, dismissed, linkTables = false }: InspectorReviewListProps) => {
   const t = useT();
@@ -44,7 +47,13 @@ const InspectorReviewList = ({ findings, dismissed, linkTables = false }: Inspec
                 </Button>
                 {fix && (
                   <Button size="sm" onClick={() => applyReviewFix(fix)}>
-                    {fix.kind === 'createIndex' ? t('review.fix.createIndex') : t('review.fix.makeUnique', { column: String(params.candidate) })}
+                    {fix.kind === 'createIndex'
+                      ? t('review.fix.createIndex')
+                      : fix.kind === 'makeUnique'
+                        ? t('review.fix.makeUnique', { column: String(params.candidate) })
+                        : fix.kind === 'specMapping'
+                          ? t('review.fix.specMapping', { mapping: lowerFirst(t(`spec.mapping.${fix.mapping}` as MessageKey)) })
+                          : t('review.fix.specFromRelationship')}
                   </Button>
                 )}
               </div>

@@ -1,6 +1,7 @@
+import { discriminatorOf } from './specialization';
 import { t, type MessageKey } from '../i18n';
 import { ddlType, DIALECTS, findType, isSerial } from './dialects';
-import type { Column, ForeignKey, Project, ReferentialAction, Schema, Table } from './types';
+import type { Column, ForeignKey, Project, ReferentialAction, Schema, SpecializationMapping, Table } from './types';
 
 /**
  * A neutral description of the data model, meant to be handed to a coding agent so it can write
@@ -56,7 +57,16 @@ export type SpecEntity = {
   relations: SpecRelation[];
 };
 
-export type ModelSpec = { project: string; dialect: string; database?: string; entities: SpecEntity[] };
+export type SpecSpecialization = {
+  superclass: string;
+  subclasses: string[];
+  total: boolean;
+  disjoint: boolean;
+  mapping: SpecializationMapping;
+  discriminator?: { column: string; values: Record<string, string> };
+};
+
+export type ModelSpec = { project: string; dialect: string; database?: string; entities: SpecEntity[]; specializations?: SpecSpecialization[] };
 
 const columnNames = (table: Table, ids: string[]) => ids.map((id) => table.columns.find((c) => c.id === id)?.name ?? id);
 
@@ -147,6 +157,28 @@ export const buildModelSpec = (project: Project, schema: Schema, tableIds?: stri
       })),
       relations: relationsOf(project, table, schema, tables),
     })),
+    ...specializationsOf(project, schema),
+  };
+};
+
+/** Superclasses and subclasses, with how they map to tables and the discriminator. */
+const specializationsOf = (project: Project, schema: Schema) => {
+  const name = (id: string) => project.entities.find((e) => e.id === id)?.name ?? id;
+  const specs = (project.specializations ?? []).filter((s) => project.entities.some((e) => e.id === s.supertypeId));
+  if (!specs.length) return {};
+  return {
+    specializations: specs.map((spec): SpecSpecialization => {
+      const disc = discriminatorOf(spec, project.entities, project.namesLocale);
+      const hasDisc = spec.disjoint && schema.tables.find((t) => t.id === spec.supertypeId)?.columns.some((c) => c.name === disc.name);
+      return {
+        superclass: name(spec.supertypeId),
+        subclasses: spec.subtypeIds.map(name),
+        total: spec.total,
+        disjoint: spec.disjoint,
+        mapping: spec.mapping,
+        ...(hasDisc ? { discriminator: { column: disc.name, values: Object.fromEntries(spec.subtypeIds.map((id) => [name(id), disc.values[id]])) } } : {}),
+      };
+    }),
   };
 };
 
@@ -241,6 +273,26 @@ const entityMarkdown = (entity: SpecEntity) => {
   return lines.join('\n');
 };
 
+const specializationsMarkdown = (spec: ModelSpec) => {
+  if (!spec.specializations?.length) return [];
+  const lines = [`## ${t('agentExport.specializations')}`, ''];
+  for (const s of spec.specializations) {
+    lines.push(
+      `- ${t('agentExport.specLine', {
+        superclass: s.superclass,
+        subclasses: s.subclasses.join(', '),
+        participation: t(s.total ? 'spec.total' : 'spec.partial').toLowerCase(),
+        constraint: t(s.disjoint ? 'spec.disjoint' : 'spec.overlapping').toLowerCase(),
+        mapping: t(`spec.mapping.${s.mapping}` as MessageKey),
+      })}`,
+      `  - ${t(`agentExport.specOrm.${s.mapping}` as MessageKey)}`,
+      ...(s.discriminator ? [`  - ${t('agentExport.specDiscriminator', { column: s.discriminator.column, values: Object.entries(s.discriminator.values).map(([k, v]) => `${k} = '${v}'`).join(', ') })}`] : []),
+    );
+  }
+  lines.push('');
+  return lines;
+};
+
 export const toAgentMarkdown = (spec: ModelSpec, options: AgentExportOptions) => {
   const lines = [
     `# ${t('agentExport.title', { project: spec.project })}`,
@@ -254,6 +306,7 @@ export const toAgentMarkdown = (spec: ModelSpec, options: AgentExportOptions) =>
     `- ${t('agentExport.entities')}: ${spec.entities.map((e) => e.name).join(', ')}`,
     '',
     ...spec.entities.map(entityMarkdown),
+    ...specializationsMarkdown(spec),
   ];
   if (options.ddl) lines.push(`## ${t('agentExport.ddl')}`, '', '```sql', options.ddl.trimEnd(), '```', '');
   return `${lines.join('\n').trimEnd()}\n`;

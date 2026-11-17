@@ -975,4 +975,24 @@ export const fr: Messages = {
   'value.specDiscriminator': "Dans {supertype}, le type indique « {value} », pas « {expected} ».",
   'value.specTotal': "La spécialisation est totale : cet enregistrement manque dans l’une de {subtypes}.",
   'value.specNotSubtype': "Seuls les enregistrements de {subtype} portent cette valeur.",
+
+  // Specialization migration comments
+  'migration.copyRows': "-- Copie les enregistrements de {from} vers {to}.",
+  'migration.copyByHand': "-- {supertype} : ce changement ne copie pas les enregistrements tout seul ; copiez-les avant de supprimer les tables.",
+
+  // Specialization review rules
+  'review.specEmptySubtype': "La sous-classe « {table} » n’a ni attributs ni relations propres : elle peut aller dans une seule table avec « {supertype} » ou être retirée.",
+  'review.specSparseSingleTable': "« {table} » garde {count} colonnes de sous-classes dans une seule table, presque toujours vides. Une table par classe évite autant de valeurs nulles.",
+  'review.specConcreteReferenced': "Des relations pointent vers « {table} », mais chaque sous-classe copie ses colonnes dans sa propre table : ces relations ne voient pas les sous-classes.",
+  'review.specFromOneToOne': "« {table} » prend toute sa clé de « {supertype} » par une 1:1 : cela ressemble à une sous-classe de « {supertype} ».",
+  'review.fix.specMapping': "Utiliser {mapping}",
+  'review.fix.specFromRelationship': "En faire une sous-classe",
+
+  // Agent export specializations
+  'agentExport.specializations': "Superclasses et sous-classes",
+  'agentExport.specLine': "{superclass} → {subclasses} : {participation}, {constraint}, {mapping}.",
+  'agentExport.specOrm.table-per-type': "Héritage avec une table par classe : JPA InheritanceType.JOINED, EF Core TPT, héritage multi-table de Django.",
+  'agentExport.specOrm.single-table': "Héritage dans une seule table : JPA InheritanceType.SINGLE_TABLE, EF Core TPH, Rails STI.",
+  'agentExport.specOrm.table-per-concrete': "Une table par sous-classe concrète : JPA InheritanceType.TABLE_PER_CLASS, EF Core TPC, classe de base abstraite Django.",
+  'agentExport.specDiscriminator': "Discriminant {column} : {values}.",
 };

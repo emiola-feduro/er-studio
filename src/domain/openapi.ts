@@ -1,3 +1,4 @@
+import { discriminatorOf } from './specialization';
 import { t } from '../i18n';
 import { ddlType, DIALECTS, findType, isSerial } from './dialects';
 import { randomValue, seededRng } from './random-values';
@@ -192,8 +193,10 @@ export const buildOpenApi = (project: Project, schema: Schema, options: OpenApiO
   };
   const tags = doc.tags as { name: string; description?: string }[];
 
+  const nameOf = new Map<string, string>();
   for (const table of chosen) {
     const name = schemaName(table);
+    nameOf.set(table.id, name);
     const writable = table.columns.filter((c) => !isGenerated(project, c));
     const properties = (columns: Column[]) => Object.fromEntries(columns.map((c) => [c.name, columnSchema(project, table, c, tables)]));
     const required = (columns: Column[]) =>
@@ -300,7 +303,47 @@ export const buildOpenApi = (project: Project, schema: Schema, options: OpenApiO
       },
     };
   }
+  addSpecializations(project, doc, nameOf, tables, (entityName) => schemaName({ name: entityName } as Table));
   return doc;
+};
+
+/**
+ * Superclasses and subclasses: a subclass schema is the superclass plus its own properties (allOf),
+ * and a disjoint superclass with a discriminator column names the subclass of each object.
+ */
+const addSpecializations = (
+  project: Project,
+  doc: OpenApiDocument,
+  nameOf: Map<string, string>,
+  tables: Map<string, Table>,
+  newName: (entityName: string) => string,
+) => {
+  const schemas = doc.components.schemas;
+  for (const spec of project.specializations ?? []) {
+    const superName = nameOf.get(spec.supertypeId);
+    const superTable = tables.get(spec.supertypeId);
+    if (!superName || !superTable) continue;
+    const mapping: Record<string, string> = {};
+    const { values, name: discName } = discriminatorOf(spec, project.entities, project.namesLocale);
+    for (const subId of spec.subtypeIds) {
+      const entity = project.entities.find((e) => e.id === subId);
+      if (!entity) continue;
+      const own = schemas[nameOf.get(subId) ?? ''] as { properties?: Record<string, unknown>; required?: string[] } | undefined;
+      const inherited = new Set(superTable.columns.map((c) => c.name));
+      // A subclass with its own table keeps the properties the superclass does not have; one stored in
+      // the superclass table (single table) is documented with only its name.
+      const subName = nameOf.get(subId) ?? newName(entity.name);
+      const properties = Object.fromEntries(Object.entries(own?.properties ?? {}).filter(([key]) => !inherited.has(key)));
+      schemas[subName] = {
+        allOf: [ref(superName), { type: 'object', properties, ...(own?.required ? { required: own.required.filter((r) => !inherited.has(r)) } : {}) }],
+        ...(own && 'example' in own ? { example: (own as { example: unknown }).example } : {}),
+      };
+      mapping[values[subId]] = `#/components/schemas/${subName}`;
+    }
+    if (spec.disjoint && superTable.columns.some((c) => c.name === discName) && Object.keys(mapping).length) {
+      (schemas[superName] as Record<string, unknown>).discriminator = { propertyName: discName, mapping };
+    }
+  }
 };
 
 export const openApiJson = (doc: OpenApiDocument) => `${JSON.stringify(doc, null, 2)}\n`;

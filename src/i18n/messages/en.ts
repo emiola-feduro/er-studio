@@ -975,4 +975,24 @@ export const en: Messages = {
   'value.specDiscriminator': "In {supertype} the type says \"{value}\", not \"{expected}\".",
   'value.specTotal': "The specialization is total: this record is missing from one of {subtypes}.",
   'value.specNotSubtype': "Only {subtype} records carry this value.",
+
+  // Specialization migration comments
+  'migration.copyRows': "-- Copies the records of {from} into {to}.",
+  'migration.copyByHand': "-- {supertype}: this change of mapping does not copy the records by itself; copy them before dropping the tables.",
+
+  // Specialization review rules
+  'review.specEmptySubtype': "The subclass \"{table}\" has no attributes or relationships of its own: it can go in a single table with \"{supertype}\" or be removed.",
+  'review.specSparseSingleTable': "\"{table}\" keeps {count} subclass columns in a single table, mostly empty. A table per class avoids so many nulls.",
+  'review.specConcreteReferenced': "Relationships point to \"{table}\", but each subclass copies its columns into its own table: those relationships do not see the subclasses.",
+  'review.specFromOneToOne': "\"{table}\" takes its whole key from \"{supertype}\" through a 1:1: it looks like a subclass of \"{supertype}\".",
+  'review.fix.specMapping': "Use {mapping}",
+  'review.fix.specFromRelationship': "Make it a subclass",
+
+  // Agent export specializations
+  'agentExport.specializations': "Superclasses and subclasses",
+  'agentExport.specLine': "{superclass} → {subclasses}: {participation}, {constraint}, {mapping}.",
+  'agentExport.specOrm.table-per-type': "Inheritance with a table per class: JPA InheritanceType.JOINED, EF Core TPT, Django multi-table inheritance.",
+  'agentExport.specOrm.single-table': "Single table inheritance: JPA InheritanceType.SINGLE_TABLE, EF Core TPH, Rails STI.",
+  'agentExport.specOrm.table-per-concrete': "A table per concrete subclass: JPA InheritanceType.TABLE_PER_CLASS, EF Core TPC, Django abstract base class.",
+  'agentExport.specDiscriminator': "Discriminator {column}: {values}.",
 };

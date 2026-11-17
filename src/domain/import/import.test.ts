@@ -194,3 +194,28 @@ describe('names language', () => {
     expect(importSchema('CREATE TABLE a (id INT PRIMARY KEY);', { name: 'a', fallbackLocale: 'fr' }).project.namesLocale).toBe('fr');
   });
 });
+
+describe('subclasses written as tables', () => {
+  it('turn into a specialization with its discriminator when the tables stay the same', () => {
+    const sql = `
+      CREATE TABLE persona (id INT PRIMARY KEY, nombre VARCHAR(80) NOT NULL, tipo VARCHAR(10) NOT NULL CHECK (tipo IN ('empleado', 'cliente')));
+      CREATE TABLE empleado (id INT PRIMARY KEY REFERENCES persona(id) ON DELETE CASCADE, salario NUMERIC(10,2) NOT NULL);
+      CREATE TABLE cliente (id INT PRIMARY KEY REFERENCES persona(id) ON DELETE CASCADE, credito NUMERIC(10,2));`;
+    const { project } = importSchema(sql, { name: 'herencia', fallbackLocale: 'es' });
+    expect(project.specializations).toHaveLength(1);
+    const spec = project.specializations![0];
+    expect(spec).toMatchObject({ mapping: 'table-per-type', disjoint: true, total: true });
+    expect(spec.discriminator?.name).toBe('tipo');
+    const tables = buildSchema(project).tables.map((t) => `${t.name}(${t.columns.map((c) => c.name).join(',')})`).sort();
+    expect(tables).toEqual(['cliente(id,credito)', 'empleado(id,salario)', 'persona(id,nombre,tipo)']);
+  });
+
+  it('stay 1:1 relationships when the subtable key has another name', () => {
+    const sql = `
+      CREATE TABLE persona (id INT PRIMARY KEY, nombre VARCHAR(80));
+      CREATE TABLE empleado (persona_id INT PRIMARY KEY REFERENCES persona(id), salario NUMERIC(10,2));`;
+    const { project } = importSchema(sql, { name: 'x', fallbackLocale: 'es' });
+    expect(project.specializations ?? []).toHaveLength(0);
+    expect(buildSchema(project).tables.find((t) => t.name === 'empleado')!.columns.map((c) => c.name)).toContain('persona_id');
+  });
+});

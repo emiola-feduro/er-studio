@@ -1011,6 +1011,26 @@ export const es = {
   'value.specDiscriminator': "En {supertype} el tipo dice \"{value}\", no \"{expected}\".",
   'value.specTotal': "La especialización es total: falta este registro en alguna de {subtypes}.",
   'value.specNotSubtype': "Solo los registros de {subtype} llevan este valor.",
+
+  // Specialization migration comments
+  'migration.copyRows': "-- Copia los registros de {from} a {to}.",
+  'migration.copyByHand': "-- {supertype}: este cambio de forma no copia los registros solo; cópialos antes de borrar las tablas.",
+
+  // Specialization review rules
+  'review.specEmptySubtype': "La subclase \"{table}\" no tiene atributos ni relaciones propias: puede ir en una sola tabla con \"{supertype}\" o quitarse.",
+  'review.specSparseSingleTable': "\"{table}\" guarda {count} columnas de subclases en una sola tabla, casi siempre vacías. Una tabla por clase evita tantos valores nulos.",
+  'review.specConcreteReferenced': "Hay relaciones con \"{table}\", pero cada subclase copia sus columnas en su propia tabla: esas relaciones no ven a las subclases.",
+  'review.specFromOneToOne': "\"{table}\" toma toda su llave de \"{supertype}\" con una 1:1: parece una subclase de \"{supertype}\".",
+  'review.fix.specMapping': "Usar {mapping}",
+  'review.fix.specFromRelationship': "Convertir en subclase",
+
+  // Agent export specializations
+  'agentExport.specializations': "Superclases y subclases",
+  'agentExport.specLine': "{superclass} → {subclasses}: {participation}, {constraint}, {mapping}.",
+  'agentExport.specOrm.table-per-type': "Herencia con una tabla por clase: JPA InheritanceType.JOINED, EF Core TPT, Django herencia multitabla.",
+  'agentExport.specOrm.single-table': "Herencia en una sola tabla: JPA InheritanceType.SINGLE_TABLE, EF Core TPH, Rails STI.",
+  'agentExport.specOrm.table-per-concrete': "Una tabla por subclase concreta: JPA InheritanceType.TABLE_PER_CLASS, EF Core TPC, Django clase base abstracta.",
+  'agentExport.specDiscriminator': "Discriminador {column}: {values}.",
 } as const;
 
 export type Messages = { [K in keyof typeof es]: string };

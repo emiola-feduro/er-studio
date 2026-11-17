@@ -975,4 +975,24 @@ export const pt: Messages = {
   'value.specDiscriminator': "Em {supertype} o tipo diz \"{value}\", não \"{expected}\".",
   'value.specTotal': "A especialização é total: este registro falta em alguma de {subtypes}.",
   'value.specNotSubtype': "Só os registros de {subtype} levam este valor.",
+
+  // Specialization migration comments
+  'migration.copyRows': "-- Copia os registros de {from} para {to}.",
+  'migration.copyByHand': "-- {supertype}: esta mudança não copia os registros sozinha; copie-os antes de apagar as tabelas.",
+
+  // Specialization review rules
+  'review.specEmptySubtype': "A subclasse \"{table}\" não tem atributos nem relacionamentos próprios: pode ir em uma única tabela com \"{supertype}\" ou ser removida.",
+  'review.specSparseSingleTable': "\"{table}\" guarda {count} colunas de subclasses em uma única tabela, quase sempre vazias. Uma tabela por classe evita tantos valores nulos.",
+  'review.specConcreteReferenced': "Há relacionamentos com \"{table}\", mas cada subclasse copia suas colunas em sua própria tabela: esses relacionamentos não veem as subclasses.",
+  'review.specFromOneToOne': "\"{table}\" pega toda a sua chave de \"{supertype}\" com uma 1:1: parece uma subclasse de \"{supertype}\".",
+  'review.fix.specMapping': "Usar {mapping}",
+  'review.fix.specFromRelationship': "Converter em subclasse",
+
+  // Agent export specializations
+  'agentExport.specializations': "Superclasses e subclasses",
+  'agentExport.specLine': "{superclass} → {subclasses}: {participation}, {constraint}, {mapping}.",
+  'agentExport.specOrm.table-per-type': "Herança com uma tabela por classe: JPA InheritanceType.JOINED, EF Core TPT, herança multitabela do Django.",
+  'agentExport.specOrm.single-table': "Herança em uma única tabela: JPA InheritanceType.SINGLE_TABLE, EF Core TPH, Rails STI.",
+  'agentExport.specOrm.table-per-concrete': "Uma tabela por subclasse concreta: JPA InheritanceType.TABLE_PER_CLASS, EF Core TPC, classe base abstrata do Django.",
+  'agentExport.specDiscriminator': "Discriminador {column}: {values}.",
 };
