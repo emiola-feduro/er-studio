@@ -11,6 +11,7 @@ import AgentExportDialog from '../../ui/agent-export-dialog/agent-export-dialog'
 import DeleteEntityDialog from '../../ui/delete-entity-dialog/delete-entity-dialog';
 import ImportDialog from '../../ui/import-dialog/import-dialog';
 import NewProjectDialog from '../../ui/new-project-dialog/new-project-dialog';
+import SpecializationDialog from '../../ui/specialization-dialog/specialization-dialog';
 import OpenApiExportDialog from '../../ui/openapi-export-dialog/openapi-export-dialog';
 import RelationshipDialog from '../../ui/relationship-dialog/relationship-dialog';
 import SettingsDialog from '../../ui/settings-dialog/settings-dialog';
@@ -49,6 +50,7 @@ const AppShell = () => {
       <RelationshipDialog />
       <SettingsDialog />
       <NewProjectDialog />
+      <SpecializationDialog />
       <ImportDialog />
       <AgentExportDialog />
       <OpenApiExportDialog />

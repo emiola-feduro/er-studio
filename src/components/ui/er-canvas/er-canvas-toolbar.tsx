@@ -31,6 +31,9 @@ const ErCanvasToolbar = () => {
       <Button size="sm" onClick={() => openRelationshipDialog()}>
         {t('canvas.newRelationship')}
       </Button>
+      <Button size="sm" onClick={() => useUiStore.getState().openSpecializationDialog()}>
+        {t('spec.new')}
+      </Button>
       <span className="mx-1 h-5 w-px bg-line" aria-hidden />
       <Button size="sm" variant="ghost" onClick={autoLayout}>
         {t('canvas.arrange')}

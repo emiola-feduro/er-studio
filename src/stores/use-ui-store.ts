@@ -11,6 +11,7 @@ type UiState = {
   view: CenterView;
   hoveredFkId: string | null;
   relationshipDialog: { open: boolean; entityIds: string[] };
+  specializationDialog: { open: boolean; supertypeId?: string; subtypeIds: string[] };
   settingsOpen: boolean;
   showFkLabels: boolean;
   newProjectOpen: boolean;
@@ -32,6 +33,8 @@ type UiState = {
   setView: (view: CenterView) => void;
   setHoveredFk: (id: string | null) => void;
   openRelationshipDialog: (entityIds?: string[]) => void;
+  openSpecializationDialog: (supertypeId?: string, subtypeIds?: string[]) => void;
+  closeSpecializationDialog: () => void;
   closeRelationshipDialog: () => void;
   setSettingsOpen: (open: boolean) => void;
   toggleFkLabels: () => void;
@@ -58,6 +61,7 @@ const useUiStore = create<UiState>((set, get) => ({
   view: 'diagram',
   hoveredFkId: null,
   relationshipDialog: { open: false, entityIds: [] },
+  specializationDialog: { open: false, subtypeIds: [] },
   settingsOpen: false,
   showFkLabels: true,
   newProjectOpen: false,
@@ -75,6 +79,8 @@ const useUiStore = create<UiState>((set, get) => ({
   setView: (view) => set({ view }),
   setHoveredFk: (hoveredFkId) => set({ hoveredFkId }),
   openRelationshipDialog: (entityIds = []) => set({ relationshipDialog: { open: true, entityIds } }),
+  openSpecializationDialog: (supertypeId, subtypeIds = []) => set({ specializationDialog: { open: true, supertypeId, subtypeIds }, contextMenu: null }),
+  closeSpecializationDialog: () => set({ specializationDialog: { open: false, subtypeIds: [] } }),
   closeRelationshipDialog: () => set({ relationshipDialog: { open: false, entityIds: [] } }),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   toggleFkLabels: () => set({ showFkLabels: !get().showFkLabels }),

@@ -128,6 +128,9 @@ export const lowerSpecializations = (source: Project): Lowered => {
     if (subtypes.length === 0) continue;
     const superKey = supertype.attributes.filter((a) => a.pk);
     const disc = discriminatorOf(spec, source.entities, locale);
+    // An attribute of a subtype named like one of the supertype is that same inherited attribute.
+    const superNames = new Set(supertype.attributes.map((a) => a.name.toLowerCase()));
+    for (const sub of subtypes) sub.attributes = sub.attributes.filter((a) => !superNames.has(a.name.toLowerCase()));
 
     // Discriminator: an ENUM column in the supertype with one value per subtype.
     const addDiscriminator = () => {

@@ -37,6 +37,9 @@ const SidebarModelList = ({ tables, relationships: showRelationships, bordered, 
 
   if (!project) return null;
   const { entities, relationships } = project;
+  const specializations = project.specializations ?? [];
+  const specIssueCount = new Map<string, number>();
+  for (const issue of derived?.issues ?? []) if (issue.specializationId) specIssueCount.set(issue.specializationId, (specIssueCount.get(issue.specializationId) ?? 0) + 1);
   const nameOf = (id: string) => entities.find((e) => e.id === id)?.name ?? '?';
 
   return (
@@ -56,7 +59,7 @@ const SidebarModelList = ({ tables, relationships: showRelationships, bordered, 
         </SidebarModelSection>
       )}
       {showRelationships && (
-        <SidebarModelSection title={t('sidebar.relationships')} panel="relationships" count={relationships.length} onContextMenu={onContextMenu(['relationships'])}>
+        <SidebarModelSection title={t('sidebar.relationships')} panel="relationships" count={relationships.length + specializations.length} onContextMenu={onContextMenu(['relationships'])}>
           {relationships.map((rel) => (
             <SidebarModelItem
               key={rel.id}
@@ -65,6 +68,16 @@ const SidebarModelList = ({ tables, relationships: showRelationships, bordered, 
               issues={issueCount.get(rel.id) ?? 0}
               active={selection?.id === rel.id}
               onSelect={() => select({ kind: 'relationship', id: rel.id })}
+            />
+          ))}
+          {specializations.map((spec) => (
+            <SidebarModelItem
+              key={spec.id}
+              label={spec.name?.trim() || `${nameOf(spec.supertypeId)}: ${formatList(spec.subtypeIds.map(nameOf), locale)}`}
+              meta={[t('spec.kindLabel'), t(spec.total ? 'spec.total' : 'spec.partial').toLowerCase(), t(spec.disjoint ? 'spec.disjoint' : 'spec.overlapping').toLowerCase()].join(', ')}
+              issues={specIssueCount.get(spec.id) ?? 0}
+              active={selection?.id === spec.id}
+              onSelect={() => select({ kind: 'specialization', id: spec.id })}
             />
           ))}
         </SidebarModelSection>

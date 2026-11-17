@@ -7,6 +7,7 @@ import useUiStore from '../../../stores/use-ui-store';
 import InspectorEntity from './inspector-entity';
 import InspectorOverview from './inspector-overview';
 import InspectorRelationship from './inspector-relationship';
+import InspectorSpecialization from './inspector-specialization';
 
 const Inspector = () => {
   const t = useT();
@@ -14,6 +15,9 @@ const Inspector = () => {
   const selection = useUiStore((s) => s.selection);
   const entity = useProjectStore((s) =>
     selection?.kind === 'entity' ? s.project?.entities.find((e) => e.id === selection.id) : undefined,
+  );
+  const specialization = useProjectStore((s) =>
+    selection?.kind === 'specialization' ? s.project?.specializations?.find((x) => x.id === selection.id) : undefined,
   );
   const relationship = useProjectStore((s) =>
     selection?.kind === 'relationship' ? s.project?.relationships.find((r) => r.id === selection.id) : undefined,
@@ -28,6 +32,8 @@ const Inspector = () => {
           <InspectorEntity key={entity.id} entity={entity} />
         ) : relationship ? (
           <InspectorRelationship key={relationship.id} relationship={relationship} />
+        ) : specialization ? (
+          <InspectorSpecialization key={specialization.id} spec={specialization} />
         ) : (
           <InspectorOverview />
         )}

@@ -11,7 +11,7 @@ import {
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { linkAttributeAsFk, moveEntities } from '../../lib/actions';
-import { ATTR_HANDLE_PREFIX, buildEdges, buildNodes, buildSpecEdges, SPEC_NODE_PREFIX, type DiagramNode } from '../../lib/graph';
+import { ATTR_HANDLE_PREFIX, buildEdges, buildNodes, buildSpecEdges, defaultSpecPosition, SPEC_NODE_PREFIX, type DiagramNode } from '../../lib/graph';
 import useProjectStore from '../../stores/use-project-store';
 import useUiStore from '../../stores/use-ui-store';
 import useDerived from '../data/use-derived';
@@ -52,19 +52,41 @@ const useDiagramGraph = () => {
       setNodes([]);
       return;
     }
-    const next = buildNodes({
-      project,
-      schema: derived.schema,
-      selectedId: selection?.kind === 'entity' || selection?.kind === 'specialization' ? selection.id : undefined,
-      hoveredFkId,
-      issueCounts,
-    });
-    // Keep measured sizes so edges can pick sides without waiting for a new measurement.
+    // Keep measured sizes so edges can pick sides, and circles sit under tables, without waiting to measure again.
     setNodes((prev) => {
       const measured = new Map(prev.map((n) => [n.id, n.measured]));
+      const heights = new Map(prev.flatMap((n) => (n.measured?.height ? [[n.id, n.measured.height] as const] : [])));
+      const next = buildNodes({
+        project,
+        schema: derived.schema,
+        selectedId: selection?.kind === 'entity' || selection?.kind === 'specialization' ? selection.id : undefined,
+        hoveredFkId,
+        issueCounts,
+        heights,
+      });
       return next.map((n) => ({ ...n, measured: measured.get(n.id) }));
     });
   }, [project, derived, selection, hoveredFkId, issueCounts]);
+
+  // Circles never moved by hand go under their supertype as it is drawn, once its height is measured.
+  const measuredKey = nodes.map((n) => `${n.id}:${n.measured?.height ?? ''}`).join('|');
+  useEffect(() => {
+    if (!project?.specializations?.length) return;
+    setNodes((prev) => {
+      const heights = new Map(prev.flatMap((n) => (n.measured?.height ? [[n.id, n.measured.height] as const] : [])));
+      let changed = false;
+      const next = prev.map((n) => {
+        if (n.type !== 'spec') return n;
+        const spec = project.specializations!.find((s) => `${SPEC_NODE_PREFIX}${s.id}` === n.id);
+        if (!spec || spec.position) return n;
+        const position = defaultSpecPosition(spec, project, heights);
+        if (position.x === n.position.x && position.y === n.position.y) return n;
+        changed = true;
+        return { ...n, position };
+      });
+      return changed ? next : prev;
+    });
+  }, [measuredKey, project]);
 
   const edges = useMemo(
     () =>

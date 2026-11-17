@@ -54,7 +54,7 @@ const useCanvasContextMenu = (menu: ContextMenuState | null) => {
             },
           },
           ...(isJunction ? [] : [{ label: t('canvas.relateTo'), onSelect: () => ui.openRelationshipDialog([id]) }]),
-          ...(isJunction ? [] : [{ label: t('canvas.createSubtype'), onSelect: () => createSubtypeOf(id) }]),
+          ...(isJunction ? [] : [{ label: t('canvas.createSubtype'), onSelect: () => createSubtypeOf(id) }, { label: t('spec.startHere'), onSelect: () => ui.openSpecializationDialog(id) }]),
           { label: t('canvas.viewRecords'), onSelect: showRecords, separatorBefore: true },
           { label: t('agentExport.contextMenu'), onSelect: () => ui.openAgentExport(id) },
           {
@@ -80,6 +80,7 @@ const useCanvasContextMenu = (menu: ContextMenuState | null) => {
       items: [
         { label: t('canvas.newEntityHere'), hint: 'E', onSelect: () => addEntity(menu.flowPosition) },
         { label: t('canvas.newRelationship'), onSelect: () => ui.openRelationshipDialog() },
+        { label: t('spec.new'), onSelect: () => ui.openSpecializationDialog() },
         { label: t('canvas.arrangeDiagram'), onSelect: autoLayout, separatorBefore: true },
         { label: t('canvas.fitView'), onSelect: () => void fitView({ padding: 0.15, duration: 250 }) },
         { label: t('export.copyPng'), onSelect: () => void exportImage('copy-png') },

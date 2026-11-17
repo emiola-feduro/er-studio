@@ -46,11 +46,12 @@ export type DiagramNode = TableNodeType | SpecNodeType;
 export const estimatedNodeHeight = (columns: number) => 46 + Math.max(1, columns) * 26;
 
 /** Where the circle goes when it was never moved: under the supertype, halfway to its subtypes. */
-export const defaultSpecPosition = (spec: Specialization, project: Project) => {
+export const defaultSpecPosition = (spec: Specialization, project: Project, heights?: Map<string, number>) => {
   const entity = (id: string) => project.entities.find((e) => e.id === id);
   const supertype = entity(spec.supertypeId);
   if (!supertype) return { x: 0, y: 0 };
-  const bottom = supertype.position.y + estimatedNodeHeight(supertype.attributes.length);
+  // The drawn height when known: a single table makes the supertype taller than its own attributes.
+  const bottom = supertype.position.y + (heights?.get(supertype.id) ?? estimatedNodeHeight(supertype.attributes.length));
   const subtypes = spec.subtypeIds.map(entity).filter((e) => e !== undefined);
   const top = subtypes.length ? Math.min(...subtypes.map((s) => s!.position.y)) : bottom + 120;
   const y = top > bottom ? (bottom + top) / 2 : bottom + 50;
@@ -64,6 +65,8 @@ export const handleId = (columnId: string, side: 'L' | 'R', type: 's' | 't') => 
 
 type NodeInput = {
   project: Project;
+  /** Heights the canvas measured, to place things next to tables as they are drawn. */
+  heights?: Map<string, number>;
   schema: Schema;
   selectedId?: string;
   hoveredFkId: string | null;
@@ -79,7 +82,7 @@ const junctionLabel = (project: Project, table: Table) => {
   return kind === 'recursiva' ? t('relKind.recursiveNM') : 'N:M';
 };
 
-export const buildNodes = ({ project, schema, selectedId, hoveredFkId, issueCounts }: NodeInput): DiagramNode[] => {
+export const buildNodes = ({ project, schema, selectedId, hoveredFkId, issueCounts, heights }: NodeInput): DiagramNode[] => {
   const hovered = hoveredFkId ? schema.foreignKeys.find((fk) => fk.id === hoveredFkId) : undefined;
   const specs = project.specializations ?? [];
   // Subtypes stored in their supertype's table (single table) still get their own box.
@@ -87,11 +90,15 @@ export const buildNodes = ({ project, schema, selectedId, hoveredFkId, issueCoun
   const merged: { table: Table; into: string }[] = [];
   for (const spec of specs) {
     if (spec.mapping !== 'single-table') continue;
-    const into = project.entities.find((e) => e.id === spec.supertypeId)?.name ?? '';
+    const supertype = project.entities.find((e) => e.id === spec.supertypeId);
+    const into = supertype?.name ?? '';
+    // Only what moves into the supertype's table: not its key, not what the supertype already has.
+    const taken = new Set((supertype?.attributes ?? []).map((a) => a.name.toLowerCase()));
     for (const id of spec.subtypeIds) {
       const entity = project.entities.find((e) => e.id === id);
       if (!entity || inTables.has(id)) continue;
-      merged.push({ into, table: { id, name: entity.name, kind: 'entity', columns: entity.attributes.map(attributeColumn), uniques: [], foreignKeys: [], indexes: [] } });
+      const moved = entity.attributes.filter((a) => !a.pk && !taken.has(a.name.toLowerCase()));
+      merged.push({ into, table: { id, name: entity.name, kind: 'entity', columns: moved.map((a) => ({ ...attributeColumn(a), nullable: true })), uniques: [], foreignKeys: [], indexes: [] } });
     }
   }
   const specNodes: SpecNodeType[] = specs
@@ -99,7 +106,7 @@ export const buildNodes = ({ project, schema, selectedId, hoveredFkId, issueCoun
     .map((spec) => ({
       id: specNodeId(spec.id),
       type: 'spec',
-      position: spec.position ?? defaultSpecPosition(spec, project),
+      position: spec.position ?? defaultSpecPosition(spec, project, heights),
       selected: selectedId === spec.id,
       data: {
         specId: spec.id,

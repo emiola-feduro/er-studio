@@ -196,3 +196,17 @@ describe('migrations between mappings', () => {
     expect(sql).toContain("CHECK (salario IS NULL OR COALESCE(tipo, '') = 'empleado')");
   });
 });
+
+describe('attributes named like the supertype ones', () => {
+  it('are the inherited attribute, not a second column', () => {
+    for (const mapping of ['table-per-type', 'single-table', 'table-per-concrete'] as SpecializationMapping[]) {
+      const { project, empleado } = hierarchy(mapping);
+      empleado.attributes.unshift({ id: uid(), name: 'id', type: 'INTEGER', pk: true, nullable: false, unique: false, autoIncrement: true }, { id: uid(), name: 'nombre', type: 'VARCHAR', length: 50, pk: false, nullable: true, unique: false, autoIncrement: false });
+      for (const table of buildSchema(project).tables) {
+        const names = table.columns.map((c) => c.name.toLowerCase());
+        expect(new Set(names).size, `${mapping}: ${table.name}(${names})`).toBe(names.length);
+      }
+    }
+  });
+});
+

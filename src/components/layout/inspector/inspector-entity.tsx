@@ -7,6 +7,7 @@ import InspectorFkColumns from './inspector-fk-columns';
 import InspectorIndexList from './inspector-index-list';
 import InspectorIssueList from './inspector-issue-list';
 import useDesignReview from '../../../hooks/data/use-design-review';
+import InspectorEntityHierarchy from './inspector-entity-hierarchy';
 import InspectorJunction from './inspector-junction';
 import InspectorReviewList from './inspector-review-list';
 import InspectorSection from './inspector-section';
@@ -23,6 +24,7 @@ const InspectorEntity = ({ entity }: { entity: Entity }) => {
     <>
       <InspectorEntityHeader entity={entity} />
       {kind === 'junction' && <InspectorJunction entity={entity} />}
+      <InspectorEntityHierarchy entity={entity} />
       <InspectorAttributeList entity={entity} />
       {table && <InspectorFkColumns table={table} />}
       {table && <InspectorIndexList entity={entity} table={table} />}
