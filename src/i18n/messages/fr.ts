@@ -969,4 +969,10 @@ export const fr: Messages = {
 
   // Spec rules title
   'spec.rules': "Règles",
+
+  // Specialization record rules
+  'value.specDisjoint': "Cet enregistrement de {supertype} est déjà dans {other}, et la spécialisation est disjointe.",
+  'value.specDiscriminator': "Dans {supertype}, le type indique « {value} », pas « {expected} ».",
+  'value.specTotal': "La spécialisation est totale : cet enregistrement manque dans l’une de {subtypes}.",
+  'value.specNotSubtype': "Seuls les enregistrements de {subtype} portent cette valeur.",
 };

@@ -1,5 +1,6 @@
 import { t } from '../i18n';
 import { DIALECTS, findType, isSerial, lengthLimit, type Generic } from './dialects';
+import { validateSpecializationRecords } from './specialization-records';
 import type { Column, DataRow, DialectId, Project, Schema, Table } from './types';
 
 /* Type checks for single values */
@@ -244,6 +245,7 @@ export const validateRecords = (project: Project, schema: Schema): RecordIssues 
       }
     }
   }
+  validateSpecializationRecords(project, schema, add);
   return issues;
 };
 

@@ -1,6 +1,7 @@
 import { getLocale, type Locale } from '../i18n';
 import { DIALECTS, findType, isSerial, lengthLimit, type Generic } from './dialects';
 import { nextAutoValue } from './records';
+import { shapeSupertypeRow, specializationRefFilter } from './specialization-records';
 import type { Column, DataRow, DialectId, Project, Schema, Table } from './types';
 
 export type Rng = () => number;
@@ -260,6 +261,8 @@ export const generateRows = (
   const usedRefs = new Map(
     table.foreignKeys.filter((fk) => uniqueFks.has(fk.id)).map((fk) => [fk.id, new Set(existing.map((r) => fkKey(r.values, fk.columnIds)))]),
   );
+  // A subtype row points only to supertype rows that can be of that subtype.
+  const allowRef = specializationRefFilter(project, schema, table);
 
   for (let i = 0; i < count; i += 1) {
     let values: Record<string, string> = {};
@@ -268,7 +271,7 @@ export const generateRows = (
       values = {};
       for (const fk of table.foreignKeys) {
         const used = usedRefs.get(fk.id);
-        const refRows = (records[fk.refTableId] ?? []).filter((r) => !used?.has(fkKey(r.values, fk.refColumnIds)));
+        const refRows = (records[fk.refTableId] ?? []).filter((r) => !used?.has(fkKey(r.values, fk.refColumnIds)) && (!allowRef || allowRef(fk, r)));
         if (refRows.length === 0) {
           if (used && (records[fk.refTableId] ?? []).length > 0) exhausted = true;
           else missingRefs.add(schema.tables.find((t) => t.id === fk.refTableId)?.name ?? '?');
@@ -290,6 +293,11 @@ export const generateRows = (
         const value = used ? uniqueValue(ctx, column, used) : randomValue(project.dialect, column, rng, locale);
         if (value !== null) values[column.id] = value;
       }
+      // A supertype row says its subtype, and in a single table carries only that subtype's columns.
+      shapeSupertypeRow(project, schema, table, values, rng, (columnId) => {
+        const column = table.columns.find((c) => c.id === columnId);
+        return column ? randomValue(project.dialect, { ...column, nullable: false }, rng, locale) : null;
+      });
       if (pkIds.length === 0 || !usedPk.has(pkKey(values))) break;
     }
     // Every referenced row is already taken by a one-to-one FK, so no more valid rows fit.

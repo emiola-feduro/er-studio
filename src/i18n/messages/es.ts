@@ -1005,6 +1005,12 @@ export const es = {
 
   // Spec rules title
   'spec.rules': "Reglas",
+
+  // Specialization record rules
+  'value.specDisjoint': "Este registro de {supertype} ya está en {other}, y la especialización es disjunta.",
+  'value.specDiscriminator': "En {supertype} el tipo dice \"{value}\", no \"{expected}\".",
+  'value.specTotal': "La especialización es total: falta este registro en alguna de {subtypes}.",
+  'value.specNotSubtype': "Solo los registros de {subtype} llevan este valor.",
 } as const;
 
 export type Messages = { [K in keyof typeof es]: string };
