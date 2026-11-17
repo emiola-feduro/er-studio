@@ -4,15 +4,17 @@ import usePreferencesStore, { PANEL_WIDTHS, type ResizablePanel } from '../../st
 const KEY_STEP = 16;
 
 /**
- * Drag, keyboard and double click handlers for a side panel's resize handle. The left panel grows
- * when dragged to the right; the right panel grows when dragged to the left.
+ * Drag, keyboard and double click handlers for a panel's resize handle. Panels on the left grow when
+ * dragged to the right, the right panel when dragged to the left, and the query results (at the
+ * bottom, the only one that changes height) when dragged up.
  */
 const usePanelResize = (panel: ResizablePanel) => {
-  const width = usePreferencesStore((s) => s.panelWidths[panel]);
+  const width = usePreferencesStore((s) => s.panelWidths[panel] ?? PANEL_WIDTHS[panel].default);
+  const vertical = panel === 'queryResults';
   const setPanelWidth = usePreferencesStore((s) => s.setPanelWidth);
   const [dragging, setDragging] = useState(false);
   const limits = PANEL_WIDTHS[panel];
-  const direction = panel === 'sidebar' ? 1 : -1;
+  const direction = panel === 'sidebar' || panel === 'queryBuilder' ? 1 : -1;
   const setWidth = useCallback((value: number) => setPanelWidth(panel, value), [panel, setPanelWidth]);
 
   const onPointerDown = useCallback(
@@ -21,13 +23,13 @@ const usePanelResize = (panel: ResizablePanel) => {
       event.preventDefault();
       const handle = event.currentTarget;
       handle.setPointerCapture(event.pointerId);
-      const startX = event.clientX;
-      const startWidth = usePreferencesStore.getState().panelWidths[panel];
+      const start = vertical ? event.clientY : event.clientX;
+      const startWidth = usePreferencesStore.getState().panelWidths[panel] ?? limits.default;
       setDragging(true);
-      document.body.style.cursor = 'col-resize';
+      document.body.style.cursor = vertical ? 'row-resize' : 'col-resize';
       document.body.style.userSelect = 'none';
 
-      const onMove = (move: globalThis.PointerEvent) => setWidth(startWidth + (move.clientX - startX) * direction);
+      const onMove = (move: globalThis.PointerEvent) => setWidth(startWidth + ((vertical ? move.clientY : move.clientX) - start) * direction);
       const onUp = () => {
         setDragging(false);
         document.body.style.cursor = '';
@@ -40,16 +42,16 @@ const usePanelResize = (panel: ResizablePanel) => {
       handle.addEventListener('pointerup', onUp);
       handle.addEventListener('pointercancel', onUp);
     },
-    [panel, direction, setWidth],
+    [panel, direction, vertical, limits, setWidth],
   );
 
   const onKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
-      const current = usePreferencesStore.getState().panelWidths[panel];
+      const current = usePreferencesStore.getState().panelWidths[panel] ?? limits.default;
       const step = (event.shiftKey ? KEY_STEP * 4 : KEY_STEP) * direction;
       const next = {
-        ArrowLeft: current - step,
-        ArrowRight: current + step,
+        [vertical ? 'ArrowUp' : 'ArrowLeft']: current - step,
+        [vertical ? 'ArrowDown' : 'ArrowRight']: current + step,
         Home: limits.min,
         End: limits.max,
       }[event.key];
@@ -57,12 +59,12 @@ const usePanelResize = (panel: ResizablePanel) => {
       event.preventDefault();
       setWidth(next);
     },
-    [panel, direction, limits, setWidth],
+    [panel, direction, vertical, limits, setWidth],
   );
 
   const reset = useCallback(() => setWidth(limits.default), [limits, setWidth]);
 
-  return { width, limits, dragging, onPointerDown, onKeyDown, reset };
+  return { width, limits, vertical, dragging, onPointerDown, onKeyDown, reset };
 };
 
 export default usePanelResize;

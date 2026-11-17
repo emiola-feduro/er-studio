@@ -4,7 +4,7 @@ import { DEFAULT_LOCALE, isLocale, setLocale, t, type Locale, type MessageKey } 
 import { DEFAULT_THEME_ID } from '../lib/themes/themes';
 
 export type TextSize = 'sm' | 'md' | 'lg';
-export type PanelId = 'header' | 'projects' | 'tables' | 'relationships' | 'inspector';
+export type PanelId = 'header' | 'projects' | 'tables' | 'relationships' | 'inspector' | 'queryBuilder' | 'queryResults';
 
 /** Panels that can be hidden. `shortcut` is the digit used with Alt to toggle each one. */
 export const PANELS: { id: PanelId; label: MessageKey; shortcut: string }[] = [
@@ -13,6 +13,8 @@ export const PANELS: { id: PanelId; label: MessageKey; shortcut: string }[] = [
   { id: 'relationships', label: 'panels.relationships', shortcut: '3' },
   { id: 'inspector', label: 'panels.inspector', shortcut: '4' },
   { id: 'header', label: 'panels.header', shortcut: '5' },
+  { id: 'queryBuilder', label: 'panels.queryBuilder', shortcut: '6' },
+  { id: 'queryResults', label: 'panels.queryResults', shortcut: '7' },
 ];
 
 export const panelShortcut = (id: PanelId) => `Alt+${PANELS.find((p) => p.id === id)!.shortcut}`;
@@ -28,6 +30,8 @@ type PreferencesState = {
   /** Width in pixels of each resizable side panel (wide screens only). */
   panelWidths: Record<ResizablePanel, number>;
   hiddenPanels: Partial<Record<PanelId, boolean>>;
+  /** Sidebar sections folded to their title, like a dropdown. */
+  collapsedSections: Partial<Record<SidebarSection, boolean>>;
   setLocale: (locale: Locale) => void;
   setTheme: (id: string) => void;
   setUiFont: (id: string) => void;
@@ -37,13 +41,19 @@ type PreferencesState = {
   setShowConstraintIcons: (show: boolean) => void;
   setPanelWidth: (panel: ResizablePanel, width: number) => void;
   setPanelHidden: (id: PanelId, hidden: boolean) => void;
+  setSectionCollapsed: (id: SidebarSection, collapsed: boolean) => void;
 };
 
-export type ResizablePanel = 'sidebar' | 'inspector';
+export type SidebarSection = 'projects' | 'tables' | 'relationships';
+
+/** Side panels change width; queryResults changes height. */
+export type ResizablePanel = 'sidebar' | 'inspector' | 'queryBuilder' | 'queryResults';
 
 export const PANEL_WIDTHS: Record<ResizablePanel, { min: number; max: number; default: number }> = {
   sidebar: { min: 200, max: 520, default: 272 },
   inspector: { min: 320, max: 760, default: 410 },
+  queryBuilder: { min: 240, max: 640, default: 320 },
+  queryResults: { min: 120, max: 1000, default: 320 },
 };
 
 /** localStorage can throw in private windows; preferences then just do not persist. */
@@ -86,8 +96,9 @@ const usePreferencesStore = create<PreferencesState>()(
       sqlFontId: 'jetbrains-mono',
       textSize: 'md',
       showConstraintIcons: false,
-      panelWidths: { sidebar: PANEL_WIDTHS.sidebar.default, inspector: PANEL_WIDTHS.inspector.default },
+      panelWidths: Object.fromEntries(Object.entries(PANEL_WIDTHS).map(([k, v]) => [k, v.default])) as Record<ResizablePanel, number>,
       hiddenPanels: {},
+      collapsedSections: {},
       setTheme: (themeId) => set({ themeId }),
       setUiFont: (uiFontId) => set({ uiFontId }),
       setCanvasFont: (canvasFontId) => set({ canvasFontId }),
@@ -99,18 +110,22 @@ const usePreferencesStore = create<PreferencesState>()(
         set((s) => ({ panelWidths: { ...s.panelWidths, [panel]: Math.round(Math.min(max, Math.max(min, width))) } }));
       },
       setPanelHidden: (id, hidden) => set((s) => ({ hiddenPanels: { ...s.hiddenPanels, [id]: hidden } })),
+      setSectionCollapsed: (id, collapsed) => set((s) => ({ collapsedSections: { ...s.collapsedSections, [id]: collapsed } })),
     }),
     {
       name: 'er-studio:preferences',
       storage: createJSONStorage(() => safeStorage),
-      version: 1,
+      version: 2,
       // Version 0 saved only the left panel width, as sidebarWidth.
       migrate: (persisted, version) => {
         const state = persisted as Partial<PreferencesState> & { sidebarWidth?: number };
         if (version < 1) {
-          state.panelWidths = { sidebar: state.sidebarWidth ?? PANEL_WIDTHS.sidebar.default, inspector: PANEL_WIDTHS.inspector.default };
+          state.panelWidths = { sidebar: state.sidebarWidth ?? PANEL_WIDTHS.sidebar.default, inspector: PANEL_WIDTHS.inspector.default } as Record<ResizablePanel, number>;
           delete state.sidebarWidth;
         }
+        // Version 2 added the query panels and the folded sidebar sections.
+        state.panelWidths = { ...Object.fromEntries(Object.entries(PANEL_WIDTHS).map(([k, v]) => [k, v.default])), ...state.panelWidths } as Record<ResizablePanel, number>;
+        state.collapsedSections ??= {};
         return state as PreferencesState;
       },
       onRehydrateStorage: () => (state) => {

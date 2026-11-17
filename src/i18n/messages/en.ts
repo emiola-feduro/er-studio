@@ -889,4 +889,18 @@ export const en: Messages = {
   'completion.function': "function",
   'completion.join': "join by FK",
   'query.editorPlaceholder': "Write a SELECT on the tables of the model. Ctrl+Space shows suggestions and Ctrl+Enter runs it.",
+
+  // Editable FK columns and 1:1 side
+  'rel.fkColumn': "FK column to {column}",
+  'rel.fkSide': "The FK goes in",
+
+  // Query panels, context menu, collapsible sections
+  'panels.queryBuilder': "Query panel",
+  'panels.queryResults': "Query results",
+  'panels.hideItem': "Hide {name}",
+  'panels.hideSidebar': "Hide the sidebar",
+  'panels.menuLabel': "Panels",
+  'panels.resizeQueryBuilder': "Width of the query panel",
+  'panels.resizeQueryResults': "Height of the results",
+  'sidebar.toggleSection': "Show or hide {name}",
 };

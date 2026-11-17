@@ -2,7 +2,8 @@ import { RELATIONSHIP_KIND_KEYS } from '../../../lib/labels';
 import usePreferencesStore from '../../../stores/use-preferences-store';
 import { formatList } from '../../../i18n';
 import useT from '../../../hooks/ui/use-t';
-import { useMemo } from 'react';
+import { useMemo, type MouseEvent } from 'react';
+import type { PanelId } from '../../../stores/use-preferences-store';
 import useDerived from '../../../hooks/data/use-derived';
 import { relationshipKind } from '../../../domain/model';
 import useProjectStore from '../../../stores/use-project-store';
@@ -14,9 +15,10 @@ type SidebarModelListProps = {
   tables: boolean;
   relationships: boolean;
   bordered: boolean;
+  onContextMenu: (panels: PanelId[]) => (event: MouseEvent) => void;
 };
 
-const SidebarModelList = ({ tables, relationships: showRelationships, bordered }: SidebarModelListProps) => {
+const SidebarModelList = ({ tables, relationships: showRelationships, bordered, onContextMenu }: SidebarModelListProps) => {
   const t = useT();
   const project = useProjectStore((s) => s.project);
   const derived = useDerived();
@@ -40,7 +42,7 @@ const SidebarModelList = ({ tables, relationships: showRelationships, bordered }
   return (
     <div className={`relative min-h-0 flex-1 overflow-y-auto px-2 py-3 ${bordered ? 'border-t border-line' : ''}`}>
       {tables && (
-        <SidebarModelSection title={t('sidebar.tables')} panel="tables" empty={entities.length === 0}>
+        <SidebarModelSection title={t('sidebar.tables')} panel="tables" count={entities.length} onContextMenu={onContextMenu(['tables'])}>
           {entities.map((entity) => (
             <SidebarModelItem
               key={entity.id}
@@ -54,7 +56,7 @@ const SidebarModelList = ({ tables, relationships: showRelationships, bordered }
         </SidebarModelSection>
       )}
       {showRelationships && (
-        <SidebarModelSection title={t('sidebar.relationships')} panel="relationships" empty={relationships.length === 0}>
+        <SidebarModelSection title={t('sidebar.relationships')} panel="relationships" count={relationships.length} onContextMenu={onContextMenu(['relationships'])}>
           {relationships.map((rel) => (
             <SidebarModelItem
               key={rel.id}

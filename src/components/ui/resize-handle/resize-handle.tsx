@@ -7,15 +7,23 @@ type ResizeHandleProps = {
   label: string;
 };
 
-/** Vertical splitter on a side panel's inner edge. Drag, use the arrow keys, or double click to reset. */
+// Where the handle sits on each panel: the inner edge, the one next to the content it shares space with.
+const PLACEMENT = {
+  sidebar: 'inset-y-0 -right-1.5 w-3 cursor-col-resize',
+  queryBuilder: 'inset-y-0 -right-1.5 w-3 cursor-col-resize',
+  inspector: 'inset-y-0 -left-1.5 w-3 cursor-col-resize',
+  queryResults: 'inset-x-0 -top-1.5 h-3 cursor-row-resize',
+};
+
+/** Splitter on a panel's inner edge. Drag, use the arrow keys, or double click to reset. */
 const ResizeHandle = ({ panel, label }: ResizeHandleProps) => {
   const t = useT();
-  const { width, limits, dragging, onPointerDown, onKeyDown, reset } = usePanelResize(panel);
+  const { width, limits, vertical, dragging, onPointerDown, onKeyDown, reset } = usePanelResize(panel);
 
   return (
     <div
       role="separator"
-      aria-orientation="vertical"
+      aria-orientation={vertical ? 'horizontal' : 'vertical'}
       aria-label={label}
       aria-valuenow={width}
       aria-valuemin={limits.min}
@@ -25,10 +33,10 @@ const ResizeHandle = ({ panel, label }: ResizeHandleProps) => {
       onPointerDown={onPointerDown}
       onKeyDown={onKeyDown}
       onDoubleClick={reset}
-      className={`group absolute inset-y-0 z-20 hidden w-3 cursor-col-resize touch-none lg:block ${panel === 'sidebar' ? '-right-1.5' : '-left-1.5'}`}
+      className={`group absolute z-20 hidden touch-none ${vertical || panel === 'queryBuilder' ? 'md:block' : 'lg:block'} ${PLACEMENT[panel]}`}
     >
       <span
-        className={`absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 transition-colors ${dragging ? 'bg-accent' : 'bg-transparent group-hover:bg-accent group-focus-visible:bg-accent'}`}
+        className={`absolute transition-colors ${vertical ? 'inset-x-0 top-1/2 h-0.5 -translate-y-1/2' : 'inset-y-0 left-1/2 w-0.5 -translate-x-1/2'} ${dragging ? 'bg-accent' : 'bg-transparent group-hover:bg-accent group-focus-visible:bg-accent'}`}
       />
     </div>
   );

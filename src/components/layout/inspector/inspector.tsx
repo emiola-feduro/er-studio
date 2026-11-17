@@ -1,5 +1,7 @@
 import ResizeHandle from '../../ui/resize-handle/resize-handle';
+import usePanelContextMenu from '../../../hooks/ui/use-panel-context-menu';
 import useT from '../../../hooks/ui/use-t';
+import PanelContextMenu from '../panels-menu/panel-context-menu';
 import useProjectStore from '../../../stores/use-project-store';
 import useUiStore from '../../../stores/use-ui-store';
 import InspectorEntity from './inspector-entity';
@@ -8,6 +10,7 @@ import InspectorRelationship from './inspector-relationship';
 
 const Inspector = () => {
   const t = useT();
+  const { menu, onContextMenu, close } = usePanelContextMenu();
   const selection = useUiStore((s) => s.selection);
   const entity = useProjectStore((s) =>
     selection?.kind === 'entity' ? s.project?.entities.find((e) => e.id === selection.id) : undefined,
@@ -17,7 +20,7 @@ const Inspector = () => {
   );
 
   return (
-    <aside aria-label={t('inspector.label')} className="relative flex min-h-0 flex-col border-l border-line bg-surface">
+    <aside aria-label={t('inspector.label')} className="relative flex min-h-0 flex-col border-l border-line bg-surface" onContextMenu={onContextMenu(['inspector'])}>
       <ResizeHandle panel="inspector" label={t('inspector.resize')} />
       {/* The handle stays outside the scrolling area so it covers the whole edge. */}
       <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto">
@@ -29,6 +32,7 @@ const Inspector = () => {
           <InspectorOverview />
         )}
       </div>
+      <PanelContextMenu menu={menu} onClose={close} />
     </aside>
   );
 };

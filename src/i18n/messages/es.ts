@@ -925,6 +925,20 @@ export const es = {
   'completion.function': "función",
   'completion.join': "unión por FK",
   'query.editorPlaceholder': "Escribe un SELECT sobre las tablas del modelo. Ctrl+Espacio muestra sugerencias y Ctrl+Enter lo ejecuta.",
+
+  // Editable FK columns and 1:1 side
+  'rel.fkColumn': "Columna FK hacia {column}",
+  'rel.fkSide': "La FK va en",
+
+  // Query panels, context menu, collapsible sections
+  'panels.queryBuilder': "Panel de consultas",
+  'panels.queryResults': "Resultados de consultas",
+  'panels.hideItem': "Ocultar {name}",
+  'panels.hideSidebar': "Ocultar la barra lateral",
+  'panels.menuLabel': "Paneles",
+  'panels.resizeQueryBuilder': "Ancho del panel de consultas",
+  'panels.resizeQueryResults': "Alto de los resultados",
+  'sidebar.toggleSection': "Mostrar u ocultar {name}",
 } as const;
 
 export type Messages = { [K in keyof typeof es]: string };

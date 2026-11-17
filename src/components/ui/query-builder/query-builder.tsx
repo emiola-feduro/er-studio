@@ -1,4 +1,9 @@
-import { useState, type KeyboardEvent } from 'react';
+import { useState, type CSSProperties, type KeyboardEvent } from 'react';
+import usePanelContextMenu from '../../../hooks/ui/use-panel-context-menu';
+import usePanels from '../../../hooks/ui/use-panels';
+import usePreferencesStore, { PANEL_WIDTHS } from '../../../stores/use-preferences-store';
+import PanelContextMenu from '../../layout/panels-menu/panel-context-menu';
+import ResizeHandle from '../resize-handle/resize-handle';
 import useQueryBuilder from '../../../hooks/data/use-query-builder';
 import useEditorCompletion from '../../../hooks/data/use-editor-completion';
 import useDerived from '../../../hooks/data/use-derived';
@@ -24,6 +29,12 @@ const QueryBuilder = () => {
   const { result, spec, project, customSql, setCustomSql, tab, setTab } = builder;
   const runner = useQueryRun(project, spec, customSql, tab);
   const [confirmReplace, setConfirmReplace] = useState(false);
+  const { isVisible } = usePanels();
+  const { menu, onContextMenu, close } = usePanelContextMenu();
+  const builderWidth = usePreferencesStore((s) => s.panelWidths.queryBuilder ?? PANEL_WIDTHS.queryBuilder.default);
+  const resultsHeight = usePreferencesStore((s) => s.panelWidths.queryResults ?? PANEL_WIDTHS.queryResults.default);
+  const showBuilder = isVisible('queryBuilder');
+  const showResults = isVisible('queryResults');
   const complete = useEditorCompletion(useDerived()?.schema, project?.dialect);
   const sql = tab === 'editor' ? customSql : result.sql;
 
@@ -46,20 +57,30 @@ const QueryBuilder = () => {
   };
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-1 bg-bg md:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)]" onKeyDown={onKeyDown}>
-      <div className="relative min-h-0 space-y-5 overflow-y-auto border-r border-line bg-surface p-4">
-        <QueryBuilderTables builder={builder} />
-        {spec.tableIds.length > 0 && (
-          <>
-            <QueryBuilderJoins builder={builder} />
-            <QueryBuilderColumns builder={builder} />
-            <QueryBuilderOptions builder={builder} />
-          </>
-        )}
-      </div>
+    <div
+      className="grid h-full min-h-0 grid-cols-1 bg-bg md:grid-cols-(--query-cols)"
+      style={{ '--query-cols': showBuilder ? `${builderWidth}px minmax(0,1fr)` : 'minmax(0,1fr)' } as CSSProperties}
+      onKeyDown={onKeyDown}
+    >
+      {showBuilder && (
+        <div className="relative flex min-h-0 flex-col border-r border-line bg-surface" onContextMenu={onContextMenu(['queryBuilder'])}>
+          {/* The handle stays outside the scrolling area so it covers the whole edge. */}
+          <div className="relative min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
+            <QueryBuilderTables builder={builder} />
+            {spec.tableIds.length > 0 && (
+              <>
+                <QueryBuilderJoins builder={builder} />
+                <QueryBuilderColumns builder={builder} />
+                <QueryBuilderOptions builder={builder} />
+              </>
+            )}
+          </div>
+          <ResizeHandle panel="queryBuilder" label={t('panels.resizeQueryBuilder')} />
+        </div>
+      )}
       <div className="flex min-h-0 flex-col">
         <QueryBuilderToolbar builder={builder} runner={runner} sql={sql} onCopyToEditor={() => copyToEditor()} />
-        <div className="relative flex max-h-[45%] min-h-28 shrink-0 flex-col overflow-auto">
+        <div className="relative flex min-h-28 flex-1 flex-col overflow-auto">
           {tab === 'editor' ? (
             <SqlEditor id="query-editor" label={t('query.sqlLabel')} value={customSql} onChange={setCustomSql} placeholder={t('query.editorPlaceholder')} complete={complete} />
           ) : result.sql ? (
@@ -68,15 +89,20 @@ const QueryBuilder = () => {
             <p className="p-6 text-muted">{t('query.empty')}</p>
           )}
         </div>
-        {project && (
-          <QueryBuilderResults
-            runner={runner}
-            dialect={project.dialect}
-            scope={`results:${project.id}`}
-            sourceLabel={runner.from ? t(runner.from === 'editor' ? 'query.fromEditor' : 'query.fromGenerated') : undefined}
-          />
+        {project && showResults && (
+          // Never taller than the column minus room for the query above, so the query never disappears.
+          <div className="relative flex min-h-0 shrink-0 flex-col" style={{ height: `min(${resultsHeight}px, calc(100% - 9rem))` }} onContextMenu={onContextMenu(['queryResults'])}>
+            <ResizeHandle panel="queryResults" label={t('panels.resizeQueryResults')} />
+            <QueryBuilderResults
+              runner={runner}
+              dialect={project.dialect}
+              scope={`results:${project.id}`}
+              sourceLabel={runner.from ? t(runner.from === 'editor' ? 'query.fromEditor' : 'query.fromGenerated') : undefined}
+            />
+          </div>
         )}
       </div>
+      <PanelContextMenu menu={menu} onClose={close} />
       <ConfirmDialog
         open={confirmReplace}
         title={t('query.replaceTitle')}
