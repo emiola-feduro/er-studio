@@ -18,6 +18,7 @@ import {
 } from '../domain/model';
 import type { Attribute, DialectId, ModelVersion, Entity, Participant, Position, Project, Relationship, TableIndex } from '../domain/types';
 import useProjectStore from '../stores/use-project-store';
+import { forgetEntityInSpecializations } from './specialization-actions';
 import useUiStore from '../stores/use-ui-store';
 
 /** Model editing commands. Each one is a single undoable step (or coalesced by key). */
@@ -80,6 +81,7 @@ export const deleteEntity = (id: string) => {
       draft.relationships = draft.relationships.filter((r) => r.id !== entity.junction?.relationshipId);
     }
     draft.entities = draft.entities.filter((e) => e.id !== id);
+    forgetEntityInSpecializations(draft, id);
   });
   const { selection, select } = useUiStore.getState();
   if (selection?.id === id) select(null);

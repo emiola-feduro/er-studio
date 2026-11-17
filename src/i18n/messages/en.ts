@@ -903,4 +903,19 @@ export const en: Messages = {
   'panels.resizeQueryBuilder': "Width of the query panel",
   'panels.resizeQueryResults': "Height of the results",
   'sidebar.toggleSection': "Show or hide {name}",
+
+  // Specialization issues
+  'spec.missingSupertype': "A specialization has no supertype.",
+  'spec.junction': "\"{name}\" is a junction table and cannot be part of a specialization.",
+  'spec.noSubtypes': "The specialization of \"{name}\" has no subtypes.",
+  'spec.selfSubtype': "\"{name}\" cannot be a subtype of itself.",
+  'spec.supertypeNoPk': "The supertype \"{name}\" needs a primary key.",
+  'spec.multipleSupertypes': "\"{name}\" is a subtype of several supertypes ({supertypes}); it can only have one.",
+  'spec.cycle': "\"{name}\" ends up as a supertype of itself.",
+  'spec.subtypeOwnKey': "\"{name}\" uses the key of \"{supertype}\"; its own key stays as UNIQUE.",
+  'spec.singleTableKey': "\"{name}\" is a key of the subtype and does not move into the table \"{supertype}\".",
+  'spec.abstractReferenced': "\"{name}\" has no table of its own (total, table per subtype) and a relationship points to it. Use a table per type.",
+
+  // New subtype name
+  'spec.newSubtype': "{name}_kind",
 };

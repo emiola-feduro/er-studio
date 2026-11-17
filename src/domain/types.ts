@@ -54,6 +54,27 @@ export type Entity = {
 
 export type Cardinality = '1' | 'N';
 
+/** How a specialization becomes tables. */
+export type SpecializationMapping = 'table-per-type' | 'single-table' | 'table-per-concrete';
+
+/**
+ * Generalization and specialization (EER): a supertype and its subtypes. Total means every
+ * supertype row belongs to some subtype; disjoint means it belongs to at most one.
+ */
+export type Specialization = {
+  id: string;
+  name?: string;
+  supertypeId: string;
+  subtypeIds: string[];
+  total: boolean;
+  disjoint: boolean;
+  mapping: SpecializationMapping;
+  /** Column in the supertype that names the subtype of each row; only used when disjoint. */
+  discriminator?: { name: string; values: Record<string, string> };
+  /** Where the "d" or "o" circle sits on the diagram. */
+  position?: Position;
+};
+
 export type Participant = {
   id: string;
   entityId: string;
@@ -95,6 +116,7 @@ export type Project = {
   dismissedFindings?: string[];
   entities: Entity[];
   relationships: Relationship[];
+  specializations?: Specialization[];
   /** Data rows per table id. Optional so projects saved before this feature keep loading. */
   records?: Record<string, DataRow[]>;
   createdAt: number;
@@ -153,6 +175,8 @@ export type Table = {
   columns: Column[];
   pk?: { name: string; columnIds: string[] };
   uniques: UniqueConstraint[];
+  /** CHECK constraints on several columns, with the expression already written for the gestor. */
+  checks?: { name: string; expression: string }[];
   foreignKeys: ForeignKey[];
   indexes: TableIndex[];
 };
@@ -168,6 +192,7 @@ export type Issue = {
   message: string;
   entityId?: string;
   relationshipId?: string;
+  specializationId?: string;
 };
 
 /** A saved copy of a project's model, to compare later and generate the migration between versions. */

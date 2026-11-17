@@ -939,6 +939,21 @@ export const es = {
   'panels.resizeQueryBuilder': "Ancho del panel de consultas",
   'panels.resizeQueryResults': "Alto de los resultados",
   'sidebar.toggleSection': "Mostrar u ocultar {name}",
+
+  // Specialization issues
+  'spec.missingSupertype': "Una especialización no tiene superclase.",
+  'spec.junction': "\"{name}\" es una tabla intermedia y no puede formar parte de una especialización.",
+  'spec.noSubtypes': "La especialización de \"{name}\" no tiene subclases.",
+  'spec.selfSubtype': "\"{name}\" no puede ser subclase de sí misma.",
+  'spec.supertypeNoPk': "La superclase \"{name}\" necesita una llave primaria.",
+  'spec.multipleSupertypes': "\"{name}\" es subclase de varias superclases ({supertypes}); solo puede tener una.",
+  'spec.cycle': "\"{name}\" termina siendo superclase de sí misma.",
+  'spec.subtypeOwnKey': "\"{name}\" usa la llave de \"{supertype}\"; su llave propia queda como UNIQUE.",
+  'spec.singleTableKey': "\"{name}\" es llave de la subclase y no pasa a la tabla \"{supertype}\".",
+  'spec.abstractReferenced': "\"{name}\" no tiene tabla propia (especialización total, una tabla por subclase) y una relación apunta a ella. Usa una tabla por clase.",
+
+  // New subtype name
+  'spec.newSubtype': "{name}_tipo",
 } as const;
 
 export type Messages = { [K in keyof typeof es]: string };

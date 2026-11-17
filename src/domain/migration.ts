@@ -29,7 +29,8 @@ export type ChangeKind =
 export type Change = { kind: ChangeKind; table: string; detail?: string; destructive?: boolean };
 export type Migration = { sql: string; changes: Change[]; warnings: string[] };
 
-type Constraint = { name: string; columnIds: string[]; check?: string };
+/** `raw` checks are written as they are; the others start with the column name, quoted on output. */
+type Constraint = { name: string; columnIds: string[]; check?: string; raw?: boolean };
 
 const sameList = (a: string[], b: string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
 
@@ -39,9 +40,12 @@ const constraintsOf = (table: Table) => {
     ...table.columns.filter((c) => c.unique && !c.pk).map((c) => ({ name: `uq_${table.name}_${c.name}`, columnIds: [c.id] })),
     ...table.uniques.map((u) => ({ name: u.name, columnIds: u.columnIds })),
   ];
-  const checks: Constraint[] = table.columns
-    .filter((c) => isEnum(c.type) && c.enumValues?.length)
-    .map((c) => ({ name: `ck_${table.name}_${c.name}`, columnIds: [c.id], check: `${c.name} IN (${c.enumValues!.map(quoteLiteral).join(', ')})` }));
+  const checks: Constraint[] = [
+    ...table.columns
+      .filter((c) => isEnum(c.type) && c.enumValues?.length)
+      .map((c) => ({ name: `ck_${table.name}_${c.name}`, columnIds: [c.id], check: `${c.name} IN (${c.enumValues!.map(quoteLiteral).join(', ')})` })),
+    ...(table.checks ?? []).map((c) => ({ name: c.name, columnIds: [], check: c.expression, raw: true })),
+  ];
   return { uniques, checks };
 };
 
@@ -239,7 +243,7 @@ export const diffSchemas = (from: Schema, to: Schema, dialect: DialectId, labels
           rebuild.add(table.id);
           continue;
         }
-        const body = c.check ? `CHECK (${c.check.replace(/^\S+/, (n) => q(n))})` : `UNIQUE (${c.columnIds.map((id) => q(newColumns.get(id)?.name ?? id)).join(', ')})`;
+        const body = c.raw ? `CHECK (${c.check})` : c.check ? `CHECK (${c.check.replace(/^\S+/, (n) => q(n))})` : `UNIQUE (${c.columnIds.map((id) => q(newColumns.get(id)?.name ?? id)).join(', ')})`;
         stmt.addConstraint.push(`ALTER TABLE ${q(table.name)} ADD CONSTRAINT ${q(c.name)} ${body};`);
       }
     }

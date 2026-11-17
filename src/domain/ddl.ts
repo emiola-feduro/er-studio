@@ -99,6 +99,9 @@ export const createTable = (table: Table, dialect: DialectId, tables: Map<string
   for (const uq of table.uniques) {
     lines.push(`CONSTRAINT ${quoteIdent(dialect, uq.name)} UNIQUE (${columnList(dialect, table, uq.columnIds)})`);
   }
+  for (const check of table.checks ?? []) {
+    lines.push(`CONSTRAINT ${quoteIdent(dialect, check.name)} CHECK (${check.expression})`);
+  }
   if (!DIALECTS[dialect].supportsAlterAddFk) {
     for (const fk of table.foreignKeys) lines.push(fkClause(dialect, fk, tables, warnings));
   }

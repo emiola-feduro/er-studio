@@ -903,4 +903,19 @@ export const fr: Messages = {
   'panels.resizeQueryBuilder': "Largeur du panneau des requêtes",
   'panels.resizeQueryResults': "Hauteur des résultats",
   'sidebar.toggleSection': "Afficher ou masquer {name}",
+
+  // Specialization issues
+  'spec.missingSupertype': "Une spécialisation n’a pas de superclasse.",
+  'spec.junction': "« {name} » est une table d’association et ne peut pas faire partie d’une spécialisation.",
+  'spec.noSubtypes': "La spécialisation de « {name} » n’a pas de sous-classes.",
+  'spec.selfSubtype': "« {name} » ne peut pas être sa propre sous-classe.",
+  'spec.supertypeNoPk': "La superclasse « {name} » a besoin d’une clé primaire.",
+  'spec.multipleSupertypes': "« {name} » est sous-classe de plusieurs superclasses ({supertypes}) ; une seule est possible.",
+  'spec.cycle': "« {name} » devient sa propre superclasse.",
+  'spec.subtypeOwnKey': "« {name} » utilise la clé de « {supertype} » ; sa propre clé reste en UNIQUE.",
+  'spec.singleTableKey': "« {name} » est une clé de la sous-classe et ne passe pas dans la table « {supertype} ».",
+  'spec.abstractReferenced': "« {name} » n’a pas de table propre (totale, une table par sous-classe) et une relation pointe vers elle. Utilisez une table par classe.",
+
+  // New subtype name
+  'spec.newSubtype': "{name}_type",
 };

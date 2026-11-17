@@ -1,4 +1,5 @@
 import { t } from '../i18n';
+import { lowerSpecializations } from './specialization';
 import { fkTypeFor } from './dialects';
 import { fkPrefix, isRecursive, needsJunction } from './model';
 import type {
@@ -148,8 +149,11 @@ export const defaultIndexName = (tableName: string, columnNames: string[]) =>
   `idx_${tableName}_${columnNames.join('_') || 'sin_columnas'}`;
 
 /** Derives the physical schema (tables, columns, PKs, FKs, uniques, indexes) from the model. */
-export const buildSchema = (project: Project): Schema => {
-  const issues: Issue[] = [];
+export const buildSchema = (source: Project): Schema => {
+  // Superclasses and subclasses become plain entities and relationships first.
+  const lowered = lowerSpecializations(source);
+  const project = lowered.project;
+  const issues: Issue[] = [...lowered.issues];
   const { entities, dialect } = project;
   const entityById = new Map(entities.map((e) => [e.id, e]));
   const placements = buildPlacements(project, issues);
@@ -305,8 +309,11 @@ export const buildSchema = (project: Project): Schema => {
     });
     const nameOf = (id: string) => columns.find((c) => c.id === id)?.name ?? id;
 
+    const pkKey = [...pkIds].sort().join();
     const uniques = holderPlacements
       .filter((pl) => pl.unique)
+      // A UNIQUE on exactly the primary key adds nothing (a 1:1 identifying FK, a subtype's key).
+      .filter((pl) => (fkColumns.get(pl.id) ?? []).map((c) => c.id).sort().join() !== pkKey)
       .map((pl) => {
         const ids = (fkColumns.get(pl.id) ?? []).map((c) => c.id);
         return { name: `uq_${entity.name}_${ids.map(nameOf).join('_')}`, columnIds: ids };
@@ -358,6 +365,7 @@ export const buildSchema = (project: Project): Schema => {
       columns,
       pk: pk.length > 0 ? { name: `pk_${entity.name}`, columnIds: pk.map((c) => c.id) } : undefined,
       uniques,
+      ...(lowered.checks.get(entity.id)?.length ? { checks: lowered.checks.get(entity.id) } : {}),
       foreignKeys: foreignKeys.filter((fk) => fk.tableId === entity.id),
       indexes,
     };

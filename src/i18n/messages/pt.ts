@@ -903,4 +903,19 @@ export const pt: Messages = {
   'panels.resizeQueryBuilder': "Largura do painel de consultas",
   'panels.resizeQueryResults': "Altura dos resultados",
   'sidebar.toggleSection': "Mostrar ou ocultar {name}",
+
+  // Specialization issues
+  'spec.missingSupertype': "Uma especialização não tem superclasse.",
+  'spec.junction': "\"{name}\" é uma tabela associativa e não pode fazer parte de uma especialização.",
+  'spec.noSubtypes': "A especialização de \"{name}\" não tem subclasses.",
+  'spec.selfSubtype': "\"{name}\" não pode ser subclasse de si mesma.",
+  'spec.supertypeNoPk': "A superclasse \"{name}\" precisa de uma chave primária.",
+  'spec.multipleSupertypes': "\"{name}\" é subclasse de várias superclasses ({supertypes}); só pode ter uma.",
+  'spec.cycle': "\"{name}\" acaba sendo superclasse de si mesma.",
+  'spec.subtypeOwnKey': "\"{name}\" usa a chave de \"{supertype}\"; sua chave própria fica como UNIQUE.",
+  'spec.singleTableKey': "\"{name}\" é chave da subclasse e não passa para a tabela \"{supertype}\".",
+  'spec.abstractReferenced': "\"{name}\" não tem tabela própria (total, uma tabela por subclasse) e um relacionamento aponta para ela. Use uma tabela por classe.",
+
+  // New subtype name
+  'spec.newSubtype': "{name}_tipo",
 };
