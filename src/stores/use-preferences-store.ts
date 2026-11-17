@@ -30,8 +30,10 @@ type PreferencesState = {
   /** Width in pixels of each resizable side panel (wide screens only). */
   panelWidths: Record<ResizablePanel, number>;
   hiddenPanels: Partial<Record<PanelId, boolean>>;
-  /** Sidebar sections folded to their title, like a dropdown. */
+  /** The project list folded to its title, like a dropdown. */
   collapsedSections: Partial<Record<SidebarSection, boolean>>;
+  /** Tables and relationships folded per project, so a new project starts with both open. */
+  collapsedByProject: Record<string, Partial<Record<ModelSection, boolean>>>;
   setLocale: (locale: Locale) => void;
   setTheme: (id: string) => void;
   setUiFont: (id: string) => void;
@@ -42,9 +44,12 @@ type PreferencesState = {
   setPanelWidth: (panel: ResizablePanel, width: number) => void;
   setPanelHidden: (id: PanelId, hidden: boolean) => void;
   setSectionCollapsed: (id: SidebarSection, collapsed: boolean) => void;
+  setModelSectionCollapsed: (projectId: string, id: ModelSection, collapsed: boolean) => void;
+  forgetProjectSections: (projectId: string) => void;
 };
 
 export type SidebarSection = 'projects' | 'tables' | 'relationships';
+export type ModelSection = 'tables' | 'relationships';
 
 /** Side panels change width; queryResults changes height. */
 export type ResizablePanel = 'sidebar' | 'inspector' | 'queryBuilder' | 'queryResults';
@@ -99,6 +104,7 @@ const usePreferencesStore = create<PreferencesState>()(
       panelWidths: Object.fromEntries(Object.entries(PANEL_WIDTHS).map(([k, v]) => [k, v.default])) as Record<ResizablePanel, number>,
       hiddenPanels: {},
       collapsedSections: {},
+      collapsedByProject: {},
       setTheme: (themeId) => set({ themeId }),
       setUiFont: (uiFontId) => set({ uiFontId }),
       setCanvasFont: (canvasFontId) => set({ canvasFontId }),
@@ -111,11 +117,19 @@ const usePreferencesStore = create<PreferencesState>()(
       },
       setPanelHidden: (id, hidden) => set((s) => ({ hiddenPanels: { ...s.hiddenPanels, [id]: hidden } })),
       setSectionCollapsed: (id, collapsed) => set((s) => ({ collapsedSections: { ...s.collapsedSections, [id]: collapsed } })),
+      setModelSectionCollapsed: (projectId, id, collapsed) =>
+        set((s) => ({ collapsedByProject: { ...s.collapsedByProject, [projectId]: { ...s.collapsedByProject[projectId], [id]: collapsed } } })),
+      forgetProjectSections: (projectId) =>
+        set((s) => {
+          const collapsedByProject = { ...s.collapsedByProject };
+          delete collapsedByProject[projectId];
+          return { collapsedByProject };
+        }),
     }),
     {
       name: 'er-studio:preferences',
       storage: createJSONStorage(() => safeStorage),
-      version: 2,
+      version: 3,
       // Version 0 saved only the left panel width, as sidebarWidth.
       migrate: (persisted, version) => {
         const state = persisted as Partial<PreferencesState> & { sidebarWidth?: number };
@@ -126,6 +140,7 @@ const usePreferencesStore = create<PreferencesState>()(
         // Version 2 added the query panels and the folded sidebar sections.
         state.panelWidths = { ...Object.fromEntries(Object.entries(PANEL_WIDTHS).map(([k, v]) => [k, v.default])), ...state.panelWidths } as Record<ResizablePanel, number>;
         state.collapsedSections ??= {};
+        state.collapsedByProject ??= {};
         return state as PreferencesState;
       },
       onRehydrateStorage: () => (state) => {
