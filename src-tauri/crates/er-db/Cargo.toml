@@ -29,3 +29,7 @@ webpki-roots = "1.0.12"
 [dev-dependencies]
 rcgen = "0.14.10"
 serde_json = "1.0.154"
+
+# Windows authentication for SQL Server (SSPI) exists only on Windows.
+[target.'cfg(windows)'.dependencies]
+tiberius = { version = "0.13.0", default-features = false, features = ["tds73", "rustls", "chrono", "winauth"] }
