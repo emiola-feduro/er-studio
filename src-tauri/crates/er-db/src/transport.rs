@@ -3,6 +3,7 @@
 //! the real server name.
 
 use std::any::Any;
+use std::net::SocketAddr;
 use std::time::{Duration, Instant};
 
 use serde::Serialize;
@@ -33,11 +34,55 @@ pub struct Step {
     pub ms: u64,
 }
 
-pub(crate) async fn within<T>(seconds: u64, step: &str, future: impl std::future::Future<Output = Result<T>>) -> Result<T> {
+/// Runs one step with the connection's time limit. `step` is the kind of step ("tcp", "ssh", "database"...)
+/// and `target` the address it was waiting for, so the error says where the connection stopped.
+pub(crate) async fn within<T>(seconds: u64, step: &str, target: &str, future: impl std::future::Future<Output = Result<T>>) -> Result<T> {
     tokio::time::timeout(Duration::from_secs(seconds), future).await.map_err(|_| Error::Timeout {
         step: step.to_string(),
+        target: target.to_string(),
         seconds,
     })?
+}
+
+/// Connects to every address the name resolves to, staggered by 250 ms and in parallel, and keeps the
+/// first that answers (as browsers do). A name like "localhost" gives ::1 and 127.0.0.1; trying them one
+/// after the other hangs when the first one is silently dropped.
+pub(crate) async fn connect_tcp(host: &str, port: u16) -> std::io::Result<TcpStream> {
+    let addresses: Vec<SocketAddr> = tokio::net::lookup_host(target_of(host, port)).await?.collect();
+    connect_any(addresses).await
+}
+
+pub async fn connect_any(addresses: Vec<SocketAddr>) -> std::io::Result<TcpStream> {
+    // Alternate the families, starting with the one the resolver put first.
+    let first_v6 = addresses.first().is_some_and(SocketAddr::is_ipv6);
+    let (mut same, mut other): (Vec<_>, Vec<_>) = addresses.into_iter().partition(|a| a.is_ipv6() == first_v6);
+    same.reverse();
+    other.reverse();
+    let mut ordered = Vec::new();
+    while !same.is_empty() || !other.is_empty() {
+        ordered.extend(same.pop());
+        ordered.extend(other.pop());
+    }
+
+    let mut attempts = tokio::task::JoinSet::new();
+    for (index, address) in ordered.into_iter().enumerate() {
+        attempts.spawn(async move {
+            tokio::time::sleep(Duration::from_millis(250 * index as u64)).await;
+            TcpStream::connect(address).await
+        });
+    }
+    let mut last_error = None;
+    while let Some(attempt) = attempts.join_next().await {
+        match attempt {
+            Ok(Ok(stream)) => {
+                attempts.abort_all();
+                return Ok(stream);
+            }
+            Ok(Err(error)) => last_error = Some(error),
+            Err(_) => {}
+        }
+    }
+    Err(last_error.unwrap_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "the name has no addresses")))
 }
 
 fn target_of(host: &str, port: u16) -> String {
@@ -55,8 +100,8 @@ pub async fn open(config: &ConnectionConfig, steps: &mut Vec<Step>) -> Result<Tu
     let first = target_of(&first_host, first_port);
 
     let started = Instant::now();
-    let tcp = within(seconds, &format!("connecting to {first}"), async {
-        TcpStream::connect((first_host.as_str(), first_port)).await.map_err(|e| unreachable(&first, e))
+    let tcp = within(seconds, "tcp", &first, async {
+        connect_tcp(&first_host, first_port).await.map_err(|e| unreachable(&first, e))
     })
     .await?;
     let _ = tcp.set_nodelay(true);
@@ -80,22 +125,12 @@ pub async fn open(config: &ConnectionConfig, steps: &mut Vec<Step>) -> Result<Tu
                 password,
             } => {
                 let via = target_of(host, *port);
-                let stream = within(
-                    seconds,
-                    &format!("opening SOCKS5 tunnel to {next}"),
-                    socks5(stream, &via, &next_host, next_port, username, password),
-                )
-                .await?;
+                let stream = within(seconds, "socks5", &next, socks5(stream, &via, &next_host, next_port, username, password)).await?;
                 ("socks5", stream)
             }
             Hop::Socks4 { host, port, user_id } => {
                 let via = target_of(host, *port);
-                let stream = within(
-                    seconds,
-                    &format!("opening SOCKS4 tunnel to {next}"),
-                    socks4(stream, &via, &next_host, next_port, user_id),
-                )
-                .await?;
+                let stream = within(seconds, "socks4", &next, socks4(stream, &via, &next_host, next_port, user_id)).await?;
                 ("socks4", stream)
             }
             Hop::HttpConnect {
@@ -105,12 +140,7 @@ pub async fn open(config: &ConnectionConfig, steps: &mut Vec<Step>) -> Result<Tu
                 password,
             } => {
                 let via = target_of(host, *port);
-                let stream = within(
-                    seconds,
-                    &format!("opening HTTP tunnel to {next}"),
-                    http_connect(stream, &via, &next_host, next_port, username, password),
-                )
-                .await?;
+                let stream = within(seconds, "http", &next, http_connect(stream, &via, &next_host, next_port, username, password)).await?;
                 ("http", stream)
             }
             Hop::Ssh {
@@ -122,7 +152,8 @@ pub async fn open(config: &ConnectionConfig, steps: &mut Vec<Step>) -> Result<Tu
             } => {
                 let (stream, guard) = within(
                     seconds,
-                    &format!("opening SSH tunnel to {next}"),
+                    "ssh",
+                    &next,
                     ssh::tunnel(stream, host, *port, user, auth, host_key.as_deref(), &next_host, next_port),
                 )
                 .await?;

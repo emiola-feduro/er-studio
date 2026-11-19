@@ -6,8 +6,8 @@ use serde::Serialize;
 pub enum Error {
     #[error("could not reach {target}: {message}")]
     Unreachable { target: String, message: String },
-    #[error("timed out after {seconds} s while {step}")]
-    Timeout { step: String, seconds: u64 },
+    #[error("no answer from {target} after {seconds} s ({step})")]
+    Timeout { step: String, target: String, seconds: u64 },
     #[error("proxy {target} refused: {message}")]
     ProxyRefused { target: String, message: String },
     #[error("unknown SSH host key for {host}: {fingerprint}")]

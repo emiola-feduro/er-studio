@@ -33,3 +33,14 @@ fn open_is_send(config: &ConnectionConfig, steps: &mut Vec<er_db::Step>) {
 fn connect_is_send(config: &ConnectionConfig, steps: &mut Vec<er_db::Step>) {
     is_send(er_db::postgres::connect(config, steps));
 }
+
+#[tokio::test]
+async fn a_silent_address_does_not_block_the_next_one() {
+    // 10.255.255.1 drops packets; the listener on 127.0.0.1 must still win quickly.
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let addresses = vec![format!("10.255.255.1:{port}").parse().unwrap(), format!("127.0.0.1:{port}").parse().unwrap()];
+    let started = std::time::Instant::now();
+    er_db::transport::connect_any(addresses).await.unwrap();
+    assert!(started.elapsed() < std::time::Duration::from_secs(2), "{:?}", started.elapsed());
+}

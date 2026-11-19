@@ -5,7 +5,7 @@ import { secretSlot, toConnectionConfig } from '../domain/connections';
 
 export type ConnectionErrorInfo =
   | { code: 'unreachable'; target: string; message: string }
-  | { code: 'timeout'; step: string; seconds: number }
+  | { code: 'timeout'; step: ConnectionStep['kind']; target: string; seconds: number }
   | { code: 'proxyRefused'; target: string; message: string }
   | { code: 'unknownHostKey'; host: string; fingerprint: string }
   | { code: 'hostKeyChanged'; host: string; expected: string; actual: string }

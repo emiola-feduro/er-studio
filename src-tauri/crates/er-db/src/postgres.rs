@@ -137,7 +137,13 @@ pub async fn connect(config: &ConnectionConfig, steps: &mut Vec<Step>) -> Result
             name: tls::server_name(&config.tls, &config.host)?,
         }),
     };
-    let client = within(seconds, "signing in to the database", sign_in(pg, stream, tls, guards)).await?;
+    let client = within(
+        seconds,
+        "database",
+        &format!("{}/{}", config.host, config.database),
+        sign_in(pg, stream, tls, guards),
+    )
+    .await?;
     // simple_query, not query_one: an empty parameter slice makes the future Send only for one lifetime.
     let server_version = client
         .simple_query("SHOW server_version")

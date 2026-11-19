@@ -62,7 +62,8 @@ const ConnectionDialogReport = ({ report, onTrust }: ConnectionDialogReportProps
           {error.code !== 'unknownHostKey' && error.code !== 'hostKeyChanged' && (
             <p className="text-danger break-words">
               {error.code === 'unreachable' && t('connections.error.unreachable', { target: error.target, message: error.message })}
-              {error.code === 'timeout' && t('connections.error.timeout', { seconds: error.seconds })}
+              {error.code === 'timeout' &&
+                t(error.step === 'tcp' ? 'connections.error.timeoutTcp' : 'connections.error.timeout', { target: error.target, seconds: error.seconds })}
               {error.code === 'proxyRefused' && t('connections.error.proxyRefused', { target: error.target, message: error.message })}
               {error.code === 'sshAuthFailed' && t('connections.error.sshAuthFailed', { user: error.user, host: error.host, message: error.message })}
               {error.code === 'invalidKey' && t('connections.error.invalidKey', { message: error.message })}
