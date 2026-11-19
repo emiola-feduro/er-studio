@@ -3,9 +3,8 @@ name: Desktop release
 on:
   push:
     tags: ['v*']
-    # Feature branches that touch the desktop side build too, until the workflow lives on main.
+    # Feature branches build too (the app embeds the interface, so any change counts), until the workflow lives on main.
     branches: ['feat/**']
-    paths: ['src-tauri/**', '.github/workflows/desktop.yml']
   workflow_dispatch:
 
 permissions:
