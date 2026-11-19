@@ -3,6 +3,8 @@ name: Desktop release
 on:
   push:
     tags: ['v*']
+    # Temporary: build from the desktop branch until the workflow lives on main.
+    branches: [feat/desktop-shell]
   workflow_dispatch:
 
 permissions:
