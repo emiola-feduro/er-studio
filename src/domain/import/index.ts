@@ -1,10 +1,11 @@
 import type { Locale } from '../../i18n';
 import type { DialectId, Project } from '../types';
+import type { Ir } from './ir';
 import { parseDbml } from './dbml-parser';
 import { parseSql } from './sql-parser';
 import { irToProject, type ImportReport } from './to-project';
 
-export type ImportFormat = 'sql' | 'dbml';
+export type ImportFormat = 'sql' | 'dbml' | 'sqlite';
 
 /** DBML when the text has Table or Ref blocks and no CREATE TABLE. */
 export const detectFormat = (text: string): ImportFormat =>
@@ -30,9 +31,19 @@ export const importSchema = (
   text: string,
   options: { name: string; namesLocale?: Locale; fallbackLocale?: Locale; format?: ImportFormat; dialect?: DialectId },
 ): ImportResult => {
-  const format = options.format ?? detectFormat(text);
+  const format = options.format === 'dbml' || options.format === 'sql' ? options.format : detectFormat(text);
   const ir = format === 'dbml' ? parseDbml(text) : parseSql(text);
   const dialect = options.dialect ?? ir.dialect ?? (format === 'sql' ? detectDialect(text) : 'postgresql');
+  return importIr(ir, format, { ...options, dialect });
+};
+
+/** Turns an already read schema (a SQLite file, for example) into a new project. */
+export const importIr = (
+  ir: Ir,
+  format: ImportFormat,
+  options: { name: string; namesLocale?: Locale; fallbackLocale?: Locale; dialect?: DialectId },
+): ImportResult => {
+  const dialect = options.dialect ?? ir.dialect ?? 'postgresql';
   const { project, report } = irToProject(ir, { name: options.name, dialect, namesLocale: options.namesLocale, fallbackLocale: options.fallbackLocale });
   return { project, report, format, dialect };
 };

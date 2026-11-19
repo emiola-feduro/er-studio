@@ -779,8 +779,8 @@ export const fr: Messages = {
   'versions.loadError': "Impossible de lire les versions enregistrées.",
 
   // Import DDL or DBML
-  'import.menu': "Importer un DDL ou DBML",
-  'import.title': "Importer un DDL ou DBML",
+  'import.menu': "Importer un DDL, DBML ou SQLite",
+  'import.title': "Importer un DDL, DBML ou SQLite",
   'import.source': "Script SQL ou DBML",
   'import.placeholder': "Collez ici un CREATE TABLE ... ou un fichier DBML (Table, Ref, Enum)",
   'import.file': "Téléverser un fichier",
@@ -796,7 +796,14 @@ export const fr: Messages = {
   'import.relationships.one': "1 relation",
   'import.indexes': "{count} index",
   'import.indexes.one': "1 index",
-  'import.empty': "Collez ou téléversez un script pour voir ce qui sera importé.",
+  'import.empty': "Collez ou téléversez un script, ou ouvrez un fichier SQLite, pour voir ce qui sera importé.",
+  'import.sqliteFile': "Fichier SQLite",
+  'import.removeFile': "Retirer le fichier",
+  'import.sqliteLoading': "Lecture du fichier...",
+  'import.sqliteFailed': "Impossible d'ouvrir le fichier SQLite : {message}",
+  'import.copyData': "Copier les données des tables",
+  'import.rowLimit': "Lignes par table",
+  'import.doneWithRows': "Projet « {name} » importé : {summary}. {rows} lignes copiées.",
   'import.nothing': "Aucune table n'a été trouvée dans le texte.",
   'import.failed': "Impossible de lire le texte : {message}",
   'import.submit': "Importer",
@@ -807,7 +814,7 @@ export const fr: Messages = {
   'import.warning.check': "CHECK sur plusieurs colonnes non pris en charge : {detail}",
   'import.warning.missingTable': "FK vers une table absente du script : {detail}",
   'import.warning.junctionFk': "FK en trop dans une table intermédiaire : {detail}",
-  'newProject.import': "Importer un DDL ou DBML",
+  'newProject.import': "Importer un DDL, DBML ou SQLite",
 
   // Query WHERE completions
   'query.meaning.positive': "supérieur à zéro",

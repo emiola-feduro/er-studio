@@ -815,8 +815,8 @@ export const es = {
   'versions.loadError': "No se pudieron leer las versiones guardadas.",
 
   // Import DDL or DBML
-  'import.menu': "Importar DDL o DBML",
-  'import.title': "Importar DDL o DBML",
+  'import.menu': "Importar DDL, DBML o SQLite",
+  'import.title': "Importar DDL, DBML o SQLite",
   'import.source': "Script SQL o DBML",
   'import.placeholder': "Pega aquí un CREATE TABLE ... o un archivo DBML (Table, Ref, Enum)",
   'import.file': "Subir archivo",
@@ -832,7 +832,14 @@ export const es = {
   'import.relationships.one': "1 relación",
   'import.indexes': "{count} índices",
   'import.indexes.one': "1 índice",
-  'import.empty': "Pega o sube un script para ver qué se va a importar.",
+  'import.empty': "Pega o sube un script, o abre un archivo SQLite, para ver qué se va a importar.",
+  'import.sqliteFile': "Archivo SQLite",
+  'import.removeFile': "Quitar archivo",
+  'import.sqliteLoading': "Leyendo el archivo...",
+  'import.sqliteFailed': "No se pudo abrir el archivo SQLite: {message}",
+  'import.copyData': "Copiar los datos de las tablas",
+  'import.rowLimit': "Filas por tabla",
+  'import.doneWithRows': "Proyecto \"{name}\" importado: {summary}. Se copiaron {rows} filas.",
   'import.nothing': "No se encontraron tablas en el texto.",
   'import.failed': "No se pudo leer el texto: {message}",
   'import.submit': "Importar",
@@ -843,7 +850,7 @@ export const es = {
   'import.warning.check': "CHECK de varias columnas no admitido: {detail}",
   'import.warning.missingTable': "FK hacia una tabla que no está en el script: {detail}",
   'import.warning.junctionFk': "FK extra en una tabla intermedia: {detail}",
-  'newProject.import': "Importar DDL o DBML",
+  'newProject.import': "Importar DDL, DBML o SQLite",
 
   // Query WHERE completions
   'query.meaning.positive': "mayor que cero",

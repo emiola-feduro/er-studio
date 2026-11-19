@@ -779,8 +779,8 @@ export const en: Messages = {
   'versions.loadError': "Could not read the saved versions.",
 
   // Import DDL or DBML
-  'import.menu': "Import DDL or DBML",
-  'import.title': "Import DDL or DBML",
+  'import.menu': "Import DDL, DBML or SQLite",
+  'import.title': "Import DDL, DBML or SQLite",
   'import.source': "SQL script or DBML",
   'import.placeholder': "Paste a CREATE TABLE ... or a DBML file (Table, Ref, Enum) here",
   'import.file': "Upload file",
@@ -796,7 +796,14 @@ export const en: Messages = {
   'import.relationships.one': "1 relationship",
   'import.indexes': "{count} indexes",
   'import.indexes.one': "1 index",
-  'import.empty': "Paste or upload a script to see what will be imported.",
+  'import.empty': "Paste or upload a script, or open a SQLite file, to see what will be imported.",
+  'import.sqliteFile': "SQLite file",
+  'import.removeFile': "Remove file",
+  'import.sqliteLoading': "Reading the file...",
+  'import.sqliteFailed': "Could not open the SQLite file: {message}",
+  'import.copyData': "Copy the table data",
+  'import.rowLimit': "Rows per table",
+  'import.doneWithRows': "Project \"{name}\" imported: {summary}. {rows} rows copied.",
   'import.nothing': "No tables were found in the text.",
   'import.failed': "Could not read the text: {message}",
   'import.submit': "Import",
@@ -807,7 +814,7 @@ export const en: Messages = {
   'import.warning.check': "Multi column CHECK not supported: {detail}",
   'import.warning.missingTable': "FK to a table that is not in the script: {detail}",
   'import.warning.junctionFk': "Extra FK in a junction table: {detail}",
-  'newProject.import': "Import DDL or DBML",
+  'newProject.import': "Import DDL, DBML or SQLite",
 
   // Query WHERE completions
   'query.meaning.positive': "greater than zero",
