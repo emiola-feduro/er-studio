@@ -71,6 +71,9 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Signs the update bundles; the app checks them with the public key in tauri.conf.json.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tauriScript: bun tauri
           tagName: ${{ steps.release.outputs.tag }}
@@ -78,6 +81,8 @@ jobs:
           releaseBody: 'Desktop build of ER Studio for Windows, macOS and Linux. The installers are not signed yet.'
           releaseDraft: true
           prerelease: true
+          # latest.json lists the signed bundles; installed apps read it from the latest published release.
+          includeUpdaterJson: true
           args: ${{ matrix.args }}
 
   # Branch builds become public prereleases once every installer is up; version tags stay drafts to publish by hand.

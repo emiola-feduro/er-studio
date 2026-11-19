@@ -1225,6 +1225,14 @@ export const es = {
   'liveCompare.transactionNote': "Se aplica en una transacción: si un paso falla, no queda nada a medias.",
   'liveCompare.mysqlNote': "MySQL confirma cada cambio de estructura por separado: si un paso falla, los anteriores ya quedan aplicados.",
   'liveCompare.applied': "Migración aplicada en {name}.",
+
+  // Desktop updates
+  'update.downloading': "Descargando ER Studio ++ {version}...",
+  'update.downloadingPercent': "Descargando ER Studio ++ {version} ({percent} %)...",
+  'update.ready': "ER Studio ++ {version} está lista. Se instala al reiniciar.",
+  'update.installing': "Instalando ER Studio ++ {version}...",
+  'update.restart': "Reiniciar ahora",
+  'update.later': "Más tarde",
 } as const;
 
 export type Messages = { [K in keyof typeof es]: string };

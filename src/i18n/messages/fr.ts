@@ -1189,4 +1189,12 @@ export const fr: Messages = {
   'liveCompare.transactionNote': "Elle s’exécute dans une transaction : si une étape échoue, rien ne reste à moitié fait.",
   'liveCompare.mysqlNote': "MySQL valide chaque modification de structure séparément : si une étape échoue, les précédentes restent appliquées.",
   'liveCompare.applied': "Migration appliquée à {name}.",
+
+  // Desktop updates
+  'update.downloading': "Téléchargement de ER Studio ++ {version}...",
+  'update.downloadingPercent': "Téléchargement de ER Studio ++ {version} ({percent} %)...",
+  'update.ready': "ER Studio ++ {version} est prête. Elle s’installe au redémarrage.",
+  'update.installing': "Installation de ER Studio ++ {version}...",
+  'update.restart': "Redémarrer maintenant",
+  'update.later': "Plus tard",
 };

@@ -20,6 +20,7 @@ import Inspector from '../inspector/inspector';
 import Sidebar from '../sidebar/sidebar';
 import TopBar from '../top-bar/top-bar';
 import ConnectionDialog from '../../ui/connection-dialog/connection-dialog';
+import UpdateBanner from '../update-banner/update-banner';
 import ConnectionImportDialog from '../../ui/connection-import-dialog/connection-import-dialog';
 import { isDesktop } from '../../../lib/platform';
 
@@ -38,8 +39,12 @@ const AppShell = () => {
   } as CSSProperties;
 
   return (
-    <div className={`grid h-full ${header ? 'grid-rows-[auto_minmax(0,1fr)]' : 'grid-rows-[minmax(0,1fr)]'}`}>
-      {header && <TopBar />}
+    <div className="grid h-full grid-rows-[auto_minmax(0,1fr)]">
+      {/* The header row also holds the desktop update notice, which shows even with the header hidden. */}
+      <div>
+        {header && <TopBar />}
+        {isDesktop() && <UpdateBanner />}
+      </div>
       <div style={columns} className="grid min-h-0 grid-cols-1 grid-rows-(--rows-sm) md:grid-cols-(--cols-md) md:grid-rows-1 lg:grid-cols-(--cols-lg)">
         {sidebar && <Sidebar />}
         {status === 'loading' && <WorkspaceSkeleton />}
