@@ -22,7 +22,11 @@
         for (var key in colors) if (typeof boot[key] === 'string') root.style.setProperty(colors[key], boot[key]);
         root.style.colorScheme = boot.dark ? 'dark' : 'light';
         root.lang = locale;
-        window.__erLoadingLabel = { es: 'Cargando ER Studio', en: 'Loading ER Studio', fr: 'Chargement de ER Studio', pt: 'Carregando o ER Studio' }[locale];
+        // The desktop app (Tauri marks it with window.isTauri) is called ER Studio ++.
+        var app = window.isTauri ? 'ER Studio ++' : 'ER Studio';
+        window.__erAppName = app;
+        if (window.isTauri) document.title = app;
+        window.__erLoadingLabel = { es: 'Cargando ' + app, en: 'Loading ' + app, fr: 'Chargement de ' + app, pt: 'Carregando o ' + app }[locale];
       })();
     </script>
     <style>
@@ -73,6 +77,7 @@
         <span class="name">ER Studio</span>
       </div>
       <script>
+        document.querySelector('#boot .name').textContent = window.__erAppName || 'ER Studio';
         document.getElementById('boot').setAttribute('aria-label', window.__erLoadingLabel || 'Cargando ER Studio');
       </script>
     </div>

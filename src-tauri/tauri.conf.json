@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "ER Studio",
+  "productName": "ER Studio ++",
   "version": "../package.json",
   "identifier": "io.github.emiola-feduro.er-studio",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "ER Studio",
+        "title": "ER Studio ++",
         "width": 1440,
         "height": 900,
         "minWidth": 1024,
@@ -27,7 +27,7 @@
     "active": true,
     "targets": "all",
     "category": "DeveloperTool",
-    "shortDescription": "Entity-relationship modeling",
+    "shortDescription": "Entity-relationship modeling and live databases",
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"]
   }
 }

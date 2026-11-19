@@ -1,4 +1,5 @@
 import useT from '../../../hooks/ui/use-t';
+import { isDesktop } from '../../../lib/platform';
 import { ChevronsUp, Menu as MenuIcon, PanelsTopLeft, Palette, Redo2, Undo2 } from 'lucide-react';
 import usePanels from '../../../hooks/ui/use-panels';
 import useProjectStore from '../../../stores/use-project-store';
@@ -30,7 +31,7 @@ const TopBar = () => {
           <MenuIcon size={18} />
         </IconButton>
       )}
-      <span className="font-bold tracking-tight">ER Studio</span>
+      <span className="font-bold tracking-tight">{isDesktop() ? 'ER Studio ++' : 'ER Studio'}</span>
       <span className="h-5 w-px bg-line" aria-hidden />
       <TopBarProjectName />
       <div className="mx-auto">
