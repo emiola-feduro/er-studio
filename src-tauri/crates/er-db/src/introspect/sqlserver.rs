@@ -143,8 +143,8 @@ pub async fn read_schema(driver: &Driver, schemas: &[String]) -> Result<SchemaRe
         driver,
         &format!(
             "SELECT CAST(c.object_id AS varchar(20)) AS id, CAST(c.column_id AS int) AS num, c.name AS name, TYPE_NAME(c.system_type_id) AS type,
-                    CAST(c.max_length AS int) AS max_length, CAST(c.precision AS int) AS precision, CAST(c.scale AS int) AS scale,
-                    CASE WHEN c.is_nullable = 1 THEN 't' ELSE 'f' END AS nullable, CASE WHEN c.is_identity = 1 THEN 't' ELSE 'f' END AS identity,
+                    CAST(c.max_length AS int) AS max_length, CAST(c.precision AS int) AS prec, CAST(c.scale AS int) AS scale,
+                    CASE WHEN c.is_nullable = 1 THEN 't' ELSE 'f' END AS nullable, CASE WHEN c.is_identity = 1 THEN 't' ELSE 'f' END AS is_identity,
                     cc.definition AS computed, dc.definition AS default_value
              FROM sys.columns c
              LEFT JOIN sys.computed_columns cc ON cc.object_id = c.object_id AND cc.column_id = c.column_id
@@ -166,9 +166,9 @@ pub async fn read_schema(driver: &Driver, schemas: &[String]) -> Result<SchemaRe
         table.columns.push(IrColumn {
             name,
             kind: type_name.to_uppercase(),
-            params: params_of(&type_name, num("max_length"), num("precision"), num("scale")),
+            params: params_of(&type_name, num("max_length"), num("prec"), num("scale")),
             not_null: !flag(&c, "nullable"),
-            auto_increment: flag(&c, "identity"),
+            auto_increment: flag(&c, "is_identity"),
             default_value: opt(&c, "default_value").map(|d| simplify(&d)),
             ..Default::default()
         });
