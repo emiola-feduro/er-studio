@@ -37,9 +37,18 @@ jobs:
       # The app embeds the built interface, so it has to exist before the Rust side compiles.
       - run: bun install --frozen-lockfile && bun run build
 
+      # Compiler errors also go to the job annotations, which can be read without signing in.
       - name: Clippy
         working-directory: src-tauri
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        shell: bash
+        run: |
+          set +e
+          cargo clippy --workspace --all-targets --color never -- -D warnings 2>&1 | tee clippy.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            grep -E '^(error|warning)' -A12 clippy.log | head -120 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' | sed 's/^/::error title=clippy::/'
+          fi
+          exit "$status"
 
       - name: Start test servers
         run: CONTAINER_ENGINE=docker src-tauri/crates/er-db/tests/env/up.sh
