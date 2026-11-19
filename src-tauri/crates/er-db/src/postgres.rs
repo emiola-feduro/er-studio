@@ -19,7 +19,7 @@ use tokio_rustls::TlsConnector;
 use crate::config::{ConnectionConfig, TlsMode};
 use crate::error::{database, Result};
 use crate::tls;
-use crate::transport::{self, within, Step, Tunnel};
+use crate::transport::{self, within, BoxStream, Step, Tunnel};
 
 pub struct RustlsConnect {
     config: Arc<ClientConfig>,
@@ -100,33 +100,55 @@ where
     });
 }
 
+type Connecting<'a, T> =
+    Pin<Box<dyn Future<Output = std::result::Result<(Client, tokio_postgres::Connection<BoxStream, T>), tokio_postgres::Error>> + Send + 'a>>;
+
+/// Signs in over the stream. The connect futures are boxed as `dyn Future + Send`: tokio-postgres keeps a
+/// `&Config` across an await, and without the box rustc cannot prove the future Send for every lifetime,
+/// which Tauri commands require.
+async fn sign_in(pg: tokio_postgres::Config, stream: BoxStream, tls: Option<RustlsConnect>, guards: Vec<Box<dyn std::any::Any + Send>>) -> Result<Client> {
+    match tls {
+        None => {
+            let connecting: Connecting<'_, tokio_postgres::tls::NoTlsStream> = Box::pin(pg.connect_raw(stream, NoTls));
+            let (client, connection) = connecting.await.map_err(database)?;
+            spawn_connection(connection, guards);
+            Ok(client)
+        }
+        Some(tls) => {
+            let connecting: Connecting<'_, RustlsStream<BoxStream>> = Box::pin(pg.connect_raw(stream, tls));
+            let (client, connection) = connecting.await.map_err(database)?;
+            spawn_connection(connection, guards);
+            Ok(client)
+        }
+    }
+}
+
 /// Opens the tunnel and the database session, and reads the server version.
 pub async fn connect(config: &ConnectionConfig, steps: &mut Vec<Step>) -> Result<Session> {
     let Tunnel { stream, guards } = transport::open(config, steps).await?;
     let started = Instant::now();
     let pg = pg_config(config);
     let seconds = config.timeout_secs;
-    let client = within(seconds, "signing in to the database", async {
-        match tls::client_config(&config.tls)? {
-            None => {
-                let (client, connection) = pg.connect_raw(stream, NoTls).await.map_err(database)?;
-                spawn_connection(connection, guards);
-                Ok(client)
-            }
-            Some(tls_config) => {
-                let tls = RustlsConnect {
-                    config: tls_config,
-                    name: tls::server_name(&config.tls, &config.host)?,
-                };
-                let (client, connection) = pg.connect_raw(stream, tls).await.map_err(database)?;
-                spawn_connection(connection, guards);
-                Ok(client)
-            }
-        }
-    })
-    .await?;
-    let row = client.query_one("SELECT current_setting('server_version')", &[]).await.map_err(database)?;
-    let server_version: String = row.get(0);
+    // TLS settings are resolved before the sign-in, so the future below owns everything it uses (Tauri needs it Send).
+    let tls = match tls::client_config(&config.tls)? {
+        None => None,
+        Some(tls_config) => Some(RustlsConnect {
+            config: tls_config,
+            name: tls::server_name(&config.tls, &config.host)?,
+        }),
+    };
+    let client = within(seconds, "signing in to the database", sign_in(pg, stream, tls, guards)).await?;
+    // simple_query, not query_one: an empty parameter slice makes the future Send only for one lifetime.
+    let server_version = client
+        .simple_query("SHOW server_version")
+        .await
+        .map_err(database)?
+        .into_iter()
+        .find_map(|message| match message {
+            tokio_postgres::SimpleQueryMessage::Row(row) => row.get(0).map(str::to_string),
+            _ => None,
+        })
+        .unwrap_or_default();
     steps.push(Step {
         kind: "database",
         target: format!("{}/{}", config.host, config.database),
