@@ -2,6 +2,7 @@ import { t } from '../i18n';
 import { DIALECTS } from '../domain/dialects';
 import { syncJunctions, uid } from '../domain/model';
 import type { Project } from '../domain/types';
+import { saveBlob } from './platform';
 
 const FORMAT = 'er-studio';
 const VERSION = 1;
@@ -43,24 +44,12 @@ export const parseProjectFile = (text: string): Project => {
 
 export const downloadText = (filename: string, text: string, mime: string) => {
   const blob = new Blob([text], { type: mime });
-  downloadBlob(filename, blob);
+  return downloadBlob(filename, blob);
 };
 
-export const downloadBlob = (filename: string, blob: Blob) => {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-};
+export const downloadBlob = (filename: string, blob: Blob) => saveBlob(filename, blob);
 
-export const downloadDataUrl = (filename: string, dataUrl: string) => {
-  const a = document.createElement('a');
-  a.href = dataUrl;
-  a.download = filename;
-  a.click();
-};
+export const downloadDataUrl = async (filename: string, dataUrl: string) => saveBlob(filename, await (await fetch(dataUrl)).blob());
 
 export const slug = (name: string) =>
   name

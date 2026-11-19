@@ -76,7 +76,7 @@ const useExportImage = () => {
       try {
         const { viewportEl, options } = await render();
         const dataUrl = format === 'png' ? await toPng(viewportEl, options) : await toSvg(viewportEl, options);
-        downloadDataUrl(`${slug(project.name)}-er.${format}`, dataUrl);
+        await downloadDataUrl(`${slug(project.name)}-er.${format}`, dataUrl);
       } catch {
         notify(t('export.imageFailed'), 'error');
       }
