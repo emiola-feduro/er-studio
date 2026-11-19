@@ -1101,4 +1101,20 @@ export const pt: Messages = {
   'connections.error.tunnelRefused': "O servidor SSH não abriu o túnel até {target}: {message}",
   'connections.error.tlsConfig': "Configuração TLS inválida: {message}",
   'connections.error.database': "O banco de dados respondeu: {message}",
+
+  // New project from a connection (desktop)
+  'connections.createProject': "Criar um projeto a partir deste banco",
+  'connections.edit': "Editar {name}",
+  'connectionImport.title': "Projeto a partir de {name}",
+  'connectionImport.connecting': "Conectando...",
+  'connectionImport.editConnection': "Editar a conexão",
+  'connectionImport.schemas': "Schemas",
+  'connectionImport.schemaOption': "{name} ({count} tabelas)",
+  'connectionImport.schemaOption.one': "{name} (1 tabela)",
+  'connectionImport.noSchemas': "O banco não tem schemas próprios.",
+  'connectionImport.reading': "Lendo o schema...",
+  'connectionImport.readFailed': "Não foi possível ler o schema: {message}",
+  'connectionImport.submit': "Criar projeto",
+  'connectionImport.copying': "Copiando {table}...",
+  'connectionImport.copyFailed': "Não foi possível copiar as linhas: {message}",
 };

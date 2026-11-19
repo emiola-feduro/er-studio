@@ -2,6 +2,8 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { ConnectionProfile, ConnectionSecrets } from '../domain/connections';
 import { secretSlot, toConnectionConfig } from '../domain/connections';
+import { postgresCell, type RowSource } from '../domain/import/copy-rows';
+import type { Ir } from '../domain/import/ir';
 
 export type ConnectionErrorInfo =
   | { code: 'unreachable'; target: string; message: string }
@@ -50,3 +52,56 @@ export const saveSecrets = async (id: string, secrets: ConnectionSecrets, hopsWi
 export const deleteSecrets = (id: string) => invoke('secrets_delete', { connectionId: id });
 
 export const readSshConfig = () => invoke<string | null>('ssh_config_read');
+
+/* Open sessions: reading a schema and its rows over one connection */
+
+export type SchemaInfo = { name: string; tables: number };
+export type TableSource = { name: string; schema: string; table: string; key: string[] };
+export type SchemaRead = { ir: Ir; sources: TableSource[] };
+export type Opened = { sessionId: number | null; report: ConnectionReport };
+
+/** Errors of session commands come as the JSON of the desktop error; this gives its message. */
+export const sessionErrorMessage = (error: unknown) => {
+  const text = error instanceof Error ? error.message : String(error);
+  try {
+    const parsed = JSON.parse(text) as { message?: string };
+    return parsed.message ?? text;
+  } catch {
+    return text;
+  }
+};
+
+export const openSession = async (profile: ConnectionProfile, savedId?: string): Promise<Opened> => {
+  try {
+    return await invoke<Opened>('connection_open', { config: toConnectionConfig(profile), connectionId: savedId ?? null });
+  } catch (error) {
+    return { sessionId: null, report: appError(error) };
+  }
+};
+
+export const closeSession = (sessionId: number) => invoke('connection_close', { sessionId }).catch(() => undefined);
+
+export const listSchemas = (sessionId: number) => invoke<SchemaInfo[]>('session_schemas', { sessionId });
+
+export const readSchema = (sessionId: number, schemas: string[]) => invoke<SchemaRead>('session_schema', { sessionId, schemas });
+
+/** The tables of an open PostgreSQL session as a source of rows for copyRows. */
+export const sessionRowSource = (sessionId: number, sources: TableSource[]): RowSource => {
+  const byName = new Map(sources.map((s) => [s.name.toLowerCase(), s]));
+  return {
+    has: (name) => byName.has(name.toLowerCase()),
+    fetch: async (name, offset, limit) => {
+      const source = byName.get(name.toLowerCase())!;
+      const page = await invoke<{ columns: string[]; rows: (string | null)[][] }>('session_rows', {
+        sessionId,
+        schema: source.schema,
+        table: source.table,
+        orderBy: source.key,
+        offset,
+        limit,
+      });
+      return { columns: page.columns, values: page.rows };
+    },
+    cell: postgresCell,
+  };
+};

@@ -1,4 +1,5 @@
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Pencil } from 'lucide-react';
+import IconButton from '../../ui/icon-button/icon-button';
 import type { ConnectionEnvironment } from '../../../domain/connections';
 import useT from '../../../hooks/ui/use-t';
 import useConnectionStore from '../../../stores/use-connection-store';
@@ -18,6 +19,7 @@ const SidebarConnections = () => {
   const t = useT();
   const connections = useConnectionStore((s) => s.connections);
   const openDialog = useConnectionStore((s) => s.openDialog);
+  const openImport = useConnectionStore((s) => s.openImport);
   const collapsed = usePreferencesStore((s) => Boolean(s.collapsedSections.connections));
   const setCollapsed = usePreferencesStore((s) => s.setSectionCollapsed);
 
@@ -46,11 +48,12 @@ const SidebarConnections = () => {
         <ul id="connection-list-body" className="relative min-h-0 overflow-y-auto">
           {connections.length === 0 && <li className="px-2 text-muted">{t('connections.empty')}</li>}
           {connections.map((connection) => (
-            <li key={connection.id}>
+            <li key={connection.id} className="group flex items-center gap-1">
               <button
                 type="button"
-                onClick={() => openDialog(connection.id)}
-                className="flex w-full min-w-0 flex-col items-start rounded-[calc(var(--radius)*0.6)] px-2 py-1.5 text-left hover:bg-surface-2"
+                title={t('connections.createProject')}
+                onClick={() => openImport(connection.id)}
+                className="flex min-w-0 flex-1 flex-col items-start rounded-[calc(var(--radius)*0.6)] px-2 py-1.5 text-left hover:bg-surface-2"
               >
                 <span className="flex w-full min-w-0 items-center justify-between gap-2">
                   <span className="truncate">{connection.name}</span>
@@ -62,6 +65,9 @@ const SidebarConnections = () => {
                     : `${connection.host}/${connection.database}`}
                 </span>
               </button>
+              <IconButton label={t('connections.edit', { name: connection.name })} size="sm" onClick={() => openDialog(connection.id)}>
+                <Pencil size={14} />
+              </IconButton>
             </li>
           ))}
         </ul>

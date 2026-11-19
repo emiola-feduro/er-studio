@@ -1137,6 +1137,22 @@ export const es = {
   'connections.error.tunnelRefused': "El servidor SSH no abrió el túnel hasta {target}: {message}",
   'connections.error.tlsConfig': "Configuración TLS inválida: {message}",
   'connections.error.database': "La base de datos respondió: {message}",
+
+  // New project from a connection (desktop)
+  'connections.createProject': "Crear un proyecto desde esta base",
+  'connections.edit': "Editar {name}",
+  'connectionImport.title': "Proyecto desde {name}",
+  'connectionImport.connecting': "Conectando...",
+  'connectionImport.editConnection': "Editar la conexión",
+  'connectionImport.schemas': "Schemas",
+  'connectionImport.schemaOption': "{name} ({count} tablas)",
+  'connectionImport.schemaOption.one': "{name} (1 tabla)",
+  'connectionImport.noSchemas': "La base no tiene schemas propios.",
+  'connectionImport.reading': "Leyendo el schema...",
+  'connectionImport.readFailed': "No se pudo leer el schema: {message}",
+  'connectionImport.submit': "Crear proyecto",
+  'connectionImport.copying': "Copiando {table}...",
+  'connectionImport.copyFailed': "No se pudieron copiar las filas: {message}",
 } as const;
 
 export type Messages = { [K in keyof typeof es]: string };

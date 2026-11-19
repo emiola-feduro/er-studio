@@ -44,3 +44,12 @@ async fn a_silent_address_does_not_block_the_next_one() {
     er_db::transport::connect_any(addresses).await.unwrap();
     assert!(started.elapsed() < std::time::Duration::from_secs(2), "{:?}", started.elapsed());
 }
+
+#[allow(dead_code)]
+fn session_futures_are_send(sessions: &er_db::session::Sessions, config: &ConnectionConfig, schemas: &[String], order: &[String]) {
+    is_send(sessions.open(config));
+    is_send(sessions.schemas(1));
+    is_send(sessions.schema(1, schemas));
+    is_send(sessions.rows(1, "s", "t", order, 0, 10));
+    is_send(sessions.close(1));
+}

@@ -1101,4 +1101,20 @@ export const en: Messages = {
   'connections.error.tunnelRefused': "The SSH server did not open the tunnel to {target}: {message}",
   'connections.error.tlsConfig': "Invalid TLS settings: {message}",
   'connections.error.database': "The database answered: {message}",
+
+  // New project from a connection (desktop)
+  'connections.createProject': "Create a project from this database",
+  'connections.edit': "Edit {name}",
+  'connectionImport.title': "Project from {name}",
+  'connectionImport.connecting': "Connecting...",
+  'connectionImport.editConnection': "Edit the connection",
+  'connectionImport.schemas': "Schemas",
+  'connectionImport.schemaOption': "{name} ({count} tables)",
+  'connectionImport.schemaOption.one': "{name} (1 table)",
+  'connectionImport.noSchemas': "The database has no schemas of its own.",
+  'connectionImport.reading': "Reading the schema...",
+  'connectionImport.readFailed': "Could not read the schema: {message}",
+  'connectionImport.submit': "Create project",
+  'connectionImport.copying': "Copying {table}...",
+  'connectionImport.copyFailed': "Could not copy the rows: {message}",
 };

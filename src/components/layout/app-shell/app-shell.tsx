@@ -20,6 +20,7 @@ import Inspector from '../inspector/inspector';
 import Sidebar from '../sidebar/sidebar';
 import TopBar from '../top-bar/top-bar';
 import ConnectionDialog from '../../ui/connection-dialog/connection-dialog';
+import ConnectionImportDialog from '../../ui/connection-import-dialog/connection-import-dialog';
 import { isDesktop } from '../../../lib/platform';
 
 const AppShell = () => {
@@ -52,6 +53,7 @@ const AppShell = () => {
       <SpecializationDialog />
       <ImportDialog />
       {isDesktop() && <ConnectionDialog />}
+      {isDesktop() && <ConnectionImportDialog />}
       <AgentExportDialog />
       <OpenApiExportDialog />
       <DeleteEntityDialog />

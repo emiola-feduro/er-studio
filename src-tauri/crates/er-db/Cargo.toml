@@ -8,6 +8,7 @@ publish = false
 [dependencies]
 base64 = "0.23.1"
 keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust", "vendored"] }
+regex = "1.13.2"
 russh = { version = "0.65.2", default-features = false, features = ["flate2", "ring", "rsa"] }
 rustls-native-certs = "0.8.5"
 serde = { version = "1.0.229", features = ["derive"] }

@@ -93,7 +93,7 @@ describe('sqliteToIr', () => {
 });
 
 describe('copySqliteRows', () => {
-  it('keeps only the child rows whose parent was copied', () => {
+  it('keeps only the child rows whose parent was copied', async () => {
     const { exec } = open(`
       CREATE TABLE autores (id INTEGER PRIMARY KEY, nombre TEXT NOT NULL);
       CREATE TABLE libros (id INTEGER PRIMARY KEY, autor_id INTEGER REFERENCES autores(id), titulo TEXT NOT NULL);
@@ -101,7 +101,7 @@ describe('copySqliteRows', () => {
     for (let i = 1; i <= 10; i++) exec(`INSERT INTO autores VALUES (${i}, 'A${i}')`);
     for (let i = 1; i <= 10; i++) exec(`INSERT INTO libros VALUES (${i}, ${i % 2 === 0 ? 11 - i : 'NULL'}, 'L${i}')`);
     const { project } = importIr(sqliteToIr(exec).ir, 'sqlite', { name: 'b', namesLocale: 'es' });
-    copySqliteRows(exec, project, 3);
+    await copySqliteRows(exec, project, 3);
     const schema = buildSchema(project);
     const libros = schema.tables.find((t) => t.name === 'libros')!;
     // Authors 1 to 3 come in; books 1, 3 and 5 have no author, book 8 points to author 3.
@@ -109,10 +109,10 @@ describe('copySqliteRows', () => {
     expect(validateRecords(project, schema).total).toBe(0);
   });
 
-  it('copies rows into the records with the limit, and they pass validation', () => {
+  it('copies rows into the records with the limit, and they pass validation', async () => {
     const { exec } = open(STORE);
     const { project } = importIr(sqliteToIr(exec).ir, 'sqlite', { name: 'tienda', namesLocale: 'es' });
-    const report = copySqliteRows(exec, project, 2);
+    const report = await copySqliteRows(exec, project, 2);
     const schema = buildSchema(project);
     const clientes = schema.tables.find((t) => t.name === 'clientes')!;
     const rows = project.records![clientes.id];
@@ -122,7 +122,7 @@ describe('copySqliteRows', () => {
     expect(rows[1].values[email.id] ?? '').toBe('');
 
     const full = importIr(sqliteToIr(exec).ir, 'sqlite', { name: 'tienda', namesLocale: 'es' }).project;
-    expect(copySqliteRows(exec, full, 1000)).toMatchObject({ tables: 4, rows: 10, truncated: [] });
+    expect(await copySqliteRows(exec, full, 1000)).toMatchObject({ tables: 4, rows: 10, truncated: [] });
     const productos = buildSchema(full).tables.find((t) => t.name === 'productos')!;
     const foto = productos.columns.find((c) => c.name === 'foto')!;
     expect(full.records![productos.id][0].values[foto.id]).toBe('0xcafe');

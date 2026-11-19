@@ -1101,4 +1101,20 @@ export const fr: Messages = {
   'connections.error.tunnelRefused': "Le serveur SSH n’a pas ouvert le tunnel vers {target} : {message}",
   'connections.error.tlsConfig': "Paramètres TLS invalides : {message}",
   'connections.error.database': "La base de données a répondu : {message}",
+
+  // New project from a connection (desktop)
+  'connections.createProject': "Créer un projet depuis cette base",
+  'connections.edit': "Modifier {name}",
+  'connectionImport.title': "Projet depuis {name}",
+  'connectionImport.connecting': "Connexion...",
+  'connectionImport.editConnection': "Modifier la connexion",
+  'connectionImport.schemas': "Schémas",
+  'connectionImport.schemaOption': "{name} ({count} tables)",
+  'connectionImport.schemaOption.one': "{name} (1 table)",
+  'connectionImport.noSchemas': "La base n’a pas de schémas propres.",
+  'connectionImport.reading': "Lecture du schéma...",
+  'connectionImport.readFailed': "Impossible de lire le schéma : {message}",
+  'connectionImport.submit': "Créer le projet",
+  'connectionImport.copying': "Copie de {table}...",
+  'connectionImport.copyFailed': "Impossible de copier les lignes : {message}",
 };

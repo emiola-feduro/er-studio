@@ -5,7 +5,8 @@ import Button from '../button/button';
 
 type ConnectionDialogReportProps = {
   report: ConnectionReport;
-  onTrust: () => void;
+  /** Accepts the fingerprint of an unknown or changed SSH host key; without it the buttons are left out. */
+  onTrust?: () => void;
 };
 
 /** What "Test connection" found: each step that worked, then the result or the error. */
@@ -40,9 +41,11 @@ const ConnectionDialogReport = ({ report, onTrust }: ConnectionDialogReportProps
             <>
               <p>{t('connections.error.unknownHostKey', { host: error.host })}</p>
               <code className="block font-[inherit] font-sql break-all">{error.fingerprint}</code>
-              <Button size="sm" onClick={onTrust}>
-                {t('connections.trust')}
-              </Button>
+              {onTrust && (
+                <Button size="sm" onClick={onTrust}>
+                  {t('connections.trust')}
+                </Button>
+              )}
             </>
           )}
           {error.code === 'hostKeyChanged' && (
@@ -54,9 +57,11 @@ const ConnectionDialogReport = ({ report, onTrust }: ConnectionDialogReportProps
                 <dt className="text-muted">{t('connections.received')}</dt>
                 <dd className="break-all">{error.actual}</dd>
               </dl>
-              <Button size="sm" variant="danger" onClick={onTrust}>
-                {t('connections.trustNew')}
-              </Button>
+              {onTrust && (
+                <Button size="sm" variant="danger" onClick={onTrust}>
+                  {t('connections.trustNew')}
+                </Button>
+              )}
             </>
           )}
           {error.code !== 'unknownHostKey' && error.code !== 'hostKeyChanged' && (

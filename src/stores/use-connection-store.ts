@@ -7,6 +7,10 @@ type ConnectionState = {
   connections: ConnectionProfile[];
   /** The connection dialog: closed, a new connection, or the id being edited. */
   dialog: { open: boolean; id?: string };
+  /** The "new project from a connection" dialog and the connection it reads. */
+  importFrom: string | null;
+  openImport: (id: string) => void;
+  closeImport: () => void;
   save: (profile: ConnectionProfile) => void;
   remove: (id: string) => void;
   openDialog: (id?: string) => void;
@@ -18,6 +22,9 @@ const useConnectionStore = create<ConnectionState>()(
     (set) => ({
       connections: [],
       dialog: { open: false },
+      importFrom: null,
+      openImport: (id) => set({ importFrom: id }),
+      closeImport: () => set({ importFrom: null }),
       save: (profile) =>
         set((s) => ({
           connections: s.connections.some((c) => c.id === profile.id)

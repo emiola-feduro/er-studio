@@ -1,7 +1,7 @@
-import { buildSchema } from '../inference';
-import { uid } from '../model';
-import { generationOrder } from '../records';
-import type { DataRow, Project } from '../types';
+import type { Project } from '../types';
+import { copyRows, type RowSource } from './copy-rows';
+
+export type { CopyReport } from './copy-rows';
 import { emptyColumn, emptyTable, type Ir, type IrTable } from './ir';
 import { parseSql } from './sql-parser';
 
@@ -109,81 +109,24 @@ export const sqliteToIr = (exec: SqliteExec): SqliteSchema => {
 
 /** Text the records grid shows for a value read from SQLite. */
 const cellText = (value: unknown): string => {
-  if (value === null || value === undefined) return '';
   if (value instanceof Uint8Array) return `0x${Array.from(value, (b) => b.toString(16).padStart(2, '0')).join('')}`;
   return String(value);
 };
 
-export type CopyReport = { tables: number; rows: number; truncated: string[] };
-
-const CHUNK = 5000;
-
-/**
- * Copies up to `limit` rows of each source table into the records of the imported project, matching
- * tables and columns by name. Parents go first, and when a parent table was cut by the limit only the
- * child rows that point to a copied parent row come along, so the records keep their references.
- */
-export const copySqliteRows = (exec: SqliteExec, project: Project, limit: number): CopyReport => {
-  const schema = buildSchema(project);
-  const records: Record<string, DataRow[]> = {};
-  const report: CopyReport = { tables: 0, rows: 0, truncated: [] };
-  const sourceNames = new Map(
+/** The tables of an open SQLite file as a source of rows for copyRows. */
+export const sqliteRowSource = (exec: SqliteExec): RowSource => {
+  const names = new Map(
     rows(exec, "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").map((r) => [lower(String(r.name)), String(r.name)]),
   );
-  const cut = new Set<string>();
-  // Per copied table and column id, the values present, to check the references of the tables after it.
-  const keys = new Map<string, Map<string, Set<string>>>();
-  const keySet = (tableId: string, columnIds: string[]) => {
-    const rowsOf = records[tableId] ?? [];
-    const key = columnIds.join('|');
-    let byColumns = keys.get(tableId);
-    if (!byColumns) keys.set(tableId, (byColumns = new Map()));
-    let set = byColumns.get(key);
-    if (!set) byColumns.set(key, (set = new Set(rowsOf.map((r) => columnIds.map((id) => r.values[id] ?? '').join('\u0000')))));
-    return set;
+  return {
+    has: (name) => names.has(lower(name)),
+    fetch: (name, offset, limit) => {
+      const [result] = exec(`SELECT * FROM ${quoteIdent(names.get(lower(name))!)} LIMIT ${limit} OFFSET ${offset}`);
+      return result ?? { columns: [], values: [] };
+    },
+    cell: cellText,
   };
-
-  for (const table of generationOrder(schema.tables)) {
-    const source = sourceNames.get(lower(table.name));
-    if (!source) continue;
-    const checks = table.foreignKeys.filter((fk) => fk.refTableId !== table.id && cut.has(fk.refTableId));
-    const kept: DataRow[] = [];
-    let more = false;
-    for (let offset = 0; ; offset += CHUNK) {
-      const [result] = exec(`SELECT * FROM ${quoteIdent(source)} LIMIT ${CHUNK} OFFSET ${offset}`);
-      if (!result || result.values.length === 0) break;
-      const columnIds = result.columns.map((name) => table.columns.find((c) => lower(c.name) === lower(name))?.id);
-      for (const row of result.values) {
-        const values: Record<string, string> = {};
-        row.forEach((value, i) => {
-          const id = columnIds[i];
-          if (id && value !== null && value !== undefined) values[id] = cellText(value);
-        });
-        const fits = checks.every((fk) => {
-          if (fk.columnIds.some((id) => !values[id])) return true;
-          return keySet(fk.refTableId, fk.refColumnIds).has(fk.columnIds.map((id) => values[id]).join('\u0000'));
-        });
-        if (!fits) {
-          more = true;
-          continue;
-        }
-        if (kept.length === limit) {
-          more = true;
-          break;
-        }
-        kept.push({ id: uid(), values });
-      }
-      if (kept.length === limit && more) break;
-      if (result.values.length < CHUNK) break;
-    }
-    records[table.id] = kept;
-    if (more) {
-      cut.add(table.id);
-      report.truncated.push(table.name);
-    }
-    report.tables += 1;
-    report.rows += kept.length;
-  }
-  project.records = records;
-  return report;
 };
+
+/** Copies up to `limit` rows of each table of the file into the records of the imported project. */
+export const copySqliteRows = (exec: SqliteExec, project: Project, limit: number) => copyRows(sqliteRowSource(exec), project, limit);

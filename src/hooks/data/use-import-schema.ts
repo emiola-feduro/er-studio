@@ -114,10 +114,10 @@ const useImportSchema = () => {
     const result = preview?.result;
     if (!result || result.project.entities.length === 0) return;
     const db = dbRef.current;
-    let copied: ReturnType<typeof copySqliteRows> | undefined;
+    let copied: Awaited<ReturnType<typeof copySqliteRows>> | undefined;
     if (sqlite && db && copyData) {
       const exec: SqliteExec = (sql) => db.exec(sql);
-      copied = copySqliteRows(exec, result.project, Math.max(1, rowLimit));
+      copied = await copySqliteRows(exec, result.project, Math.max(1, rowLimit));
     }
     await addProject(result.project);
     const ui = useUiStore.getState();

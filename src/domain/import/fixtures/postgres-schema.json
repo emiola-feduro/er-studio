@@ -1,0 +1,415 @@
+{
+  "ir": {
+    "tables": [
+      {
+        "name": "archivo_cliente",
+        "columns": [
+          {
+            "name": "id",
+            "type": "INTEGER",
+            "params": [],
+            "notNull": true,
+            "pk": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "name": "nota",
+            "type": "TEXT",
+            "params": [],
+            "notNull": false,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false
+          }
+        ],
+        "pk": {
+          "name": "cliente_pkey",
+          "columns": [
+            "id"
+          ]
+        },
+        "uniques": [],
+        "checks": [],
+        "foreignKeys": [],
+        "indexes": []
+      },
+      {
+        "name": "tienda_cliente",
+        "columns": [
+          {
+            "name": "id",
+            "type": "INTEGER",
+            "params": [],
+            "notNull": true,
+            "pk": true,
+            "unique": false,
+            "autoIncrement": true
+          },
+          {
+            "name": "nombre",
+            "type": "CHARACTER VARYING",
+            "params": [
+              "80"
+            ],
+            "notNull": true,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "name": "email",
+            "type": "CHARACTER VARYING",
+            "params": [
+              "120"
+            ],
+            "notNull": false,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "name": "activo",
+            "type": "BOOLEAN",
+            "params": [],
+            "notNull": true,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "true"
+          },
+          {
+            "name": "tipo",
+            "type": "CHARACTER VARYING",
+            "params": [
+              "10"
+            ],
+            "notNull": false,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "name": "foto",
+            "type": "BYTEA",
+            "params": [],
+            "notNull": false,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false
+          }
+        ],
+        "pk": {
+          "name": "cliente_pkey",
+          "columns": [
+            "id"
+          ]
+        },
+        "uniques": [
+          {
+            "name": "cliente_email_key",
+            "columns": [
+              "email"
+            ]
+          }
+        ],
+        "checks": [
+          {
+            "name": "cliente_tipo_check",
+            "expression": "tipo IN ('persona', 'empresa')"
+          }
+        ],
+        "foreignKeys": [],
+        "indexes": []
+      },
+      {
+        "name": "pedido",
+        "columns": [
+          {
+            "name": "id",
+            "type": "BIGINT",
+            "params": [],
+            "notNull": true,
+            "pk": true,
+            "unique": false,
+            "autoIncrement": true
+          },
+          {
+            "name": "cliente_id",
+            "type": "INTEGER",
+            "params": [],
+            "notNull": true,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "name": "creado",
+            "type": "TIMESTAMP WITH TIME ZONE",
+            "params": [
+              "3"
+            ],
+            "notNull": true,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "now()"
+          },
+          {
+            "name": "estado",
+            "type": "ENUM",
+            "params": [],
+            "notNull": true,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "'nuevo'::tienda.estado_pedido",
+            "enumValues": [
+              "nuevo",
+              "pagado",
+              "enviado"
+            ]
+          }
+        ],
+        "pk": {
+          "name": "pedido_pkey",
+          "columns": [
+            "id"
+          ]
+        },
+        "uniques": [],
+        "checks": [],
+        "foreignKeys": [
+          {
+            "name": "pedido_cliente_id_fkey",
+            "columns": [
+              "cliente_id"
+            ],
+            "refTable": "tienda_cliente",
+            "refColumns": [
+              "id"
+            ],
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "idx_pedido_creado",
+            "columns": [
+              {
+                "name": "creado",
+                "order": "DESC"
+              }
+            ],
+            "unique": false
+          },
+          {
+            "name": "idx_pedido_pagado",
+            "columns": [
+              {
+                "name": "cliente_id",
+                "order": "ASC"
+              }
+            ],
+            "unique": false,
+            "where": "(estado = 'pagado'::tienda.estado_pedido)"
+          }
+        ]
+      },
+      {
+        "name": "pedido_producto",
+        "columns": [
+          {
+            "name": "pedido_id",
+            "type": "BIGINT",
+            "params": [],
+            "notNull": true,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "name": "producto_id",
+            "type": "INTEGER",
+            "params": [],
+            "notNull": true,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "name": "cantidad",
+            "type": "INTEGER",
+            "params": [],
+            "notNull": true,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "1"
+          }
+        ],
+        "pk": {
+          "name": "pedido_producto_pkey",
+          "columns": [
+            "pedido_id",
+            "producto_id"
+          ]
+        },
+        "uniques": [],
+        "checks": [],
+        "foreignKeys": [
+          {
+            "name": "pedido_producto_pedido_id_fkey",
+            "columns": [
+              "pedido_id"
+            ],
+            "refTable": "pedido",
+            "refColumns": [
+              "id"
+            ],
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION"
+          },
+          {
+            "name": "pedido_producto_producto_id_fkey",
+            "columns": [
+              "producto_id"
+            ],
+            "refTable": "producto",
+            "refColumns": [
+              "id"
+            ],
+            "onDelete": "NO ACTION",
+            "onUpdate": "RESTRICT"
+          }
+        ],
+        "indexes": []
+      },
+      {
+        "name": "producto",
+        "columns": [
+          {
+            "name": "id",
+            "type": "INTEGER",
+            "params": [],
+            "notNull": true,
+            "pk": true,
+            "unique": false,
+            "autoIncrement": true
+          },
+          {
+            "name": "nombre",
+            "type": "TEXT",
+            "params": [],
+            "notNull": true,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "name": "precio",
+            "type": "NUMERIC",
+            "params": [
+              "10",
+              "2"
+            ],
+            "notNull": true,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "name": "precio_iva",
+            "type": "NUMERIC",
+            "params": [
+              "10",
+              "2"
+            ],
+            "notNull": false,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false
+          }
+        ],
+        "pk": {
+          "name": "producto_pkey",
+          "columns": [
+            "id"
+          ]
+        },
+        "uniques": [],
+        "checks": [
+          {
+            "name": "producto_precio_check",
+            "expression": "precio >= (0)::numeric"
+          }
+        ],
+        "foreignKeys": [],
+        "indexes": [
+          {
+            "name": "idx_producto_nombre",
+            "columns": [
+              {
+                "name": "nombre",
+                "order": "ASC"
+              }
+            ],
+            "unique": true
+          }
+        ]
+      }
+    ],
+    "manyToMany": [],
+    "dialect": "postgresql",
+    "databaseName": "tienda",
+    "skipped": [
+      "VIEW v_clientes",
+      "producto.precio_iva GENERATED ALWAYS AS ((precio * 1.16)) STORED",
+      "INDEX idx_cliente_lower (expression)"
+    ]
+  },
+  "sources": [
+    {
+      "name": "archivo_cliente",
+      "schema": "archivo",
+      "table": "cliente",
+      "key": [
+        "id"
+      ]
+    },
+    {
+      "name": "tienda_cliente",
+      "schema": "tienda",
+      "table": "cliente",
+      "key": [
+        "id"
+      ]
+    },
+    {
+      "name": "pedido",
+      "schema": "tienda",
+      "table": "pedido",
+      "key": [
+        "id"
+      ]
+    },
+    {
+      "name": "pedido_producto",
+      "schema": "tienda",
+      "table": "pedido_producto",
+      "key": [
+        "pedido_id",
+        "producto_id"
+      ]
+    },
+    {
+      "name": "producto",
+      "schema": "tienda",
+      "table": "producto",
+      "key": [
+        "id"
+      ]
+    }
+  ]
+}

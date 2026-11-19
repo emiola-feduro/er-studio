@@ -5,8 +5,11 @@
 
 pub mod config;
 pub mod error;
+pub mod introspect;
+pub mod ir;
 pub mod postgres;
 pub mod secrets;
+pub mod session;
 pub mod ssh;
 pub mod tls;
 pub mod transport;
