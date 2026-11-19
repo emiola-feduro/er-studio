@@ -11,6 +11,11 @@ on:
 permissions:
   contents: write
 
+# A newer push to the same branch replaces a build still running.
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
 jobs:
   build:
     strategy:
@@ -49,13 +54,28 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      # A version tag publishes to its own release; any other build gets a draft named after its branch and commit.
+      - name: Release name
+        id: release
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            echo "tag=$GITHUB_REF_NAME" >>"$GITHUB_OUTPUT"
+            echo "name=ER Studio $GITHUB_REF_NAME" >>"$GITHUB_OUTPUT"
+          else
+            branch=$(echo "$GITHUB_REF_NAME" | tr -c 'A-Za-z0-9.-' '-' | sed 's/-*$//')
+            short=${GITHUB_SHA::7}
+            echo "tag=build-$branch-$short" >>"$GITHUB_OUTPUT"
+            echo "name=ER Studio $GITHUB_REF_NAME ($short)" >>"$GITHUB_OUTPUT"
+          fi
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tauriScript: bun tauri
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'desktop-v__VERSION__' }}
-          releaseName: 'ER Studio ${{ github.ref_type == ''tag'' && github.ref_name || ''v__VERSION__'' }}'
+          tagName: ${{ steps.release.outputs.tag }}
+          releaseName: ${{ steps.release.outputs.name }}
           releaseBody: 'Desktop build of ER Studio for Windows, macOS and Linux. The installers are not signed yet.'
           releaseDraft: true
           prerelease: true

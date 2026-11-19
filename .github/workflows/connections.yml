@@ -7,6 +7,10 @@ on:
     paths: ['src-tauri/**', '.github/workflows/connections.yml']
   workflow_dispatch:
 
+concurrency:
+  group: connections-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   rust:
     runs-on: ubuntu-22.04
