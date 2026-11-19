@@ -1,0 +1,204 @@
+{
+  "ir": {
+    "tables": [
+      {
+        "name": "cliente",
+        "columns": [
+          {
+            "name": "id",
+            "type": "INT",
+            "params": [],
+            "notNull": true,
+            "pk": true,
+            "unique": false,
+            "autoIncrement": true
+          },
+          {
+            "name": "nombre",
+            "type": "VARCHAR",
+            "params": [
+              "80"
+            ],
+            "notNull": true,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "name": "email",
+            "type": "VARCHAR",
+            "params": [
+              "120"
+            ],
+            "notNull": false,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "name": "activo",
+            "type": "TINYINT",
+            "params": [
+              "1"
+            ],
+            "notNull": true,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "1"
+          },
+          {
+            "name": "tipo",
+            "type": "ENUM",
+            "params": [],
+            "notNull": true,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "'persona'",
+            "enumValues": [
+              "persona",
+              "empresa"
+            ]
+          },
+          {
+            "name": "saldo",
+            "type": "DECIMAL",
+            "params": [
+              "10",
+              "2"
+            ],
+            "notNull": true,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "0.00"
+          },
+          {
+            "name": "creado",
+            "type": "DATETIME",
+            "params": [],
+            "notNull": true,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "CURRENT_TIMESTAMP"
+          }
+        ],
+        "pk": {
+          "columns": [
+            "id"
+          ]
+        },
+        "uniques": [
+          {
+            "name": "email",
+            "columns": [
+              "email"
+            ]
+          }
+        ],
+        "checks": [
+          {
+            "name": "cliente_chk_1",
+            "expression": "saldo >= 0"
+          }
+        ],
+        "foreignKeys": [],
+        "indexes": []
+      },
+      {
+        "name": "pedido",
+        "columns": [
+          {
+            "name": "id",
+            "type": "INT",
+            "params": [],
+            "notNull": true,
+            "pk": true,
+            "unique": false,
+            "autoIncrement": true
+          },
+          {
+            "name": "cliente_id",
+            "type": "INT",
+            "params": [],
+            "notNull": true,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "name": "total",
+            "type": "DECIMAL",
+            "params": [
+              "10",
+              "2"
+            ],
+            "notNull": true,
+            "pk": false,
+            "unique": false,
+            "autoIncrement": false
+          }
+        ],
+        "pk": {
+          "columns": [
+            "id"
+          ]
+        },
+        "uniques": [],
+        "checks": [],
+        "foreignKeys": [
+          {
+            "name": "fk_pedido_cliente",
+            "columns": [
+              "cliente_id"
+            ],
+            "refTable": "cliente",
+            "refColumns": [
+              "id"
+            ],
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "idx_pedido_total",
+            "columns": [
+              {
+                "name": "total",
+                "order": "DESC"
+              }
+            ],
+            "unique": false
+          }
+        ]
+      }
+    ],
+    "manyToMany": [],
+    "dialect": "mysql",
+    "databaseName": "tienda",
+    "skipped": [
+      "VIEW v_cliente"
+    ]
+  },
+  "sources": [
+    {
+      "name": "cliente",
+      "schema": "tienda",
+      "table": "cliente",
+      "key": [
+        "id"
+      ]
+    },
+    {
+      "name": "pedido",
+      "schema": "tienda",
+      "table": "pedido",
+      "key": [
+        "id"
+      ]
+    }
+  ]
+}

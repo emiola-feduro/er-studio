@@ -2,6 +2,11 @@ import type { MessageKey } from '../../../i18n';
 import type useModelVersions from '../../../hooks/data/use-model-versions';
 import { CURRENT } from '../../../hooks/data/use-model-versions';
 import useT from '../../../hooks/ui/use-t';
+import useLiveCompare from '../../../hooks/data/use-live-compare';
+import { isDesktop } from '../../../lib/platform';
+import useConnectionStore from '../../../stores/use-connection-store';
+import useProjectStore from '../../../stores/use-project-store';
+import VersionsViewLive from './versions-view-live';
 import { downloadText, slug } from '../../../lib/project-file';
 import useUiStore from '../../../stores/use-ui-store';
 import Button from '../button/button';
@@ -13,7 +18,16 @@ type Data = ReturnType<typeof useModelVersions>;
 /** Chooses two versions and shows what changed and the migration script. */
 const VersionsViewCompare = ({ data }: { data: Data }) => {
   const t = useT();
-  const { versions, fromId, setFromId, toId, setToId, migration, projectName } = data;
+  const { versions, fromId, setFromId, toId, setToId, projectName } = data;
+  const connections = useConnectionStore((s) => s.connections);
+  const project = useProjectStore((s) => s.project);
+  const desktop = isDesktop();
+  // "conn:<id>" in the From list compares a live database with the current model.
+  const liveId = fromId.startsWith('conn:') ? fromId.slice(5) : undefined;
+  const connection = desktop && liveId ? connections.find((c) => c.id === liveId) : undefined;
+  const live = useLiveCompare(project, connection);
+  const migration = connection ? live.migration : data.migration;
+  const canChoose = versions.length > 0 || (desktop && connections.length > 0);
 
   const copy = async () => {
     if (!migration) return;
@@ -34,19 +48,35 @@ const VersionsViewCompare = ({ data }: { data: Data }) => {
           <label htmlFor="version-from" className="text-muted">
             {t('versions.from')}
           </label>
-          <select id="version-from" className="field field-sm w-44" value={fromId} onChange={(e) => setFromId(e.target.value)} disabled={!versions.length}>
+          <select id="version-from" className="field field-sm w-44" value={fromId} onChange={(e) => setFromId(e.target.value)} disabled={!canChoose}>
+            {!fromId && <option value="">{t('versions.choose')}</option>}
             {versions.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.name}
               </option>
             ))}
+            {desktop && connections.length > 0 && (
+              <optgroup label={t('liveCompare.databases')}>
+                {connections.map((c) => (
+                  <option key={c.id} value={`conn:${c.id}`}>
+                    {c.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </div>
         <div className="flex items-center gap-2">
           <label htmlFor="version-to" className="text-muted">
             {t('versions.to')}
           </label>
-          <select id="version-to" className="field field-sm w-44" value={toId} onChange={(e) => setToId(e.target.value)} disabled={!versions.length}>
+          <select
+            id="version-to"
+            className="field field-sm w-44"
+            value={connection ? CURRENT : toId}
+            onChange={(e) => setToId(e.target.value)}
+            disabled={!versions.length || Boolean(connection)}
+          >
             <option value={CURRENT}>{t('versions.current')}</option>
             {versions.map((v) => (
               <option key={v.id} value={v.id}>
@@ -58,10 +88,16 @@ const VersionsViewCompare = ({ data }: { data: Data }) => {
         <Button size="sm" onClick={() => void copy()} disabled={!migration}>
           {t('common.copy')}
         </Button>
-        <Button size="sm" variant="primary" disabled={!migration} onClick={() => migration && downloadText(`${slug(projectName)}-migration.sql`, migration.sql, 'application/sql')}>
+        <Button
+          size="sm"
+          variant="primary"
+          disabled={!migration}
+          onClick={() => migration && downloadText(`${slug(projectName)}-migration.sql`, migration.sql, 'application/sql')}
+        >
           {t('versions.download')}
         </Button>
       </div>
+      {connection && <VersionsViewLive connection={connection} live={live} />}
       {migration ? (
         <>
           <div className="max-h-[40%] space-y-2 overflow-y-auto border-b border-line px-4 py-3">
@@ -90,7 +126,7 @@ const VersionsViewCompare = ({ data }: { data: Data }) => {
           <SqlPreviewCode sql={migration.sql} />
         </>
       ) : (
-        <p className="p-6 text-muted">{t('versions.empty')}</p>
+        !connection && <p className="p-6 text-muted">{t('versions.empty')}</p>
       )}
     </div>
   );

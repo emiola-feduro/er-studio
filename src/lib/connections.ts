@@ -1,6 +1,6 @@
 // Calls to the desktop side for database connections. Only used when isDesktop() is true.
 import { invoke } from '@tauri-apps/api/core';
-import type { ConnectionProfile, ConnectionSecrets } from '../domain/connections';
+import type { ConnectionEngine, ConnectionProfile, ConnectionSecrets } from '../domain/connections';
 import { secretSlot, toConnectionConfig } from '../domain/connections';
 import { postgresCell, type RowSource } from '../domain/import/copy-rows';
 import type { Ir } from '../domain/import/ir';
@@ -16,9 +16,11 @@ export type ConnectionErrorInfo =
   | { code: 'tunnelRefused'; target: string; message: string }
   | { code: 'tlsConfig'; message: string }
   | { code: 'database'; message: string; sqlState?: string | null }
+  | { code: 'writesDisabled' | 'notReadOnly' | 'pendingWrite' | 'nothingPending' | 'sessionClosed' }
+  | { code: 'unsupported'; message: string }
   | { code: 'app'; message: string };
 
-export type ConnectionStep = { kind: 'tcp' | 'ssh' | 'socks5' | 'socks4' | 'http' | 'database'; target: string; ms: number };
+export type ConnectionStep = { kind: 'tcp' | 'socket' | 'file' | 'ssh' | 'socks5' | 'socks4' | 'http' | 'database'; target: string; ms: number };
 
 export type ConnectionReport = { steps: ConnectionStep[]; serverVersion: string | null; error: ConnectionErrorInfo | null };
 
@@ -86,7 +88,7 @@ export const listSchemas = (sessionId: number) => invoke<SchemaInfo[]>('session_
 export const readSchema = (sessionId: number, schemas: string[]) => invoke<SchemaRead>('session_schema', { sessionId, schemas });
 
 /** The tables of an open PostgreSQL session as a source of rows for copyRows. */
-export const sessionRowSource = (sessionId: number, sources: TableSource[]): RowSource => {
+export const sessionRowSource = (sessionId: number, sources: TableSource[], engine: ConnectionEngine = 'postgres'): RowSource => {
   const byName = new Map(sources.map((s) => [s.name.toLowerCase(), s]));
   return {
     has: (name) => byName.has(name.toLowerCase()),
@@ -102,6 +104,26 @@ export const sessionRowSource = (sessionId: number, sources: TableSource[]): Row
       });
       return { columns: page.columns, values: page.rows };
     },
-    cell: postgresCell,
+    cell: engine === 'postgres' ? postgresCell : (value) => String(value),
   };
+};
+
+/* Live queries */
+
+export type LiveRun = { columns: string[]; rows: (string | null)[][]; rowsAffected: number | null; truncated: boolean; ms: number; pending: boolean };
+
+export const runLive = (sessionId: number, sql: string, write: boolean, maxRows: number) => invoke<LiveRun>('query_run', { sessionId, sql, write, maxRows });
+
+export const finishLive = (sessionId: number, commit: boolean) => invoke('query_finish', { sessionId, commit });
+
+export const runScript = (sessionId: number, sql: string) => invoke('session_script', { sessionId, sql });
+
+/** The code of a desktop error ("sessionClosed", "writesDisabled"...), when the error is one. */
+export const sessionErrorCode = (error: unknown): string | undefined => {
+  const text = error instanceof Error ? error.message : String(error);
+  try {
+    return (JSON.parse(text) as { code?: string }).code;
+  } catch {
+    return undefined;
+  }
 };

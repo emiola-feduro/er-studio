@@ -53,3 +53,10 @@ fn session_futures_are_send(sessions: &er_db::session::Sessions, config: &Connec
     is_send(sessions.rows(1, "s", "t", order, 0, 10));
     is_send(sessions.close(1));
 }
+
+#[allow(dead_code)]
+fn live_query_futures_are_send(sessions: &std::sync::Arc<er_db::session::Sessions>, sql: &str) {
+    is_send(sessions.run(1, sql, false, 10));
+    is_send(sessions.finish(1, true));
+    is_send(sessions.script(1, sql));
+}

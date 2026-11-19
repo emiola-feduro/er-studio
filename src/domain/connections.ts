@@ -1,9 +1,16 @@
+import type { DialectId } from './types';
+
 /**
  * Saved database connections (desktop only). A profile holds everything but the secrets: passwords,
  * passphrases and proxy passwords go to the system keychain and come back only inside the desktop app.
  */
 
-export type ConnectionEngine = 'postgres';
+export type ConnectionEngine = 'postgres' | 'mysql' | 'sqlserver' | 'sqlite';
+
+export const ENGINES: ConnectionEngine[] = ['postgres', 'mysql', 'sqlserver', 'sqlite'];
+
+/** The gestor of the projects made from a connection. */
+export const ENGINE_DIALECT: Record<ConnectionEngine, DialectId> = { postgres: 'postgresql', mysql: 'mysql', sqlserver: 'sqlserver', sqlite: 'sqlite' };
 
 export type ConnectionEnvironment = 'local' | 'development' | 'staging' | 'production';
 
@@ -40,6 +47,14 @@ export type ConnectionProfile = {
   /** From this computer outward. */
   hops: HopProfile[];
   timeoutSecs: number;
+  /** Without it, every statement runs in a transaction that is rolled back. */
+  allowWrites?: boolean;
+  /** SQL Server: named instance (its port comes from SQL Browser when the port is 0) and Windows authentication. */
+  instance?: string;
+  integratedAuth?: boolean;
+  /** SQLite: the file, and whether to open it read-only. */
+  file?: string;
+  readOnlyFile?: boolean;
   createdAt: number;
   updatedAt: number;
 };
@@ -47,7 +62,18 @@ export type ConnectionProfile = {
 /** Secrets typed in the dialog: the database password and one per hop (password, passphrase or proxy password). */
 export type ConnectionSecrets = { db: string; hops: string[] };
 
-export const DEFAULT_PORTS: Record<HopKind | ConnectionEngine, number> = { postgres: 5432, ssh: 22, socks5: 1080, socks4: 1080, httpConnect: 3128 };
+export const DEFAULT_PORTS: Record<HopKind | ConnectionEngine, number> = {
+  postgres: 5432,
+  mysql: 3306,
+  sqlserver: 1433,
+  sqlite: 0,
+  ssh: 22,
+  socks5: 1080,
+  socks4: 1080,
+  httpConnect: 3128,
+};
+
+export const DEFAULT_USERS: Record<ConnectionEngine, string> = { postgres: 'postgres', mysql: 'root', sqlserver: 'sa', sqlite: '' };
 
 export const newHop = (kind: HopKind): HopProfile => {
   const port = DEFAULT_PORTS[kind];
@@ -108,6 +134,11 @@ export const toConnectionConfig = (profile: ConnectionProfile, secrets?: Connect
     }
   }),
   timeoutSecs: profile.timeoutSecs,
+  allowWrites: Boolean(profile.allowWrites),
+  instance: filled(profile.instance?.trim()),
+  integratedAuth: Boolean(profile.integratedAuth),
+  file: filled(profile.file?.trim()),
+  readOnlyFile: Boolean(profile.readOnlyFile),
 });
 
 const SSL_MODES: Record<string, TlsMode> = {
@@ -117,18 +148,71 @@ const SSL_MODES: Record<string, TlsMode> = {
   require: 'require',
   'verify-ca': 'verifyCa',
   'verify-full': 'verifyFull',
+  // MySQL spells them differently.
+  disabled: 'disable',
+  preferred: 'prefer',
+  required: 'require',
+  'verify-identity': 'verifyFull',
 };
 
-export type ParsedUrl = Pick<ConnectionProfile, 'engine' | 'host' | 'port' | 'database' | 'user'> & { password?: string; tlsMode?: TlsMode };
+export type ParsedUrl = Pick<ConnectionProfile, 'engine' | 'host' | 'port' | 'database' | 'user'> & {
+  password?: string;
+  tlsMode?: TlsMode;
+  instance?: string;
+  integratedAuth?: boolean;
+};
 
-/** Reads "postgres://user:password@host:5432/db?sslmode=verify-full" (also postgresql://). Null when it is not one. */
+const SCHEMES: Record<string, ConnectionEngine> = {
+  postgres: 'postgres',
+  postgresql: 'postgres',
+  mysql: 'mysql',
+  mariadb: 'mysql',
+  sqlserver: 'sqlserver',
+  mssql: 'sqlserver',
+};
+
+/** "Server=host,1433;Database=x;User Id=u;Password=p;Encrypt=True" (ADO.NET, as SQL Server tools give it). */
+const parseAdoNet = (text: string): ParsedUrl | null => {
+  const pairs = new Map(
+    text
+      .split(';')
+      .map((part) => part.split('='))
+      .filter((kv) => kv.length >= 2)
+      .map(([key, ...value]) => [key.trim().toLowerCase().replace(/\s+/g, ' '), value.join('=').trim()] as const),
+  );
+  const server = pairs.get('server') ?? pairs.get('data source') ?? pairs.get('address');
+  if (!server) return null;
+  const [hostPart, portPart] = server.replace(/^tcp:/i, '').split(',');
+  const [host, instance] = hostPart.split('\\');
+  const encrypt = pairs.get('encrypt')?.toLowerCase();
+  const trust = pairs.get('trustservercertificate')?.toLowerCase() === 'true';
+  const integrated = ['true', 'sspi', 'yes'].includes((pairs.get('integrated security') ?? pairs.get('trusted_connection') ?? '').toLowerCase());
+  return {
+    engine: 'sqlserver',
+    host: host.trim() === '.' || host.trim() === '(local)' ? 'localhost' : host.trim(),
+    port: portPart ? Number(portPart) : instance ? 0 : DEFAULT_PORTS.sqlserver,
+    database: pairs.get('database') ?? pairs.get('initial catalog') ?? 'master',
+    user: pairs.get('user id') ?? pairs.get('uid') ?? pairs.get('user') ?? '',
+    password: pairs.get('password') ?? pairs.get('pwd'),
+    tlsMode: encrypt === 'false' || encrypt === 'optional' ? 'prefer' : encrypt ? (trust ? 'require' : 'verifyFull') : undefined,
+    instance: instance?.trim() || undefined,
+    integratedAuth: integrated || undefined,
+  };
+};
+
+/**
+ * Reads a connection URL ("postgres://user:password@host:5432/db?sslmode=verify-full", mysql://, mariadb://,
+ * sqlserver://) or a SQL Server connection string. Null when it is none of them.
+ */
 export const parseConnectionUrl = (text: string): ParsedUrl | null => {
   const trimmed = text.trim();
-  if (!/^postgres(ql)?:\/\//i.test(trimmed)) return null;
+  const scheme = /^([a-z]+):\/\//i.exec(trimmed)?.[1]?.toLowerCase();
+  const engine = scheme ? SCHEMES[scheme] : undefined;
+  if (!engine) return /server\s*=|data source\s*=/i.test(trimmed) ? parseAdoNet(trimmed) : null;
   let url: URL;
   try {
     // URL only parses special schemes fully, so read it as http with the same parts.
-    url = new URL(trimmed.replace(/^postgres(ql)?:/i, 'http:'));
+    url = new URL(trimmed.replace(/^[a-z]+:/i, 'http:'));
   } catch {
     return null;
   }
@@ -139,12 +223,12 @@ export const parseConnectionUrl = (text: string): ParsedUrl | null => {
       return value;
     }
   };
-  const sslmode = url.searchParams.get('sslmode')?.toLowerCase();
+  const sslmode = (url.searchParams.get('sslmode') ?? url.searchParams.get('ssl-mode'))?.toLowerCase().replace(/_/g, '-');
   return {
-    engine: 'postgres',
+    engine,
     host: url.hostname.replace(/^\[|\]$/g, ''),
-    port: url.port ? Number(url.port) : DEFAULT_PORTS.postgres,
-    database: decode(url.pathname.replace(/^\//, '')) || 'postgres',
+    port: url.port ? Number(url.port) : DEFAULT_PORTS[engine],
+    database: decode(url.pathname.replace(/^\//, '')) || (engine === 'postgres' ? 'postgres' : engine === 'sqlserver' ? 'master' : ''),
     user: decode(url.username),
     password: url.password ? decode(url.password) : undefined,
     tlsMode: sslmode ? SSL_MODES[sslmode] : undefined,

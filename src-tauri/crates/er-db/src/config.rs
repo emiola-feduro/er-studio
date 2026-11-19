@@ -3,10 +3,16 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Engine {
+    #[default]
     Postgres,
+    /// MySQL and MariaDB (same protocol).
+    Mysql,
+    SqlServer,
+    /// A SQLite file on this computer.
+    Sqlite,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -98,13 +104,18 @@ impl Hop {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ConnectionConfig {
     pub engine: Engine,
+    /// Server name or address. A path starting with "/" is a Unix socket directory (PostgreSQL) or file (MySQL).
+    #[serde(default)]
     pub host: String,
+    #[serde(default)]
     pub port: u16,
+    #[serde(default)]
     pub database: String,
+    #[serde(default)]
     pub user: String,
     #[serde(default)]
     pub password: Option<String>,
@@ -115,6 +126,20 @@ pub struct ConnectionConfig {
     pub hops: Vec<Hop>,
     #[serde(default = "default_timeout")]
     pub timeout_secs: u64,
+    /// Without it every query runs in a transaction that is rolled back, so nothing can change.
+    #[serde(default)]
+    pub allow_writes: bool,
+    /// SQL Server named instance (SERVER\\INSTANCE); its port comes from SQL Browser when none is given.
+    #[serde(default)]
+    pub instance: Option<String>,
+    /// SQL Server with the Windows account of this computer instead of a SQL login (Windows only).
+    #[serde(default)]
+    pub integrated_auth: bool,
+    /// SQLite: the database file, and whether to open it read-only.
+    #[serde(default)]
+    pub file: Option<String>,
+    #[serde(default)]
+    pub read_only_file: bool,
 }
 
 fn default_timeout() -> u64 {

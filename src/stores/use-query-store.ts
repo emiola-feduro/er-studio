@@ -16,6 +16,9 @@ type QueryState = {
   /** Tab open per project: the generated query or the editor. */
   tabs: Record<string, QueryTab>;
   setTab: (projectId: string, tab: QueryTab) => void;
+  /** Where queries run per project: its records (absent) or a saved connection's id (desktop). */
+  targets: Record<string, string>;
+  setTarget: (projectId: string, connectionId: string | null) => void;
   forget: (projectId: string) => void;
 };
 
@@ -25,6 +28,14 @@ const useQueryStore = create<QueryState>()(
       specs: {},
       customSql: {},
       tabs: {},
+      targets: {},
+      setTarget: (projectId, connectionId) =>
+        set((s) => {
+          const targets = { ...s.targets };
+          if (connectionId) targets[projectId] = connectionId;
+          else delete targets[projectId];
+          return { targets };
+        }),
       setTab: (projectId, tab) => set((s) => ({ tabs: { ...s.tabs, [projectId]: tab } })),
       setCustomSql: (projectId, sql) =>
         set((s) => {
@@ -39,10 +50,12 @@ const useQueryStore = create<QueryState>()(
           const specs = { ...s.specs };
           const customSql = { ...s.customSql };
           const tabs = { ...s.tabs };
+          const targets = { ...s.targets };
+          delete targets[projectId];
           delete specs[projectId];
           delete customSql[projectId];
           delete tabs[projectId];
-          return { specs, customSql, tabs };
+          return { specs, customSql, tabs, targets };
         }),
     }),
     {
@@ -57,7 +70,7 @@ const useQueryStore = create<QueryState>()(
       version: 3,
       // Version 2 had "Edit SQL" replace the generated query: a project with SQL written opens in the editor.
       migrate: (persisted) => {
-        const state = { customSql: {}, tabs: {}, ...(persisted as object) } as QueryState;
+        const state = { customSql: {}, tabs: {}, targets: {}, ...(persisted as object) } as QueryState;
         for (const projectId of Object.keys(state.customSql)) state.tabs[projectId] ??= 'editor';
         return state;
       },

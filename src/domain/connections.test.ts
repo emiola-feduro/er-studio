@@ -34,8 +34,40 @@ describe('parseConnectionUrl', () => {
   it('uses the defaults and ignores other text', () => {
     expect(parseConnectionUrl('postgres://localhost')).toMatchObject({ port: 5432, database: 'postgres', user: '', password: undefined, tlsMode: undefined });
     expect(parseConnectionUrl('postgres://[::1]:5433/x')).toMatchObject({ host: '::1', port: 5433 });
-    expect(parseConnectionUrl('mysql://localhost')).toBeNull();
+    expect(parseConnectionUrl('ftp://localhost')).toBeNull();
     expect(parseConnectionUrl('db.example.com')).toBeNull();
+  });
+
+  it('reads MySQL, MariaDB and SQL Server too', () => {
+    expect(parseConnectionUrl('mysql://root:pw@db:3307/shop?ssl-mode=VERIFY_IDENTITY')).toMatchObject({
+      engine: 'mysql',
+      port: 3307,
+      database: 'shop',
+      user: 'root',
+      password: 'pw',
+      tlsMode: 'verifyFull',
+    });
+    expect(parseConnectionUrl('mariadb://db/shop')).toMatchObject({ engine: 'mysql', port: 3306 });
+    expect(parseConnectionUrl('sqlserver://sa@sql.local/ventas')).toMatchObject({ engine: 'sqlserver', port: 1433, database: 'ventas', user: 'sa' });
+    expect(
+      parseConnectionUrl('Server=tcp:srv.database.windows.net,1433;Initial Catalog=ventas;User ID=app;Password=x;Encrypt=True;TrustServerCertificate=False'),
+    ).toEqual({
+      engine: 'sqlserver',
+      host: 'srv.database.windows.net',
+      port: 1433,
+      database: 'ventas',
+      user: 'app',
+      password: 'x',
+      tlsMode: 'verifyFull',
+      instance: undefined,
+      integratedAuth: undefined,
+    });
+    expect(parseConnectionUrl('Data Source=.\\SQLEXPRESS;Database=tienda;Integrated Security=SSPI')).toMatchObject({
+      host: 'localhost',
+      port: 0,
+      instance: 'SQLEXPRESS',
+      integratedAuth: true,
+    });
   });
 });
 

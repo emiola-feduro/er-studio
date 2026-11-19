@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { copyRows, type CopyReport } from '../../domain/import/copy-rows';
+import { ENGINE_DIALECT } from '../../domain/connections';
+import { copyRows, type CopyReport, type RowSource } from '../../domain/import/copy-rows';
+import { sqliteRowSource, sqliteToIr } from '../../domain/import/sqlite';
+import { loadSqlEngine } from '../../lib/sql-engine';
 import { getLocale, t, type Locale } from '../../i18n';
 import { importProjectFromIr } from '../../lib/import-project';
 import {
@@ -36,10 +39,13 @@ const useConnectionImport = () => {
   const [rowLimit, setRowLimit] = useState(1000);
   const [copying, setCopying] = useState<string | null>(null);
   const session = useRef<number | null>(null);
+  const sqliteDb = useRef<import('sql.js').Database | null>(null);
 
   const release = () => {
     if (session.current !== null) void closeSession(session.current);
     session.current = null;
+    sqliteDb.current?.close();
+    sqliteDb.current = null;
   };
 
   // Open the session and list the schemas when the dialog opens.
@@ -56,6 +62,26 @@ const useConnectionImport = () => {
     setCopyData(true);
     setRowLimit(1000);
     void (async () => {
+      if (profile.engine === 'sqlite') {
+        // A SQLite file is read here, with the same reader as the web import.
+        try {
+          const { readFile } = await import('@tauri-apps/plugin-fs');
+          const SQL = await loadSqlEngine();
+          const db = new SQL.Database(await readFile(profile.file ?? ''));
+          if (cancelled) return db.close();
+          sqliteDb.current?.close();
+          sqliteDb.current = db;
+          const exec = (sql: string) => db.exec(sql);
+          const schema = sqliteToIr(exec);
+          setSchemas([{ name: 'main', tables: schema.tables.length }]);
+          setSelected(['main']);
+          setRead({ ir: schema.ir, sources: [] });
+          setPhase({ kind: 'ready' });
+        } catch (error) {
+          setPhase({ kind: 'failed', report: { steps: [], serverVersion: null, error: { code: 'app', message: sessionErrorMessage(error) } } });
+        }
+        return;
+      }
       const opened = await openSession(profile, profile.id);
       if (cancelled) {
         if (opened.sessionId !== null) void closeSession(opened.sessionId);
@@ -87,7 +113,7 @@ const useConnectionImport = () => {
   // Read the schema again whenever the chosen schemas change.
   useEffect(() => {
     const sessionId = session.current;
-    if (phase.kind !== 'ready' || sessionId === null) return;
+    if (phase.kind !== 'ready' || sessionId === null || profile?.engine === 'sqlite') return;
     if (selected.length === 0) {
       setRead(null);
       return;
@@ -110,7 +136,7 @@ const useConnectionImport = () => {
       // The IR is cloned because building the project fills in details on it.
       const result = importProjectFromIr(structuredClone(read.ir), 'sql', {
         name: name.trim() || profile.name,
-        dialect: 'postgresql',
+        dialect: ENGINE_DIALECT[profile.engine],
         namesLocale: namesLocale === 'auto' ? undefined : namesLocale,
         fallbackLocale: getLocale(),
       });
@@ -130,11 +156,17 @@ const useConnectionImport = () => {
   const submit = async () => {
     const result = preview?.result;
     const sessionId = session.current;
-    if (!result || !read || sessionId === null || result.project.entities.length === 0) return;
+    const db = sqliteDb.current;
+    const source: RowSource | null = db
+      ? sqliteRowSource((sql) => db.exec(sql))
+      : sessionId !== null && profile
+        ? sessionRowSource(sessionId, read?.sources ?? [], profile.engine)
+        : null;
+    if (!result || !read || !source || result.project.entities.length === 0) return;
     let copied: CopyReport | undefined;
     if (copyData) {
       try {
-        copied = await copyRows(sessionRowSource(sessionId, read.sources), result.project, Math.max(1, rowLimit), setCopying);
+        copied = await copyRows(source, result.project, Math.max(1, rowLimit), setCopying);
       } catch (error) {
         setCopying(null);
         useUiStore.getState().notify(t('connectionImport.copyFailed', { message: sessionErrorMessage(error) }), 'error');

@@ -4,12 +4,16 @@
 //! database server; the driver runs over that stream, with TLS checked against the real server name.
 
 pub mod config;
+pub mod driver;
 pub mod error;
 pub mod introspect;
 pub mod ir;
+pub mod mysql;
 pub mod postgres;
 pub mod secrets;
 pub mod session;
+pub mod sqlite;
+pub mod sqlserver;
 pub mod ssh;
 pub mod tls;
 pub mod transport;
@@ -29,15 +33,19 @@ pub struct TestReport {
     pub error: Option<Error>,
 }
 
+/// Makes rustls use ring for every driver. The drivers pull in two crypto providers, and rustls refuses
+/// to choose between them on its own.
+pub fn init() {
+    let _ = tokio_rustls::rustls::crypto::ring::default_provider().install_default();
+}
+
 pub async fn test_connection(config: &ConnectionConfig) -> TestReport {
+    init();
     let mut steps = Vec::new();
-    let result = match config.engine {
-        Engine::Postgres => postgres::connect(config, &mut steps).await,
-    };
-    match result {
-        Ok(session) => TestReport {
+    match session::connect(config, &mut steps).await {
+        Ok((_, version, _)) => TestReport {
             steps,
-            server_version: Some(session.server_version),
+            server_version: Some(version),
             error: None,
         },
         Err(error) => TestReport {

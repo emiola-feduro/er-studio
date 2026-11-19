@@ -1,16 +1,19 @@
 import { useEffect, useRef } from 'react';
 import type { ConnectionReport } from '../../../lib/connections';
 import useT from '../../../hooks/ui/use-t';
+import type { ConnectionEngine } from '../../../domain/connections';
 import Button from '../button/button';
 
 type ConnectionDialogReportProps = {
   report: ConnectionReport;
+  /** The gestor, to name it next to the server version. */
+  engine?: ConnectionEngine;
   /** Accepts the fingerprint of an unknown or changed SSH host key; without it the buttons are left out. */
   onTrust?: () => void;
 };
 
 /** What "Test connection" found: each step that worked, then the result or the error. */
-const ConnectionDialogReport = ({ report, onTrust }: ConnectionDialogReportProps) => {
+const ConnectionDialogReport = ({ report, engine = 'postgres', onTrust }: ConnectionDialogReportProps) => {
   const t = useT();
   const { steps, serverVersion, error } = report;
   const ref = useRef<HTMLDivElement>(null);
@@ -34,7 +37,9 @@ const ConnectionDialogReport = ({ report, onTrust }: ConnectionDialogReportProps
           ))}
         </ol>
       )}
-      {serverVersion && !error && <p className="font-medium text-success">{t('connections.connected', { version: serverVersion })}</p>}
+      {serverVersion && !error && (
+        <p className="font-medium text-success">{t('connections.connectedTo', { version: `${t(`connections.engine.${engine}`)} ${serverVersion}` })}</p>
+      )}
       {error && (
         <div role="alert" className="space-y-2">
           {error.code === 'unknownHostKey' && (
@@ -75,7 +80,8 @@ const ConnectionDialogReport = ({ report, onTrust }: ConnectionDialogReportProps
               {error.code === 'tunnelRefused' && t('connections.error.tunnelRefused', { target: error.target, message: error.message })}
               {error.code === 'tlsConfig' && t('connections.error.tlsConfig', { message: error.message })}
               {error.code === 'database' && t('connections.error.database', { message: error.message })}
-              {error.code === 'app' && error.message}
+              {(error.code === 'app' || error.code === 'unsupported') && error.message}
+              {error.code === 'sessionClosed' && t('connections.error.sessionClosed')}
             </p>
           )}
         </div>

@@ -5,6 +5,9 @@
 #   ssh2     second SSH server, reachable only from ssh1 (to test jumps)
 #   socks    SOCKS5 proxy (Dante) with user and password, published on 127.0.0.1:51080
 #   http     HTTP CONNECT proxy (tinyproxy) with basic auth, published on 127.0.0.1:58888
+#   mysql    MySQL 8.4 (TLS with its own certificate), published on 127.0.0.1:53306
+#   mariadb  MariaDB 11, published on 127.0.0.1:53307
+#   mssql    SQL Server 2022, published on 127.0.0.1:51433, only with ERDB_MSSQL=1 (the image is over 1.5 GB)
 # Only db, ssh1, socks and http are published; db is also reachable by name from inside the network.
 # Writes the generated keys and certificates to $ERDB_TEST_DIR (default: tests/env/.generated).
 set -euo pipefail
@@ -57,6 +60,15 @@ SSHD='apk add --no-cache openssh >/dev/null && ssh-keygen -A >/dev/null
   printf "Port 8888\nListen 0.0.0.0\nTimeout 60\nAllow 0.0.0.0/0\nConnectPort 5432\nConnectPort 22\nBasicAuth proxy clave-proxy\n" >/etc/tinyproxy/tinyproxy.conf
   exec tinyproxy -d -c /etc/tinyproxy/tinyproxy.conf' >/dev/null
 
+"$ENGINE" run -d --name erdb-mysql --network "$NET" --network-alias mysql -p 127.0.0.1:53306:3306 \
+  -e MYSQL_ROOT_PASSWORD=secreto -e MYSQL_DATABASE=tienda docker.io/library/mysql:8.4 >/dev/null
+"$ENGINE" run -d --name erdb-mariadb --network "$NET" --network-alias mariadb -p 127.0.0.1:53307:3306 \
+  -e MARIADB_ROOT_PASSWORD=secreto -e MARIADB_DATABASE=tienda docker.io/library/mariadb:11 >/dev/null
+if [ -n "${ERDB_MSSQL:-}" ]; then
+  "$ENGINE" run -d --name erdb-mssql --network "$NET" --network-alias mssql -p 127.0.0.1:51433:1433 \
+    -e ACCEPT_EULA=Y -e 'MSSQL_SA_PASSWORD=Secreto.2026' mcr.microsoft.com/mssql/server:2022-latest >/dev/null
+fi
+
 # Wait until every service answers.
 wait_for() {
   for _ in $(seq 1 90); do
@@ -72,5 +84,10 @@ wait_for ssh1 "$ENGINE exec erdb-ssh1 sh -c 'nc -z 127.0.0.1 22'"
 wait_for ssh2 "$ENGINE exec erdb-ssh2 sh -c 'nc -z 127.0.0.1 22'"
 wait_for socks "$ENGINE exec erdb-socks sh -c 'nc -z 127.0.0.1 1080'"
 wait_for http "$ENGINE exec erdb-http sh -c 'nc -z 127.0.0.1 8888'"
+wait_for mysql "$ENGINE exec erdb-mysql mysql -uroot -psecreto -e 'SELECT 1'"
+wait_for mariadb "$ENGINE exec erdb-mariadb mariadb -uroot -psecreto -e 'SELECT 1'"
+if [ -n "${ERDB_MSSQL:-}" ]; then
+  wait_for mssql "$ENGINE exec erdb-mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Secreto.2026' -Q 'SELECT 1'"
+fi
 
 echo "ready: $DIR"

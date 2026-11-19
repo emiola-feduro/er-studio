@@ -19,6 +19,9 @@ impl<T: AsyncRead + AsyncWrite + Unpin + Send> AsyncStream for T {}
 
 pub type BoxStream = Box<dyn AsyncStream>;
 
+/// What must stay alive while a stream is used (the SSH sessions under it).
+pub type Guards = Vec<Box<dyn Any + Send>>;
+
 /// The stream to the server plus what must stay alive while it is used (SSH sessions).
 pub struct Tunnel {
     pub stream: BoxStream,
@@ -91,6 +94,46 @@ fn target_of(host: &str, port: u16) -> String {
     } else {
         format!("{host}:{port}")
     }
+}
+
+/// Opens a Unix socket on this computer (a local PostgreSQL or MySQL without TCP).
+#[cfg(unix)]
+pub async fn open_socket(path: &str, seconds: u64, steps: &mut Vec<Step>) -> Result<Tunnel> {
+    let started = Instant::now();
+    let stream = within(seconds, "socket", path, async {
+        tokio::net::UnixStream::connect(path).await.map_err(|e| unreachable(path, e))
+    })
+    .await?;
+    steps.push(Step {
+        kind: "socket",
+        target: path.to_string(),
+        ms: started.elapsed().as_millis() as u64,
+    });
+    Ok(Tunnel {
+        stream: Box::new(stream),
+        guards: Vec::new(),
+    })
+}
+
+#[cfg(not(unix))]
+pub async fn open_socket(path: &str, _seconds: u64, _steps: &mut Vec<Step>) -> Result<Tunnel> {
+    Err(unreachable(path, "Unix sockets only exist on Linux and macOS"))
+}
+
+/// For drivers that open their own TCP connection (MySQL): a one-shot listener on 127.0.0.1 that hands the
+/// first connection to the tunnel. It serves one connection and then stops listening.
+pub async fn local_forward(tunnel: Tunnel) -> Result<u16> {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.map_err(|e| unreachable("127.0.0.1", e))?;
+    let port = listener.local_addr().map_err(|e| unreachable("127.0.0.1", e))?.port();
+    tokio::spawn(async move {
+        if let Ok((mut local, _)) = listener.accept().await {
+            drop(listener);
+            let Tunnel { mut stream, guards } = tunnel;
+            let _ = tokio::io::copy_bidirectional(&mut local, &mut stream).await;
+            drop(guards);
+        }
+    });
+    Ok(port)
 }
 
 /// Opens the chain and returns the stream to `config.host:config.port`, recording each step.

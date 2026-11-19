@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import {
   DEFAULT_PORTS,
+  DEFAULT_USERS,
   hopSecret,
   newHop,
   parseConnectionUrl,
   parseSshConfig,
   sshHopsFor,
   sshHostLabel,
+  type ConnectionEngine,
   type ConnectionProfile,
   type ConnectionSecrets,
   type HopKind,
@@ -44,10 +46,16 @@ const validPort = (port: number) => Number.isInteger(port) && port > 0 && port <
 export const connectionProblems = (draft: ConnectionProfile): Record<string, string> => {
   const problems: Record<string, string> = {};
   const required = t('connections.required');
+  if (draft.engine === 'sqlite') {
+    if (!draft.file?.trim()) problems.file = required;
+    return problems;
+  }
   if (!draft.host.trim()) problems.host = required;
-  if (!validPort(draft.port)) problems.port = t('connections.invalidPort');
-  if (!draft.database.trim()) problems.database = required;
-  if (!draft.user.trim()) problems.user = required;
+  // A SQL Server named instance may leave the port at 0: SQL Browser gives it.
+  const portZeroOk = draft.engine === 'sqlserver' && Boolean(draft.instance?.trim()) && draft.port === 0;
+  if (!validPort(draft.port) && !portZeroOk) problems.port = t('connections.invalidPort');
+  if (!draft.database.trim() && draft.engine !== 'mysql') problems.database = required;
+  if (!draft.user.trim() && !draft.integratedAuth) problems.user = required;
   draft.hops.forEach((hop, index) => {
     if (!hop.host.trim()) problems[`hop${index}.host`] = required;
     if (!validPort(hop.port)) problems[`hop${index}.port`] = t('connections.invalidPort');
@@ -112,6 +120,28 @@ const useConnectionDialog = () => {
     setSecrets((s) => ({ ...s, hops: swap(s.hops) }));
   };
 
+  /** Switching the gestor sets its usual port, user and database, unless they were changed by hand. */
+  const setEngine = (engine: ConnectionEngine) => {
+    const previous = draft.engine;
+    const usual = (value: string | number, of: Record<ConnectionEngine, string | number>) => value === of[previous] || value === '' || value === 0;
+    const databases: Record<ConnectionEngine, string> = { postgres: 'postgres', mysql: '', sqlserver: 'master', sqlite: '' };
+    update({
+      engine,
+      port: usual(draft.port, DEFAULT_PORTS) ? DEFAULT_PORTS[engine] : draft.port,
+      user: usual(draft.user, DEFAULT_USERS) ? DEFAULT_USERS[engine] : draft.user,
+      database: usual(draft.database, databases) ? databases[engine] : draft.database,
+      hops: engine === 'sqlite' ? [] : draft.hops,
+      integratedAuth: engine === 'sqlserver' ? draft.integratedAuth : false,
+    });
+  };
+
+  /** Picks a SQLite file with the system dialog. */
+  const chooseFile = async () => {
+    const { open } = await import('@tauri-apps/plugin-dialog');
+    const path = await open({ multiple: false, directory: false, filters: [{ name: 'SQLite', extensions: ['db', 'sqlite', 'sqlite3', 'db3'] }] });
+    if (typeof path === 'string') update({ file: path });
+  };
+
   const setDbSecret = (value: string) => setSecrets((s) => ({ ...s, db: value }));
   const setHopSecret = (index: number, value: string) => setSecrets((s) => ({ ...s, hops: s.hops.map((v, i) => (i === index ? value : v)) }));
 
@@ -174,7 +204,11 @@ const useConnectionDialog = () => {
   const save = async () => {
     setShowProblems(true);
     if (invalid) return;
-    const name = draft.name.trim() || t('connections.defaultName', { database: draft.database.trim(), host: draft.host.trim() });
+    const name =
+      draft.name.trim() ||
+      (draft.engine === 'sqlite'
+        ? (draft.file ?? '').split(/[\\/]/).pop() || 'SQLite'
+        : t('connections.defaultName', { database: draft.database.trim() || draft.host.trim(), host: draft.host.trim() }));
     const profile: ConnectionProfile = { ...draft, name, updatedAt: Date.now() };
     const withoutSecret = profile.hops.flatMap((hop, index) => (hopSecret(hop) ? [] : [index]));
     try {
@@ -203,6 +237,8 @@ const useConnectionDialog = () => {
     draft,
     update,
     updateHop,
+    setEngine,
+    chooseFile,
     addHop,
     removeHop,
     moveHop,

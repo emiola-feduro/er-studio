@@ -67,6 +67,7 @@ fn config() -> ConnectionConfig {
         },
         hops: vec![],
         timeout_secs: 20,
+        ..Default::default()
     }
 }
 

@@ -35,6 +35,7 @@ fn db_inside(tls: TlsMode, hops: Vec<Hop>) -> ConnectionConfig {
         },
         hops,
         timeout_secs: 20,
+        ..Default::default()
     }
 }
 

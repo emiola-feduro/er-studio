@@ -34,7 +34,7 @@ const ConnectionImportDialog = () => {
       {phase.kind === 'connecting' && <p className="text-muted">{t('connectionImport.connecting')}</p>}
       {phase.kind === 'failed' && (
         <div className="space-y-3">
-          <ConnectionDialogReport report={phase.report} />
+          <ConnectionDialogReport engine={dialog.profile?.engine} report={phase.report} />
           <Button onClick={dialog.editConnection}>{t('connectionImport.editConnection')}</Button>
         </div>
       )}

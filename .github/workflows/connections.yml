@@ -51,11 +51,11 @@ jobs:
           exit "$status"
 
       - name: Start test servers
-        run: CONTAINER_ENGINE=docker src-tauri/crates/er-db/tests/env/up.sh
+        run: ERDB_MSSQL=1 CONTAINER_ENGINE=docker src-tauri/crates/er-db/tests/env/up.sh
 
       - name: Connection tests
         working-directory: src-tauri
-        run: ERDB_TEST=1 cargo test -p er-db
+        run: ERDB_TEST=1 ERDB_MSSQL=1 cargo test -p er-db
 
       - name: Stop test servers
         if: always()

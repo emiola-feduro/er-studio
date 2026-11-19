@@ -1,5 +1,8 @@
 import type useQueryBuilder from '../../../hooks/data/use-query-builder';
-import type useQueryRun from '../../../hooks/data/use-query-run';
+import type useQueryRunner from '../../../hooks/data/use-query-runner';
+import { isDesktop } from '../../../lib/platform';
+import useConnectionStore from '../../../stores/use-connection-store';
+import useQueryStore from '../../../stores/use-query-store';
 import useT from '../../../hooks/ui/use-t';
 import { downloadText, slug } from '../../../lib/project-file';
 import type { QueryTab } from '../../../stores/use-query-store';
@@ -10,7 +13,7 @@ import SegmentedControl from '../segmented-control/segmented-control';
 
 type QueryBuilderToolbarProps = {
   builder: ReturnType<typeof useQueryBuilder>;
-  runner: ReturnType<typeof useQueryRun>;
+  runner: ReturnType<typeof useQueryRunner>;
   sql: string;
   onCopyToEditor: () => void;
 };
@@ -20,6 +23,9 @@ const QueryBuilderToolbar = ({ builder, runner, sql, onCopyToEditor }: QueryBuil
   const t = useT();
   const { tab, setTab, spec, clear, result, setCustomSql, projectName } = builder;
   const generated = tab === 'generated';
+  const connections = useConnectionStore((s) => s.connections);
+  const projectId = builder.project?.id;
+  const setTarget = useQueryStore((s) => s.setTarget);
 
   const copy = async () => {
     const { notify } = useUiStore.getState();
@@ -43,9 +49,28 @@ const QueryBuilderToolbar = ({ builder, runner, sql, onCopyToEditor }: QueryBuil
           { value: 'editor', label: t('query.tabEditor') },
         ]}
       />
-      <Button size="sm" variant="primary" title={t('query.runTitle')} disabled={!runner.ready || runner.status === 'loading'} onClick={() => void runner.execute()}>
+      <Button
+        size="sm"
+        variant="primary"
+        title={t('query.runTitle')}
+        disabled={!runner.ready || runner.status === 'loading'}
+        onClick={() => void runner.execute()}
+      >
         {t('query.run')}
       </Button>
+      {isDesktop() && projectId && (
+        <label className="flex items-center gap-2">
+          <span className="text-muted">{t('live.target')}</span>
+          <select className="field w-auto py-0.5" value={runner.connection?.id ?? ''} onChange={(e) => setTarget(projectId, e.target.value || null)}>
+            <option value="">{t('live.records')}</option>
+            {connections.map((connection) => (
+              <option key={connection.id} value={connection.id}>
+                {connection.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <span className="mr-auto" />
       {generated ? (
         <>

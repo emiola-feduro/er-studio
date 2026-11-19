@@ -7,7 +7,8 @@ import ResizeHandle from '../resize-handle/resize-handle';
 import useQueryBuilder from '../../../hooks/data/use-query-builder';
 import useEditorCompletion from '../../../hooks/data/use-editor-completion';
 import useDerived from '../../../hooks/data/use-derived';
-import useQueryRun from '../../../hooks/data/use-query-run';
+import useQueryRunner from '../../../hooks/data/use-query-runner';
+import LiveWriteDialog from './live-write-dialog';
 import useT from '../../../hooks/ui/use-t';
 import ConfirmDialog from '../confirm-dialog/confirm-dialog';
 import SqlEditor from '../sql-editor/sql-editor';
@@ -27,7 +28,7 @@ const QueryBuilder = () => {
   const t = useT();
   const builder = useQueryBuilder();
   const { result, spec, project, customSql, setCustomSql, tab, setTab } = builder;
-  const runner = useQueryRun(project, spec, customSql, tab);
+  const runner = useQueryRunner(project, spec, customSql, result.sql, tab);
   const [confirmReplace, setConfirmReplace] = useState(false);
   const { isVisible } = usePanels();
   const { menu, onContextMenu, close } = usePanelContextMenu();
@@ -82,7 +83,14 @@ const QueryBuilder = () => {
         <QueryBuilderToolbar builder={builder} runner={runner} sql={sql} onCopyToEditor={() => copyToEditor()} />
         <div className="relative flex min-h-28 flex-1 flex-col overflow-auto">
           {tab === 'editor' ? (
-            <SqlEditor id="query-editor" label={t('query.sqlLabel')} value={customSql} onChange={setCustomSql} placeholder={t('query.editorPlaceholder')} complete={complete} />
+            <SqlEditor
+              id="query-editor"
+              label={t('query.sqlLabel')}
+              value={customSql}
+              onChange={setCustomSql}
+              placeholder={t('query.editorPlaceholder')}
+              complete={complete}
+            />
           ) : result.sql ? (
             <SqlPreviewCode sql={result.sql} />
           ) : (
@@ -91,10 +99,15 @@ const QueryBuilder = () => {
         </div>
         {project && showResults && (
           // Never taller than the column minus room for the query above, so the query never disappears.
-          <div className="relative flex min-h-0 shrink-0 flex-col" style={{ height: `min(${resultsHeight}px, calc(100% - 9rem))` }} onContextMenu={onContextMenu(['queryResults'])}>
+          <div
+            className="relative flex min-h-0 shrink-0 flex-col"
+            style={{ height: `min(${resultsHeight}px, calc(100% - 9rem))` }}
+            onContextMenu={onContextMenu(['queryResults'])}
+          >
             <ResizeHandle panel="queryResults" label={t('panels.resizeQueryResults')} />
             <QueryBuilderResults
               runner={runner}
+              key={runner.connection?.id ?? 'records'}
               dialect={project.dialect}
               scope={`results:${project.id}`}
               sourceLabel={runner.from ? t(runner.from === 'editor' ? 'query.fromEditor' : 'query.fromGenerated') : undefined}
@@ -103,6 +116,9 @@ const QueryBuilder = () => {
         )}
       </div>
       <PanelContextMenu menu={menu} onClose={close} />
+      {runner.live && runner.connection && (
+        <LiveWriteDialog request={runner.live.request} connection={runner.connection} onConfirm={runner.live.confirmWrite} onCancel={runner.live.cancelWrite} />
+      )}
       <ConfirmDialog
         open={confirmReplace}
         title={t('query.replaceTitle')}

@@ -24,6 +24,18 @@ pub enum Error {
     TlsConfig { message: String },
     #[error("database error: {message}")]
     Database { message: String, sql_state: Option<String> },
+    #[error("this connection does not allow writes")]
+    WritesDisabled,
+    #[error("only reading statements run without confirmation")]
+    NotReadOnly,
+    #[error("a change is waiting to be confirmed or undone")]
+    PendingWrite,
+    #[error("there is no change waiting")]
+    NothingPending,
+    #[error("the session is closed")]
+    SessionClosed,
+    #[error("{message}")]
+    Unsupported { message: String },
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

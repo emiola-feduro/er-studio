@@ -1,5 +1,6 @@
 import { useMemo, useRef } from 'react';
-import type useQueryRun from '../../../hooks/data/use-query-run';
+import type useQueryRunner from '../../../hooks/data/use-query-runner';
+import LivePendingBanner from './live-pending-banner';
 import useColumnWidths, { type FitColumn } from '../../../hooks/ui/use-column-widths';
 import useT from '../../../hooks/ui/use-t';
 import { DIALECTS } from '../../../domain/dialects';
@@ -10,7 +11,7 @@ import Button from '../button/button';
 import ColumnResizeHandle from '../column-resize-handle/column-resize-handle';
 
 type QueryBuilderResultsProps = {
-  runner: ReturnType<typeof useQueryRun>;
+  runner: ReturnType<typeof useQueryRunner>;
   dialect: DialectId;
   /** Where the column widths are kept (one set per project). */
   scope: string;
@@ -28,7 +29,7 @@ const csvField = (value: SqlValue) => {
 /** Rows returned by the last run, or the state that explains why there are none. */
 const QueryBuilderResults = ({ runner, dialect, scope, sourceLabel }: QueryBuilderResultsProps) => {
   const t = useT();
-  const { status, run, ranSql, stale, noRecords, readOnly } = runner;
+  const { status, run, ranSql, stale, noRecords, readOnly, live, connection } = runner;
   const tableRef = useRef<HTMLTableElement>(null);
   const ok = run && !('error' in run) ? run : undefined;
   const fitColumns = useMemo(
@@ -67,7 +68,7 @@ const QueryBuilderResults = ({ runner, dialect, scope, sourceLabel }: QueryBuild
           </Button>
         </div>
       );
-    if (status === 'loading' && !run) return message(t('query.loadingEngine'));
+    if (status === 'loading' && !run) return message(connection ? t('live.running', { name: connection.name }) : t('query.loadingEngine'));
     if (!run) return message(t('query.notRun'));
     if ('error' in run)
       return (
@@ -85,14 +86,11 @@ const QueryBuilderResults = ({ runner, dialect, scope, sourceLabel }: QueryBuild
           )}
         </div>
       );
+    if (run.columns.length === 0 && live && live.rowsAffected !== null) return message(t('live.rowsAffected', { count: live.rowsAffected }));
     if (run.rows.length === 0) return message(t('query.noRows'));
     const shown = run.rows.slice(0, MAX_ROWS);
     return (
-      <table
-        ref={tableRef}
-        className="table-fixed border-separate border-spacing-0 font-canvas text-[0.88em]"
-        style={{ width: widths.total }}
-      >
+      <table ref={tableRef} className="table-fixed border-separate border-spacing-0 font-canvas text-[0.88em]" style={{ width: widths.total }}>
         <colgroup>
           {run.columns.map((column, index) => (
             <col key={index} style={{ width: widths.widthOf(column) }} />
@@ -101,9 +99,19 @@ const QueryBuilderResults = ({ runner, dialect, scope, sourceLabel }: QueryBuild
         <thead className="sticky top-0 z-10 bg-surface">
           <tr>
             {run.columns.map((column, index) => (
-              <th key={index} scope="col" className="relative truncate border-b border-l border-line px-3 py-1.5 text-left font-semibold first:border-l-0" title={column}>
+              <th
+                key={index}
+                scope="col"
+                className="relative truncate border-b border-l border-line px-3 py-1.5 text-left font-semibold first:border-l-0"
+                title={column}
+              >
                 {column}
-                <ColumnResizeHandle column={column} width={widths.widthOf(column)} onResize={(w) => widths.resize(column, w)} onFit={() => widths.fit(column)} />
+                <ColumnResizeHandle
+                  column={column}
+                  width={widths.widthOf(column)}
+                  onResize={(w) => widths.resize(column, w)}
+                  onFit={() => widths.fit(column)}
+                />
               </th>
             ))}
           </tr>
@@ -134,10 +142,12 @@ const QueryBuilderResults = ({ runner, dialect, scope, sourceLabel }: QueryBuild
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2">
         <h3 className="font-semibold">{t('query.results')}</h3>
         {sourceLabel && run && <span className="text-muted">{sourceLabel}</span>}
+        {connection && <span className="text-muted">{t('live.on', { name: connection.name })}</span>}
         {done && (
           <span data-testid="query-row-count" className="text-muted">
             {t('query.rows', { count: done.rows.length, ms: done.ms < 1 ? '<1' : Math.round(done.ms) })}
             {done.rows.length > MAX_ROWS ? ` ${t('query.truncated', { shown: MAX_ROWS, count: done.rows.length })}` : ''}
+            {live?.truncated ? ` ${t('live.truncated', { count: done.rows.length })}` : ''}
           </span>
         )}
         {stale && <span className="text-warning">{t('query.stale')}</span>}
@@ -148,7 +158,10 @@ const QueryBuilderResults = ({ runner, dialect, scope, sourceLabel }: QueryBuild
           </Button>
         )}
       </div>
-      {dialect !== 'sqlite' && <p className="px-4 pb-2 text-[0.88em] text-muted">{t('query.sqliteNote', { dialect: DIALECTS[dialect].name })}</p>}
+      {!connection && dialect !== 'sqlite' && (
+        <p className="px-4 pb-2 text-[0.88em] text-muted">{t('query.sqliteNote', { dialect: DIALECTS[dialect].name })}</p>
+      )}
+      {live?.pending && <LivePendingBanner pending={live.pending} onFinish={(commit) => void live.finish(commit)} />}
       <div className={`relative min-h-0 flex-1 overflow-auto ${stale ? 'opacity-60' : ''}`}>{body()}</div>
     </section>
   );

@@ -17,6 +17,7 @@ use tokio_rustls::rustls::ClientConfig;
 use tokio_rustls::TlsConnector;
 
 use crate::config::{ConnectionConfig, TlsMode};
+use crate::driver::Driver;
 use crate::error::{database, Result};
 use crate::tls;
 use crate::transport::{self, within, BoxStream, Step, Tunnel};
@@ -63,12 +64,6 @@ impl<S: AsyncRead + AsyncWrite + Unpin + Send + 'static> TlsConnect<S> for Rustl
             Ok(RustlsStream(stream))
         })
     }
-}
-
-/// An open session. Dropping it closes the connection and the tunnel behind it.
-pub struct Session {
-    pub client: Client,
-    pub server_version: String,
 }
 
 fn pg_config(config: &ConnectionConfig) -> tokio_postgres::Config {
@@ -123,14 +118,24 @@ async fn sign_in(pg: tokio_postgres::Config, stream: BoxStream, tls: Option<Rust
     }
 }
 
-/// Opens the tunnel and the database session, and reads the server version.
-pub async fn connect(config: &ConnectionConfig, steps: &mut Vec<Step>) -> Result<Session> {
-    let Tunnel { stream, guards } = transport::open(config, steps).await?;
+/// Opens the tunnel (or the local socket) and the database session, and reads the server version.
+pub async fn connect(config: &ConnectionConfig, steps: &mut Vec<Step>) -> Result<(Driver, String)> {
+    let socket = config.hops.is_empty() && config.host.starts_with('/');
+    let Tunnel { stream, guards } = if socket {
+        transport::open_socket(
+            &format!("{}/.s.PGSQL.{}", config.host.trim_end_matches('/'), config.port),
+            config.timeout_secs,
+            steps,
+        )
+        .await?
+    } else {
+        transport::open(config, steps).await?
+    };
     let started = Instant::now();
     let pg = pg_config(config);
     let seconds = config.timeout_secs;
     // TLS settings are resolved before the sign-in, so the future below owns everything it uses (Tauri needs it Send).
-    let tls = match tls::client_config(&config.tls)? {
+    let tls = match if socket { None } else { tls::client_config(&config.tls)? } {
         None => None,
         Some(tls_config) => Some(RustlsConnect {
             config: tls_config,
@@ -160,5 +165,5 @@ pub async fn connect(config: &ConnectionConfig, steps: &mut Vec<Step>) -> Result
         target: format!("{}/{}", config.host, config.database),
         ms: started.elapsed().as_millis() as u64,
     });
-    Ok(Session { client, server_version })
+    Ok((Driver::Postgres(client), server_version))
 }

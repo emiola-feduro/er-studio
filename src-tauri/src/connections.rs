@@ -4,7 +4,9 @@
 use std::collections::HashMap;
 
 use er_db::introspect::{RowsPage, SchemaInfo, SchemaRead};
-use er_db::session::{Opened, Sessions};
+use std::sync::Arc;
+
+use er_db::session::{Opened, RunResult, Sessions};
 use er_db::{secrets, ConnectionConfig, TestReport};
 use tauri::State;
 
@@ -46,7 +48,7 @@ fn message(error: er_db::Error) -> String {
 
 /// Opens a connection that stays open for the next commands (schema, rows) until it is closed.
 #[tauri::command]
-pub async fn connection_open(sessions: State<'_, Sessions>, config: ConnectionConfig, connection_id: Option<String>) -> Result<Opened, String> {
+pub async fn connection_open(sessions: State<'_, Arc<Sessions>>, config: ConnectionConfig, connection_id: Option<String>) -> Result<Opened, String> {
     let mut config = config;
     if let Some(id) = connection_id.as_deref() {
         secrets::fill(&mut config, id)?;
@@ -55,24 +57,24 @@ pub async fn connection_open(sessions: State<'_, Sessions>, config: ConnectionCo
 }
 
 #[tauri::command]
-pub async fn connection_close(sessions: State<'_, Sessions>, session_id: u64) -> Result<(), String> {
+pub async fn connection_close(sessions: State<'_, Arc<Sessions>>, session_id: u64) -> Result<(), String> {
     sessions.close(session_id).await;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn session_schemas(sessions: State<'_, Sessions>, session_id: u64) -> Result<Vec<SchemaInfo>, String> {
+pub async fn session_schemas(sessions: State<'_, Arc<Sessions>>, session_id: u64) -> Result<Vec<SchemaInfo>, String> {
     sessions.schemas(session_id).await.map_err(message)
 }
 
 #[tauri::command]
-pub async fn session_schema(sessions: State<'_, Sessions>, session_id: u64, schemas: Vec<String>) -> Result<SchemaRead, String> {
+pub async fn session_schema(sessions: State<'_, Arc<Sessions>>, session_id: u64, schemas: Vec<String>) -> Result<SchemaRead, String> {
     sessions.schema(session_id, &schemas).await.map_err(message)
 }
 
 #[tauri::command]
 pub async fn session_rows(
-    sessions: State<'_, Sessions>,
+    sessions: State<'_, Arc<Sessions>>,
     session_id: u64,
     schema: String,
     table: String,
@@ -81,4 +83,23 @@ pub async fn session_rows(
     limit: u64,
 ) -> Result<RowsPage, String> {
     sessions.rows(session_id, &schema, &table, &order_by, offset, limit).await.map_err(message)
+}
+
+/// Runs one statement on an open session. Reads are always rolled back; a write (`write`) waits for
+/// query_finish, and is undone after two minutes without a decision.
+#[tauri::command]
+pub async fn query_run(sessions: State<'_, Arc<Sessions>>, session_id: u64, sql: String, write: bool, max_rows: usize) -> Result<RunResult, String> {
+    sessions.run(session_id, &sql, write, max_rows).await.map_err(message)
+}
+
+/// Confirms (commit) or undoes (rollback) the write waiting on a session.
+#[tauri::command]
+pub async fn query_finish(sessions: State<'_, Arc<Sessions>>, session_id: u64, commit: bool) -> Result<(), String> {
+    sessions.finish(session_id, commit).await.map_err(message)
+}
+
+/// Applies a migration script in one transaction (where the engine allows it).
+#[tauri::command]
+pub async fn session_script(sessions: State<'_, Arc<Sessions>>, session_id: u64, sql: String) -> Result<(), String> {
+    sessions.script(session_id, &sql).await.map_err(message)
 }
