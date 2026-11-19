@@ -88,6 +88,8 @@ wait_for mysql "$ENGINE exec erdb-mysql mysql -uroot -psecreto -e 'SELECT 1'"
 wait_for mariadb "$ENGINE exec erdb-mariadb mariadb -uroot -psecreto -e 'SELECT 1'"
 if [ -n "${ERDB_MSSQL:-}" ]; then
   wait_for mssql "$ENGINE exec erdb-mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Secreto.2026' -Q 'SELECT 1'"
+  # CREATE DATABASE cannot run inside a transaction, and the app runs every script in one.
+  "$ENGINE" exec erdb-mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Secreto.2026' -Q "IF DB_ID('tienda') IS NULL CREATE DATABASE tienda" >/dev/null
 fi
 
 echo "ready: $DIR"

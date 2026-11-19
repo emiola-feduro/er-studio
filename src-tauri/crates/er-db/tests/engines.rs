@@ -296,13 +296,8 @@ async fn sql_server() {
         return;
     }
     let sessions = Arc::new(Sessions::default());
-    let admin = config(Engine::SqlServer, 51433, "sa", "Secreto.2026", "master", TlsMode::Require, true);
-    let id = open(&sessions, &admin).await;
-    sessions.script(id, "IF DB_ID('tienda') IS NULL CREATE DATABASE tienda;").await.unwrap();
-    let admin = ConnectionConfig {
-        database: "tienda".into(),
-        ..admin
-    };
+    // tests/env/up.sh creates the "tienda" database: CREATE DATABASE cannot run inside a transaction.
+    let admin = config(Engine::SqlServer, 51433, "sa", "Secreto.2026", "tienda", TlsMode::Require, true);
     let id = open(&sessions, &admin).await;
     sessions
         .script(
