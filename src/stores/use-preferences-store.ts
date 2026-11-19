@@ -48,7 +48,7 @@ type PreferencesState = {
   forgetProjectSections: (projectId: string) => void;
 };
 
-export type SidebarSection = 'projects' | 'tables' | 'relationships';
+export type SidebarSection = 'projects' | 'connections' | 'tables' | 'relationships';
 export type ModelSection = 'tables' | 'relationships';
 
 /** Side panels change width; queryResults changes height. */

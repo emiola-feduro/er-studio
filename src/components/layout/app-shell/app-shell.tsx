@@ -19,6 +19,8 @@ import ToastStack from '../../ui/toast-stack/toast-stack';
 import Inspector from '../inspector/inspector';
 import Sidebar from '../sidebar/sidebar';
 import TopBar from '../top-bar/top-bar';
+import ConnectionDialog from '../../ui/connection-dialog/connection-dialog';
+import { isDesktop } from '../../../lib/platform';
 
 const AppShell = () => {
   const { status, error, retry } = useProjectBootstrap();
@@ -37,10 +39,7 @@ const AppShell = () => {
   return (
     <div className={`grid h-full ${header ? 'grid-rows-[auto_minmax(0,1fr)]' : 'grid-rows-[minmax(0,1fr)]'}`}>
       {header && <TopBar />}
-      <div
-        style={columns}
-        className="grid min-h-0 grid-cols-1 grid-rows-(--rows-sm) md:grid-cols-(--cols-md) md:grid-rows-1 lg:grid-cols-(--cols-lg)"
-      >
+      <div style={columns} className="grid min-h-0 grid-cols-1 grid-rows-(--rows-sm) md:grid-cols-(--cols-md) md:grid-rows-1 lg:grid-cols-(--cols-lg)">
         {sidebar && <Sidebar />}
         {status === 'loading' && <WorkspaceSkeleton />}
         {status === 'error' && <WorkspaceError message={error} onRetry={retry} />}
@@ -52,6 +51,7 @@ const AppShell = () => {
       <NewProjectDialog />
       <SpecializationDialog />
       <ImportDialog />
+      {isDesktop() && <ConnectionDialog />}
       <AgentExportDialog />
       <OpenApiExportDialog />
       <DeleteEntityDialog />

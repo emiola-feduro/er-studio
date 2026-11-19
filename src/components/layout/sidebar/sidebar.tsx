@@ -7,6 +7,8 @@ import useUiStore from '../../../stores/use-ui-store';
 import ProjectList from '../../dynamic/project-list/project-list';
 import IconButton from '../../ui/icon-button/icon-button';
 import SidebarModelList from './sidebar-model-list';
+import SidebarConnections from './sidebar-connections';
+import { isDesktop } from '../../../lib/platform';
 import ResizeHandle from '../../ui/resize-handle/resize-handle';
 import type { PanelId } from '../../../stores/use-preferences-store';
 
@@ -35,7 +37,10 @@ const Sidebar = () => {
           </IconButton>
         </div>
         {projects && <ProjectList expanded={!model} onContextMenu={onContextMenu(['projects'])} />}
-        {model && <SidebarModelList tables={isVisible('tables')} relationships={isVisible('relationships')} bordered={projects} onContextMenu={onContextMenu} />}
+        {isDesktop() && <SidebarConnections />}
+        {model && (
+          <SidebarModelList tables={isVisible('tables')} relationships={isVisible('relationships')} bordered={projects} onContextMenu={onContextMenu} />
+        )}
         <ResizeHandle panel="sidebar" label={t('sidebar.resize')} />
         <PanelContextMenu menu={menu} onClose={close} />
       </aside>

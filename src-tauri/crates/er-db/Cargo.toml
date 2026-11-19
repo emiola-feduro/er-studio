@@ -1,0 +1,24 @@
+[package]
+name = "er-db"
+version = "0.1.0"
+edition = "2021"
+description = "Database connections for ER Studio desktop: transport chains (SSH, SOCKS, HTTP CONNECT), TLS and drivers"
+publish = false
+
+[dependencies]
+base64 = "0.23.1"
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust", "vendored"] }
+russh = { version = "0.65.2", default-features = false, features = ["flate2", "ring", "rsa"] }
+rustls-native-certs = "0.8.5"
+serde = { version = "1.0.229", features = ["derive"] }
+sha2 = "0.11.1"
+thiserror = "2.0.21"
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "net", "io-util", "macros", "time", "sync"] }
+tokio-postgres = "0.7.18"
+tokio-rustls = { version = "0.26.6", default-features = false, features = ["logging", "tls12", "ring"] }
+tokio-socks = "0.5.3"
+webpki-roots = "1.0.12"
+
+[dev-dependencies]
+rcgen = "0.14.10"
+serde_json = "1.0.154"

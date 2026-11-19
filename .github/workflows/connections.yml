@@ -1,0 +1,49 @@
+name: Connections
+
+on:
+  push:
+    paths: ['src-tauri/**', '.github/workflows/connections.yml']
+  pull_request:
+    paths: ['src-tauri/**', '.github/workflows/connections.yml']
+  workflow_dispatch:
+
+jobs:
+  rust:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      # The app embeds the built interface, so it has to exist before the Rust side compiles.
+      - run: bun install --frozen-lockfile && bun run build
+
+      - name: Clippy
+        working-directory: src-tauri
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Start test servers
+        run: CONTAINER_ENGINE=docker src-tauri/crates/er-db/tests/env/up.sh
+
+      - name: Connection tests
+        working-directory: src-tauri
+        run: ERDB_TEST=1 cargo test -p er-db
+
+      - name: Stop test servers
+        if: always()
+        run: CONTAINER_ENGINE=docker src-tauri/crates/er-db/tests/env/down.sh

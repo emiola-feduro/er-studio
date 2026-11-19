@@ -1,0 +1,122 @@
+//! Connection settings as the interface sends them. Secrets travel inline: the app fills them from the
+//! system keychain right before connecting and never stores them here.
+
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Engine {
+    Postgres,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TlsMode {
+    /// No TLS at all.
+    Disable,
+    /// TLS when the server offers it, without checking the certificate.
+    #[default]
+    Prefer,
+    /// TLS required, without checking the certificate.
+    Require,
+    /// TLS required, certificate signed by a trusted CA; the host name is not checked.
+    VerifyCa,
+    /// TLS required, trusted certificate issued for the host name.
+    VerifyFull,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct TlsConfig {
+    pub mode: TlsMode,
+    /// Extra CA certificates (PEM), trusted along with the system ones.
+    pub ca_pem: Option<String>,
+    /// Client certificate and key (PEM) for servers that ask for one.
+    pub client_cert_pem: Option<String>,
+    pub client_key_pem: Option<String>,
+    /// Name to check the certificate against when it differs from the host (an IP behind a tunnel, for example).
+    pub server_name: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "method")]
+pub enum SshAuth {
+    Password {
+        password: String,
+    },
+    /// Private key in OpenSSH or PEM format, as text or as the path of the key file.
+    Key {
+        #[serde(default)]
+        private_key: Option<String>,
+        #[serde(default)]
+        private_key_path: Option<String>,
+        #[serde(default)]
+        passphrase: Option<String>,
+    },
+    /// Keys held by the running SSH agent (ssh-agent, Pageant or the Windows OpenSSH agent).
+    Agent,
+}
+
+/// One step between this computer and the database server.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "kind")]
+pub enum Hop {
+    Ssh {
+        host: String,
+        port: u16,
+        user: String,
+        auth: SshAuth,
+        /// SHA256 fingerprint the person accepted ("SHA256:..."). Without it, ~/.ssh/known_hosts decides.
+        host_key: Option<String>,
+    },
+    Socks5 {
+        host: String,
+        port: u16,
+        username: Option<String>,
+        password: Option<String>,
+    },
+    Socks4 {
+        host: String,
+        port: u16,
+        user_id: Option<String>,
+    },
+    HttpConnect {
+        host: String,
+        port: u16,
+        username: Option<String>,
+        password: Option<String>,
+    },
+}
+
+impl Hop {
+    pub fn address(&self) -> (String, u16) {
+        match self {
+            Hop::Ssh { host, port, .. } | Hop::Socks5 { host, port, .. } | Hop::Socks4 { host, port, .. } | Hop::HttpConnect { host, port, .. } => {
+                (host.clone(), *port)
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConnectionConfig {
+    pub engine: Engine,
+    pub host: String,
+    pub port: u16,
+    pub database: String,
+    pub user: String,
+    #[serde(default)]
+    pub password: Option<String>,
+    #[serde(default)]
+    pub tls: TlsConfig,
+    /// From this computer outward: the first hop is reached directly, each next one through the previous.
+    #[serde(default)]
+    pub hops: Vec<Hop>,
+    #[serde(default = "default_timeout")]
+    pub timeout_secs: u64,
+}
+
+fn default_timeout() -> u64 {
+    15
+}
