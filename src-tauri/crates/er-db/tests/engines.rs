@@ -445,7 +445,7 @@ async fn oracle_checks() {
     assert_eq!(column(&cliente, "CREADO")["type"], "TIMESTAMP");
     assert_eq!(column(&cliente, "CREADO")["defaultValue"], "SYSTIMESTAMP");
     assert_eq!(cliente["uniques"][0]["columns"], serde_json::json!(["EMAIL"]));
-    assert_eq!(cliente["checks"], serde_json::json!([{ "name": "CK_TIPO", "expression": "TIPO IN ('persona', 'empresa')" }]));
+    assert_eq!(cliente["checks"], serde_json::json!([{ "name": "CK_TIPO", "expression": "tipo IN ('persona', 'empresa')" }]));
     assert!(cliente["pk"].get("name").is_none(), "a generated SYS_C name is left out");
     let pedido = table("PEDIDO");
     assert_eq!(column(&pedido, "ID")["params"], serde_json::json!(["10", "0"]));

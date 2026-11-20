@@ -15,7 +15,7 @@
         ],
         "pk": { "columns": ["ID"] },
         "uniques": [{ "name": "UQ_CLIENTE_EMAIL", "columns": ["EMAIL"] }],
-        "checks": [{ "name": "CK_TIPO", "expression": "TIPO IN ('persona', 'empresa')" }],
+        "checks": [{ "name": "CK_TIPO", "expression": "tipo IN ('persona', 'empresa')" }],
         "foreignKeys": [],
         "indexes": []
       },
