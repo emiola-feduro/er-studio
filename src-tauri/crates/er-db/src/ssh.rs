@@ -18,7 +18,7 @@ pub fn fingerprint(key: &PublicKey) -> String {
     key.fingerprint(HashAlg::Sha256).to_string()
 }
 
-struct HostCheck {
+pub(crate) struct HostCheck {
     host: String,
     port: u16,
     expected: Option<String>,
@@ -70,17 +70,8 @@ impl client::Handler for HostCheck {
 /// Keeps the SSH session open while its channel is in use.
 struct SessionGuard(#[allow(dead_code)] Handle<HostCheck>);
 
-#[allow(clippy::too_many_arguments)]
-pub(crate) async fn tunnel(
-    stream: BoxStream,
-    host: &str,
-    port: u16,
-    user: &str,
-    auth: &SshAuth,
-    host_key: Option<&str>,
-    next_host: &str,
-    next_port: u16,
-) -> Result<(BoxStream, Box<dyn Any + Send>)> {
+/// An authenticated SSH session to `host:port` over `stream`, after checking the host key.
+pub(crate) async fn session(stream: BoxStream, host: &str, port: u16, user: &str, auth: &SshAuth, host_key: Option<&str>) -> Result<Handle<HostCheck>> {
     let target = format!("{host}:{port}");
     let rejection = Arc::new(Mutex::new(None));
     let handler = HostCheck {
@@ -143,7 +134,21 @@ pub(crate) async fn tunnel(
     if !matches!(result, AuthResult::Success) {
         return Err(failed("the server rejected the credentials".into()));
     }
+    Ok(handle)
+}
 
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn tunnel(
+    stream: BoxStream,
+    host: &str,
+    port: u16,
+    user: &str,
+    auth: &SshAuth,
+    host_key: Option<&str>,
+    next_host: &str,
+    next_port: u16,
+) -> Result<(BoxStream, Box<dyn Any + Send>)> {
+    let handle = session(stream, host, port, user, auth, host_key).await?;
     let channel = handle
         .channel_open_direct_tcpip(next_host, next_port as u32, "127.0.0.1", 0)
         .await

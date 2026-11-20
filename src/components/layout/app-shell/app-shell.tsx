@@ -23,6 +23,8 @@ import ConnectionDialog from '../../ui/connection-dialog/connection-dialog';
 import UpdateBanner from '../update-banner/update-banner';
 import ConnectionImportDialog from '../../ui/connection-import-dialog/connection-import-dialog';
 import { isDesktop } from '../../../lib/platform';
+import VmDialog from '../../ui/vm-dialog/vm-dialog';
+import TerminalPanel from '../terminal-panel/terminal-panel';
 
 const AppShell = () => {
   const { status, error, retry } = useProjectBootstrap();
@@ -39,7 +41,7 @@ const AppShell = () => {
   } as CSSProperties;
 
   return (
-    <div className="grid h-full grid-rows-[auto_minmax(0,1fr)]">
+    <div className="grid h-full grid-rows-[auto_minmax(0,1fr)_auto]">
       {/* The header row also holds the desktop update notice, which shows even with the header hidden. */}
       <div>
         {header && <TopBar />}
@@ -52,6 +54,7 @@ const AppShell = () => {
         {status === 'ready' && (hasProject ? <Workspace /> : <WorkspaceEmpty />)}
         {inspector && <Inspector />}
       </div>
+      {isDesktop() ? <TerminalPanel /> : <div />}
       <RelationshipDialog />
       <SettingsDialog />
       <NewProjectDialog />
@@ -59,6 +62,7 @@ const AppShell = () => {
       <ImportDialog />
       {isDesktop() && <ConnectionDialog />}
       {isDesktop() && <ConnectionImportDialog />}
+      {isDesktop() && <VmDialog />}
       <AgentExportDialog />
       <OpenApiExportDialog />
       <DeleteEntityDialog />

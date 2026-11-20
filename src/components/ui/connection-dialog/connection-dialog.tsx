@@ -20,7 +20,12 @@ import Modal from '../modal/modal';
 import ConnectionDialogHop from './connection-dialog-hop';
 import ConnectionDialogOracle from './connection-dialog-oracle';
 import ConnectionDialogReport from './connection-dialog-report';
+import ConnectionDialogVmHop from './connection-dialog-vm-hop';
 import ConnectionDialogWallet from './connection-dialog-wallet';
+import useConnectionStore from '../../../stores/use-connection-store';
+
+/** A kind of hop, or a saved VM ("vm:<id>"). */
+type HopChoice = HopKind | `vm:${string}`;
 import ConnectionField from './connection-field';
 
 /** The file name of a path, for the default connection name. */
@@ -34,7 +39,8 @@ const ConnectionDialog = () => {
   const caRef = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState('');
   const [urlInvalid, setUrlInvalid] = useState(false);
-  const [hopKind, setHopKind] = useState<HopKind>('ssh');
+  const [hopKind, setHopKind] = useState<HopChoice>('ssh');
+  const vms = useConnectionStore((s) => s.sshHosts);
   const verifying = draft.tls.mode === 'verifyCa' || draft.tls.mode === 'verifyFull';
   const sqlite = draft.engine === 'sqlite';
   const oracle = draft.engine === 'oracle';
@@ -335,31 +341,51 @@ const ConnectionDialog = () => {
                 <p className="text-muted">{t('connections.routeEmpty')}</p>
               ) : (
                 <ol className="space-y-2">
-                  {draft.hops.map((hop, index) => (
-                    <ConnectionDialogHop
-                      key={index}
-                      hop={hop}
-                      index={index}
-                      count={draft.hops.length}
-                      secret={secrets.hops[index] ?? ''}
-                      editing={editing}
-                      problems={problems}
-                      onChange={(next) => dialog.updateHop(index, next)}
-                      onSecret={(value) => dialog.setHopSecret(index, value)}
-                      onMove={(by) => dialog.moveHop(index, by)}
-                      onRemove={() => dialog.removeHop(index)}
-                    />
-                  ))}
+                  {draft.hops.map((hop, index) =>
+                    hop.kind === 'vm' ? (
+                      <ConnectionDialogVmHop
+                        key={index}
+                        hostId={hop.hostId}
+                        index={index}
+                        count={draft.hops.length}
+                        onMove={(by) => dialog.moveHop(index, by)}
+                        onRemove={() => dialog.removeHop(index)}
+                      />
+                    ) : (
+                      <ConnectionDialogHop
+                        key={index}
+                        hop={hop}
+                        index={index}
+                        count={draft.hops.length}
+                        secret={secrets.hops[index] ?? ''}
+                        editing={editing}
+                        problems={problems}
+                        onChange={(next) => dialog.updateHop(index, next)}
+                        onSecret={(value) => dialog.setHopSecret(index, value)}
+                        onMove={(by) => dialog.moveHop(index, by)}
+                        onRemove={() => dialog.removeHop(index)}
+                      />
+                    ),
+                  )}
                 </ol>
               )}
               <div className="flex flex-wrap items-end gap-2">
                 <ConnectionField id="connection-hop-kind" label={t('connections.hopKind')}>
-                  <select id="connection-hop-kind" className="field" value={hopKind} onChange={(e) => setHopKind(e.target.value as HopKind)}>
+                  <select id="connection-hop-kind" className="field" value={hopKind} onChange={(e) => setHopKind(e.target.value as HopChoice)}>
                     {HOP_KINDS.map((kind) => (
                       <option key={kind} value={kind}>
                         {t(`connections.hop.${kind}`)}
                       </option>
                     ))}
+                    {vms.length > 0 && (
+                      <optgroup label={t('vms.title')}>
+                        {vms.map((vm) => (
+                          <option key={vm.id} value={`vm:${vm.id}`}>
+                            {vm.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </ConnectionField>
                 <Button onClick={() => dialog.addHop(hopKind)}>{t('connections.addHop')}</Button>

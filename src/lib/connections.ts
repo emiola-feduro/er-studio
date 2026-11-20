@@ -1,7 +1,8 @@
 // Calls to the desktop side for database connections. Only used when isDesktop() is true.
 import { invoke } from '@tauri-apps/api/core';
 import type { ConnectionEngine, ConnectionProfile, ConnectionSecrets } from '../domain/connections';
-import { secretSlot, toConnectionConfig, WALLET_SLOT } from '../domain/connections';
+import { hopSecret, hopSlot, secretSlot, toConnectionConfig, WALLET_SLOT, type RouteHop } from '../domain/connections';
+import useConnectionStore from '../stores/use-connection-store';
 import { postgresCell, type RowSource } from '../domain/import/copy-rows';
 import type { Ir } from '../domain/import/ir';
 
@@ -33,24 +34,31 @@ const appError = (error: unknown): ConnectionReport => ({
 /** Opens the connection once, filling the secrets left empty from the keychain of `savedId`. */
 export const testConnection = async (profile: ConnectionProfile, secrets: ConnectionSecrets, savedId?: string): Promise<ConnectionReport> => {
   try {
-    return await invoke<ConnectionReport>('connection_test', { config: toConnectionConfig(profile, secrets), connectionId: savedId ?? null });
+    return await invoke<ConnectionReport>('connection_test', {
+      config: toConnectionConfig(profile, secrets, useConnectionStore.getState().sshHosts),
+      connectionId: savedId ?? null,
+    });
   } catch (error) {
     return appError(error);
   }
 };
 
 /** Saves the secrets that were typed; blank ones keep what the keychain already has. */
-export const saveSecrets = async (id: string, secrets: ConnectionSecrets, hopsWithoutSecret: number[], withoutWallet = false) => {
+export const saveSecrets = async (id: string, secrets: ConnectionSecrets, hops: RouteHop[], withoutWallet = false) => {
   const values: Record<string, string | null> = {};
   if (secrets.db) values[secretSlot()] = secrets.db;
   // A connection without a wallet drops the wallet password it had.
   if (withoutWallet) values[WALLET_SLOT] = null;
   else if (secrets.wallet) values[WALLET_SLOT] = secrets.wallet;
-  secrets.hops.forEach((value, index) => {
-    if (value) values[secretSlot(index)] = value;
+  hops.forEach((hop, index) => {
+    // A saved VM keeps its secret in its own entry.
+    if (hop.kind === 'vm') return;
+    const slot = secretSlot(hopSlot(hops, index));
+    const value = secrets.hops[index];
+    // A hop that no longer takes a secret (agent auth, no proxy user) drops the one it had.
+    if (!hopSecret(hop)) values[slot] = null;
+    else if (value) values[slot] = value;
   });
-  // A hop that no longer takes a secret (agent auth, no proxy user) drops the one it had.
-  for (const index of hopsWithoutSecret) values[secretSlot(index)] = null;
   await invoke('secrets_save', { connectionId: id, secrets: values });
 };
 
@@ -81,7 +89,10 @@ export const sessionErrorMessage = (error: unknown) => {
 
 export const openSession = async (profile: ConnectionProfile, savedId?: string): Promise<Opened> => {
   try {
-    return await invoke<Opened>('connection_open', { config: toConnectionConfig(profile), connectionId: savedId ?? null });
+    return await invoke<Opened>('connection_open', {
+      config: toConnectionConfig(profile, undefined, useConnectionStore.getState().sshHosts),
+      connectionId: savedId ?? null,
+    });
   } catch (error) {
     return { sessionId: null, report: appError(error) };
   }

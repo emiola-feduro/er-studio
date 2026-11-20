@@ -10,7 +10,7 @@ const KEY_STEP = 16;
  */
 const usePanelResize = (panel: ResizablePanel) => {
   const width = usePreferencesStore((s) => s.panelWidths[panel] ?? PANEL_WIDTHS[panel].default);
-  const vertical = panel === 'queryResults';
+  const vertical = panel === 'queryResults' || panel === 'terminal';
   const setPanelWidth = usePreferencesStore((s) => s.setPanelWidth);
   const [dragging, setDragging] = useState(false);
   const limits = PANEL_WIDTHS[panel];

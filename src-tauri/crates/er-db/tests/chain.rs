@@ -54,6 +54,7 @@ fn ssh1(auth: SshAuth, host_key: Option<String>) -> Hop {
         user: "tunnel".into(),
         auth,
         host_key,
+        secret_id: None,
     }
 }
 
@@ -192,6 +193,7 @@ async fn ssh_keys_and_two_jumps() {
         user: "tunnel".into(),
         auth: with_passphrase.clone(),
         host_key,
+        secret_id: None,
     };
     let report = test_connection(&db_inside(TlsMode::Disable, vec![ssh1(plain.clone(), Some(key1.clone())), second(None)])).await;
     let Some(Error::UnknownHostKey { fingerprint: key2, .. }) = report.error else {
@@ -272,6 +274,7 @@ async fn proxy_then_ssh_then_database() {
         user: "tunnel".into(),
         auth: password(),
         host_key,
+        secret_id: None,
     };
     let report = test_connection(&db_inside(TlsMode::Disable, vec![http("clave-proxy"), bastion(None)])).await;
     let Some(Error::UnknownHostKey { fingerprint, .. }) = report.error else {

@@ -8,6 +8,7 @@ import ProjectList from '../../dynamic/project-list/project-list';
 import IconButton from '../../ui/icon-button/icon-button';
 import SidebarModelList from './sidebar-model-list';
 import SidebarConnections from './sidebar-connections';
+import SidebarVms from './sidebar-vms';
 import { isDesktop } from '../../../lib/platform';
 import ResizeHandle from '../../ui/resize-handle/resize-handle';
 import type { PanelId } from '../../../stores/use-preferences-store';
@@ -38,6 +39,7 @@ const Sidebar = () => {
         </div>
         {projects && <ProjectList expanded={!model} onContextMenu={onContextMenu(['projects'])} />}
         {isDesktop() && <SidebarConnections />}
+        {isDesktop() && <SidebarVms />}
         {model && (
           <SidebarModelList tables={isVisible('tables')} relationships={isVisible('relationships')} bordered={projects} onContextMenu={onContextMenu} />
         )}

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   DEFAULT_PORTS,
   DEFAULT_USERS,
-  hopSecret,
   newHop,
   parseConnectionUrl,
   parseSshConfig,
@@ -14,9 +13,11 @@ import {
   type ConnectionSecrets,
   type HopKind,
   type HopProfile,
+  type RouteHop,
   type SshConfigHost,
 } from '../../domain/connections';
 import { uid } from '../../domain/model';
+import { vmLabel } from '../../domain/ssh-hosts';
 import { t } from '../../i18n';
 import {
   deleteSecrets,
@@ -83,6 +84,8 @@ export const connectionProblems = (draft: ConnectionProfile): Record<string, str
     else if (draft.wallet?.trim() || draft.tls.mode !== 'disable') problems.oracleRoute = t('connections.oracle.routeTls');
   }
   draft.hops.forEach((hop, index) => {
+    // A saved VM is checked in its own dialog.
+    if (hop.kind === 'vm') return;
     if (!hop.host.trim()) problems[`hop${index}.host`] = required;
     if (!validPort(hop.port)) problems[`hop${index}.port`] = t('connections.invalidPort');
     if (hop.kind === 'ssh' && !hop.user.trim()) problems[`hop${index}.user`] = required;
@@ -150,8 +153,10 @@ const useConnectionDialog = () => {
 
   const updateHop = (index: number, hop: HopProfile) => update({ hops: draft.hops.map((h, i) => (i === index ? hop : h)) });
 
-  const addHop = (kind: HopKind) => {
-    update({ hops: [...draft.hops, newHop(kind)] });
+  /** Adds a hop of a kind, or a saved VM ("vm:<id>"). */
+  const addHop = (kind: HopKind | `vm:${string}`) => {
+    const hop: RouteHop = kind.startsWith('vm:') ? { kind: 'vm', hostId: kind.slice(3) } : newHop(kind as HopKind);
+    update({ hops: [...draft.hops, hop] });
     setSecrets((s) => ({ ...s, hops: [...s.hops, ''] }));
   };
 
@@ -256,11 +261,18 @@ const useConnectionDialog = () => {
   const hopOfKey = (host: string) => draft.hops.findIndex((h) => h.kind === 'ssh' && !h.hostKey && sshHostLabel(h.host.trim(), h.port) === host);
   const hopOfChangedKey = (host: string) => draft.hops.findIndex((h) => h.kind === 'ssh' && sshHostLabel(h.host.trim(), h.port) === host);
 
-  /** Accepts the fingerprint the last test reported and tests again. */
+  /** Accepts the fingerprint the last test reported and tests again. A saved VM keeps it for every connection. */
   const trustHostKey = async () => {
     const error = report?.error;
     if (!error || (error.code !== 'unknownHostKey' && error.code !== 'hostKeyChanged')) return;
     const fingerprint = error.code === 'unknownHostKey' ? error.fingerprint : error.actual;
+    const { sshHosts, saveHost } = useConnectionStore.getState();
+    const vm = sshHosts.find((h) => vmLabel(h) === error.host && (error.code === 'hostKeyChanged' || !h.hostKey));
+    if (vm) {
+      saveHost({ ...vm, hostKey: fingerprint, updatedAt: Date.now() });
+      await test();
+      return;
+    }
     const index = error.code === 'unknownHostKey' ? hopOfKey(error.host) : hopOfChangedKey(error.host);
     if (index < 0) return;
     const hop = draft.hops[index];
@@ -283,9 +295,8 @@ const useConnectionDialog = () => {
           ? oracleName(draft.connectString ?? '')
           : t('connections.defaultName', { database: draft.database.trim() || draft.host.trim(), host: draft.host.trim() }));
     const profile: ConnectionProfile = { ...draft, name, updatedAt: Date.now() };
-    const withoutSecret = profile.hops.flatMap((hop, index) => (hopSecret(hop) ? [] : [index]));
     try {
-      await saveSecrets(profile.id, secrets, withoutSecret, profile.engine !== 'oracle' || !profile.wallet?.trim());
+      await saveSecrets(profile.id, secrets, profile.hops, profile.engine !== 'oracle' || !profile.wallet?.trim());
     } catch (error) {
       useUiStore.getState().notify(t('connections.keychainFailed', { message: error instanceof Error ? error.message : String(error) }), 'error');
       return;

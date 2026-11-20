@@ -13,6 +13,7 @@ const PLACEMENT = {
   queryBuilder: 'inset-y-0 -right-1.5 w-3 cursor-col-resize',
   inspector: 'inset-y-0 -left-1.5 w-3 cursor-col-resize',
   queryResults: 'inset-x-0 -top-1.5 h-3 cursor-row-resize',
+  terminal: 'inset-x-0 -top-1.5 h-3 cursor-row-resize',
 };
 
 /** Splitter on a panel's inner edge. Drag, use the arrow keys, or double click to reset. */

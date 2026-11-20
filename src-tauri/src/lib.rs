@@ -1,4 +1,5 @@
 mod connections;
+mod terminal;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -8,6 +9,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .manage(std::sync::Arc::new(er_db::session::Sessions::default()))
+        .manage(std::sync::Arc::new(er_db::terminal::Terminals::default()))
         .setup(|_| {
             er_db::init();
             Ok(())
@@ -25,7 +27,12 @@ pub fn run() {
             connections::session_rows,
             connections::query_run,
             connections::query_finish,
-            connections::session_script
+            connections::session_script,
+            terminal::vm_test,
+            terminal::terminal_open,
+            terminal::terminal_write,
+            terminal::terminal_resize,
+            terminal::terminal_close
         ])
         .run(tauri::generate_context!())
         .expect("error while running ER Studio");

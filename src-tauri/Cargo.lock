@@ -1578,6 +1578,7 @@ dependencies = [
 name = "er-studio"
 version = "0.3.0"
 dependencies = [
+ "base64 0.23.1",
  "er-db",
  "serde",
  "serde_json",

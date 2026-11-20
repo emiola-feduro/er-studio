@@ -76,6 +76,9 @@ pub enum Hop {
         auth: SshAuth,
         /// SHA256 fingerprint the person accepted ("SHA256:..."). Without it, ~/.ssh/known_hosts decides.
         host_key: Option<String>,
+        /// A saved VM: its secret is in the keychain under this id (slot "ssh") instead of the connection's.
+        #[serde(default)]
+        secret_id: Option<String>,
     },
     Socks5 {
         host: String,

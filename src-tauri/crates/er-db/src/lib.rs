@@ -15,6 +15,7 @@ pub mod secrets;
 pub mod session;
 pub mod sqlite;
 pub mod sqlserver;
+pub mod terminal;
 pub mod ssh;
 pub mod tls;
 pub mod transport;

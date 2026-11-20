@@ -217,6 +217,7 @@ pub async fn open(config: &ConnectionConfig, steps: &mut Vec<Step>) -> Result<Tu
                 user,
                 auth,
                 host_key,
+                ..
             } => {
                 let (stream, guard) = within(
                     seconds,

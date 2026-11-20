@@ -233,6 +233,7 @@ async fn mysql_through_an_ssh_tunnel() {
         user: "tunnel".into(),
         auth: SshAuth::Password { password: "clave-ssh".into() },
         host_key,
+        secret_id: None,
     };
     cfg.hops = vec![hop(None)];
     let report = er_db::test_connection(&cfg).await;
@@ -509,6 +510,7 @@ async fn oracle_tunnel_checks() {
         user: "tunnel".into(),
         auth: SshAuth::Password { password: "clave-ssh".into() },
         host_key,
+        secret_id: None,
     };
     cfg.hops = vec![hop(None)];
     let report = er_db::test_connection(&cfg).await;

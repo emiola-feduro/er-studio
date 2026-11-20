@@ -48,17 +48,18 @@ type PreferencesState = {
   forgetProjectSections: (projectId: string) => void;
 };
 
-export type SidebarSection = 'projects' | 'connections' | 'tables' | 'relationships';
+export type SidebarSection = 'projects' | 'connections' | 'vms' | 'tables' | 'relationships';
 export type ModelSection = 'tables' | 'relationships';
 
-/** Side panels change width; queryResults changes height. */
-export type ResizablePanel = 'sidebar' | 'inspector' | 'queryBuilder' | 'queryResults';
+/** Side panels change width; queryResults and the terminal panel change height. */
+export type ResizablePanel = 'sidebar' | 'inspector' | 'queryBuilder' | 'queryResults' | 'terminal';
 
 export const PANEL_WIDTHS: Record<ResizablePanel, { min: number; max: number; default: number }> = {
   sidebar: { min: 200, max: 520, default: 272 },
   inspector: { min: 320, max: 760, default: 410 },
   queryBuilder: { min: 240, max: 640, default: 320 },
   queryResults: { min: 120, max: 1000, default: 320 },
+  terminal: { min: 120, max: 1000, default: 300 },
 };
 
 /** localStorage can throw in private windows; preferences then just do not persist. */

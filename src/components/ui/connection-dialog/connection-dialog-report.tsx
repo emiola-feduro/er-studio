@@ -10,10 +10,12 @@ type ConnectionDialogReportProps = {
   engine?: ConnectionEngine;
   /** Accepts the fingerprint of an unknown or changed SSH host key; without it the buttons are left out. */
   onTrust?: () => void;
+  /** What success says when there is no server version to name (a VM sign-in). */
+  success?: string;
 };
 
 /** What "Test connection" found: each step that worked, then the result or the error. */
-const ConnectionDialogReport = ({ report, engine = 'postgres', onTrust }: ConnectionDialogReportProps) => {
+const ConnectionDialogReport = ({ report, engine = 'postgres', onTrust, success }: ConnectionDialogReportProps) => {
   const t = useT();
   const { steps, serverVersion, error } = report;
   const ref = useRef<HTMLDivElement>(null);
@@ -37,6 +39,7 @@ const ConnectionDialogReport = ({ report, engine = 'postgres', onTrust }: Connec
           ))}
         </ol>
       )}
+      {!serverVersion && !error && success && <p className="font-medium text-success">{success}</p>}
       {serverVersion && !error && (
         <p className="font-medium text-success">{t('connections.connectedTo', { version: `${t(`connections.engine.${engine}`)} ${serverVersion}` })}</p>
       )}

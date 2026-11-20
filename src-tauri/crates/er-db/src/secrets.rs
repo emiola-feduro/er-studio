@@ -1,6 +1,7 @@
 //! Passwords, passphrases and proxy passwords live in the system keychain (Windows Credential Manager,
 //! macOS Keychain, Secret Service on Linux), one entry per connection and slot: "db" for the database
-//! password, "wallet" for an Oracle wallet password and "hop0", "hop1"... for each hop. The saved connection never holds them.
+//! password, "wallet" for an Oracle wallet password and "hop0", "hop1"... for each hop. A saved VM has
+//! one entry of its own (its id, slot "ssh"), used by every connection and terminal that reaches it. The saved connection never holds them.
 
 use crate::config::{ConnectionConfig, Hop, SshAuth};
 
@@ -36,6 +37,7 @@ pub fn set(connection_id: &str, slot: &str, value: Option<&str>) -> Result<(), S
 pub fn delete_all(connection_id: &str) -> Result<(), String> {
     set(connection_id, "db", None)?;
     set(connection_id, "wallet", None)?;
+    set(connection_id, "ssh", None)?;
     for index in 0..MAX_HOPS {
         set(connection_id, &format!("hop{index}"), None)?;
     }
@@ -54,8 +56,24 @@ pub fn fill(config: &mut ConnectionConfig, connection_id: &str) -> Result<(), St
     if config.wallet.as_deref().is_some_and(|w| !w.trim().is_empty()) && missing(&config.wallet_password) {
         config.wallet_password = get(connection_id, "wallet")?;
     }
-    for (index, hop) in config.hops.iter_mut().enumerate() {
+    fill_hops(&mut config.hops, connection_id)
+}
+
+/// Fills the empty secrets of a route: a saved VM's from its own entry, any other hop's from `connection_id`.
+pub fn fill_hops(hops: &mut [Hop], connection_id: &str) -> Result<(), String> {
+    // Saved VMs do not take a slot of the connection, so the others are numbered without them.
+    let mut index = 0;
+    for hop in hops.iter_mut() {
         let slot = format!("hop{index}");
+        if !matches!(hop, Hop::Ssh { secret_id: Some(_), .. }) {
+            index += 1;
+        }
+        // A saved VM keeps its own secret, shared by every connection that goes through it.
+        let (owner, slot) = match hop {
+            Hop::Ssh { secret_id: Some(id), .. } => (id.clone(), "ssh".to_string()),
+            _ => (connection_id.to_string(), slot),
+        };
+        let (connection_id, slot) = (owner.as_str(), slot);
         match hop {
             Hop::Ssh {
                 auth: SshAuth::Password { password },

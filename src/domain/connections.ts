@@ -1,3 +1,4 @@
+import { vmRoute, type SshHost } from './ssh-hosts';
 import type { DialectId } from './types';
 
 /**
@@ -46,6 +47,11 @@ export type HopProfile =
 
 export type HopKind = HopProfile['kind'];
 
+/** A saved VM as a step of the route; its address, user and secret come from the VM. */
+export type VmHop = { kind: 'vm'; hostId: string };
+
+export type RouteHop = HopProfile | VmHop;
+
 export const HOP_KINDS: HopKind[] = ['ssh', 'socks5', 'socks4', 'httpConnect'];
 
 export type TlsProfile = { mode: TlsMode; caPem?: string; serverName?: string; clientCertPem?: string; clientKeyPem?: string };
@@ -61,7 +67,7 @@ export type ConnectionProfile = {
   user: string;
   tls: TlsProfile;
   /** From this computer outward. */
-  hops: HopProfile[];
+  hops: RouteHop[];
   timeoutSecs: number;
   /** Without it, every statement runs in a transaction that is rolled back. */
   allowWrites?: boolean;
@@ -109,8 +115,9 @@ export const newHop = (kind: HopKind): HopProfile => {
   }
 };
 
-/** Whether a hop takes a secret, and which one the field asks for. */
-export const hopSecret = (hop: HopProfile): 'password' | 'passphrase' | null => {
+/** Whether a hop takes a secret of the connection, and which one the field asks for (a saved VM keeps its own). */
+export const hopSecret = (hop: RouteHop): 'password' | 'passphrase' | null => {
+  if (hop.kind === 'vm') return null;
   if (hop.kind === 'ssh') return hop.auth === 'password' ? 'password' : hop.auth === 'key' ? 'passphrase' : null;
   if (hop.kind === 'socks5' || hop.kind === 'httpConnect') return hop.username ? 'password' : null;
   return null;
@@ -118,6 +125,12 @@ export const hopSecret = (hop: HopProfile): 'password' | 'passphrase' | null => 
 
 /** Keychain slot of each secret, the same names the desktop side uses. */
 export const secretSlot = (index?: number) => (index === undefined ? 'db' : `hop${index}`);
+
+/**
+ * The slot number of a hop's secret: its place among the hops that are not saved VMs, as the desktop
+ * side counts them (saved VMs keep their secret apart). Without VMs it is the hop's own index.
+ */
+export const hopSlot = (hops: RouteHop[], index: number) => hops.slice(0, index).filter((h) => h.kind !== 'vm').length;
 
 export const WALLET_SLOT = 'wallet';
 
@@ -128,7 +141,7 @@ export const usesConnectString = (profile: Pick<ConnectionProfile, 'engine' | 'o
 const filled = (value: string | undefined) => (value && value.length > 0 ? value : undefined);
 
 /** The settings the desktop side receives. Empty secrets are left out so it fills them from the keychain. */
-export const toConnectionConfig = (profile: ConnectionProfile, secrets?: ConnectionSecrets) => ({
+export const toConnectionConfig = (profile: ConnectionProfile, secrets?: ConnectionSecrets, hosts: SshHost[] = []) => ({
   engine: profile.engine,
   host: profile.host.trim(),
   port: profile.port,
@@ -142,9 +155,14 @@ export const toConnectionConfig = (profile: ConnectionProfile, secrets?: Connect
     clientCertPem: filled(profile.tls.clientCertPem),
     clientKeyPem: filled(profile.tls.clientKeyPem),
   },
-  hops: profile.hops.map((hop, index) => {
+  hops: profile.hops.flatMap<object>((hop, index) => {
     const secret = filled(secrets?.hops[index]);
     switch (hop.kind) {
+      case 'vm': {
+        // A VM that was deleted leaves no step; the test then reports the server as unreachable.
+        const host = hosts.find((h) => h.id === hop.hostId);
+        return host ? vmRoute(hosts, host) : [];
+      }
       case 'ssh': {
         const auth =
           hop.auth === 'password'
