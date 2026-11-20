@@ -98,6 +98,21 @@ impl Session {
     }
 
     async fn run_in_transaction(&self, sql: &str, max_rows: usize, read_only: bool) -> Result<QueryOutput> {
+        let mut attempt = 0;
+        loop {
+            match self.run_once(sql, max_rows, read_only).await {
+                // An Oracle read-only transaction sees the database as of a moment that is only precise to
+                // about a second, so a table created or changed just before cannot be read yet (ORA-01466).
+                Err(Error::Database { sql_state: Some(code), .. }) if read_only && code == "ORA-01466" && attempt < 3 => {
+                    attempt += 1;
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                }
+                other => return other,
+            }
+        }
+    }
+
+    async fn run_once(&self, sql: &str, max_rows: usize, read_only: bool) -> Result<QueryOutput> {
         if let Some(begin) = self.driver.begin(read_only) {
             self.driver.execute(begin).await?;
         }
