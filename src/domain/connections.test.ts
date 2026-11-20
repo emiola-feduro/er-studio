@@ -133,3 +133,49 @@ describe('toConnectionConfig', () => {
     ]);
   });
 });
+
+describe('Oracle connection strings', () => {
+  it('reads JDBC thin with a service, a SID, a descriptor and an alias', () => {
+    expect(parseConnectionUrl('jdbc:oracle:thin:@//db.example.com:1521/ORCLPDB1')).toMatchObject({
+      engine: 'oracle',
+      host: 'db.example.com',
+      port: 1521,
+      database: 'ORCLPDB1',
+      oracleConnectBy: 'service',
+    });
+    expect(parseConnectionUrl('jdbc:oracle:thin:@10.0.0.5:1521:ORCL')).toMatchObject({ host: '10.0.0.5', database: 'ORCL', oracleConnectBy: 'sid' });
+    const descriptor = '(DESCRIPTION=(ADDRESS=(PROTOCOL=TCPS)(HOST=adb.example.com)(PORT=1522))(CONNECT_DATA=(SERVICE_NAME=x_high)))';
+    expect(parseConnectionUrl(`jdbc:oracle:thin:@${descriptor}`)).toMatchObject({ oracleConnectBy: 'connectString', connectString: descriptor });
+    expect(parseConnectionUrl('jdbc:oracle:thin:@mydb_high?TNS_ADMIN=/wallet')).toMatchObject({ oracleConnectBy: 'connectString', connectString: 'mydb_high' });
+  });
+
+  it('reads Easy Connect, SQL*Plus and oracle:// forms', () => {
+    expect(parseConnectionUrl('tcps://adb.example.com:1522/x_low.adb.oraclecloud.com')).toMatchObject({
+      engine: 'oracle',
+      port: 1522,
+      database: 'x_low.adb.oraclecloud.com',
+      tlsMode: 'verifyFull',
+    });
+    expect(parseConnectionUrl('localhost:1521/FREEPDB1')).toMatchObject({ engine: 'oracle', host: 'localhost', database: 'FREEPDB1' });
+    expect(parseConnectionUrl('hr/s3cret@db:1521/XEPDB1')).toMatchObject({ user: 'hr', password: 's3cret', host: 'db', database: 'XEPDB1' });
+    expect(parseConnectionUrl('oracle://admin:p%40ss@db:1521/ventas')).toMatchObject({
+      user: 'admin',
+      password: 'p@ss',
+      database: 'ventas',
+      oracleConnectBy: 'service',
+    });
+  });
+
+  it('sends the Oracle settings only for Oracle', () => {
+    const oracle = toConnectionConfig(
+      profile({ engine: 'oracle', oracleConnectBy: 'connectString', connectString: ' mydb_high ', wallet: '/w.zip', role: 'sysdba' }),
+      { db: 'x', hops: [], wallet: 'wp' },
+    );
+    expect(oracle).toMatchObject({ connectString: 'mydb_high', sid: false, wallet: '/w.zip', walletPassword: 'wp', role: 'sysdba' });
+    expect(toConnectionConfig(profile({ engine: 'oracle', oracleConnectBy: 'sid', connectString: 'ignored' }))).toMatchObject({
+      sid: true,
+      connectString: undefined,
+    });
+    expect(toConnectionConfig(profile())).not.toHaveProperty('wallet');
+  });
+});

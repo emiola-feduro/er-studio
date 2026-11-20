@@ -61,6 +61,7 @@ pub async fn connect(config: &ConnectionConfig, steps: &mut Vec<Step>) -> Result
         Engine::Mysql => crate::mysql::connect(config, steps).await.map(|(d, v)| (d, v, Vec::new())),
         Engine::SqlServer => crate::sqlserver::connect(config, steps).await,
         Engine::Sqlite => crate::sqlite::connect(config, steps).await.map(|(d, v)| (d, v, Vec::new())),
+        Engine::Oracle => crate::oracle::connect(config, steps).await,
     }
 }
 
@@ -97,7 +98,9 @@ impl Session {
     }
 
     async fn run_in_transaction(&self, sql: &str, max_rows: usize, read_only: bool) -> Result<QueryOutput> {
-        self.driver.execute(self.driver.begin(read_only)).await?;
+        if let Some(begin) = self.driver.begin(read_only) {
+            self.driver.execute(begin).await?;
+        }
         if self.engine == Engine::Postgres {
             self.driver.execute(&format!("SET LOCAL statement_timeout = '{}s'", self.query_timeout)).await?;
         }
@@ -122,6 +125,9 @@ impl Sessions {
         let mut steps: Vec<Step> = Vec::new();
         match connect(config, &mut steps).await {
             Ok((driver, version, guards)) => {
+                if let Driver::Oracle(connection) = &driver {
+                    let _ = crate::oracle::set_call_timeout(connection, config.timeout_secs.max(30)).await;
+                }
                 let id = self.next.fetch_add(1, Ordering::Relaxed) + 1;
                 let session = Session {
                     driver,
@@ -237,8 +243,8 @@ impl Sessions {
         session.driver.execute(if commit { "COMMIT" } else { "ROLLBACK" }).await
     }
 
-    /// Runs a migration script in one transaction where the engine allows it (all but MySQL, whose DDL
-    /// commits by itself). Needs the connection to allow writes.
+    /// Runs a migration script in one transaction where the engine allows it (all but MySQL and Oracle,
+    /// whose DDL commits by itself). Needs the connection to allow writes.
     pub async fn script(&self, id: u64, sql: &str) -> Result<()> {
         let session = self.get(id).await?;
         if !session.allow_writes {
@@ -249,14 +255,16 @@ impl Sessions {
             return Err(Error::PendingWrite);
         }
         let transactional = session.driver.transactional_ddl();
-        if transactional {
-            session.driver.execute(session.driver.begin(false)).await?;
+        if let Some(begin) = session.driver.begin(false).filter(|_| transactional) {
+            session.driver.execute(begin).await?;
         }
+        // Oracle has no autocommit: its rows wait for COMMIT even though each DDL commits by itself.
+        let ends = transactional || session.engine == Engine::Oracle;
         match session.driver.execute(sql).await {
-            Ok(()) if transactional => session.driver.execute("COMMIT").await,
+            Ok(()) if ends => session.driver.execute("COMMIT").await,
             Ok(()) => Ok(()),
             Err(error) => {
-                if transactional {
+                if ends {
                     session.rollback_quietly().await;
                 }
                 Err(error)

@@ -1,7 +1,7 @@
 // Calls to the desktop side for database connections. Only used when isDesktop() is true.
 import { invoke } from '@tauri-apps/api/core';
 import type { ConnectionEngine, ConnectionProfile, ConnectionSecrets } from '../domain/connections';
-import { secretSlot, toConnectionConfig } from '../domain/connections';
+import { secretSlot, toConnectionConfig, WALLET_SLOT } from '../domain/connections';
 import { postgresCell, type RowSource } from '../domain/import/copy-rows';
 import type { Ir } from '../domain/import/ir';
 
@@ -40,9 +40,12 @@ export const testConnection = async (profile: ConnectionProfile, secrets: Connec
 };
 
 /** Saves the secrets that were typed; blank ones keep what the keychain already has. */
-export const saveSecrets = async (id: string, secrets: ConnectionSecrets, hopsWithoutSecret: number[]) => {
+export const saveSecrets = async (id: string, secrets: ConnectionSecrets, hopsWithoutSecret: number[], withoutWallet = false) => {
   const values: Record<string, string | null> = {};
   if (secrets.db) values[secretSlot()] = secrets.db;
+  // A connection without a wallet drops the wallet password it had.
+  if (withoutWallet) values[WALLET_SLOT] = null;
+  else if (secrets.wallet) values[WALLET_SLOT] = secrets.wallet;
   secrets.hops.forEach((value, index) => {
     if (value) values[secretSlot(index)] = value;
   });
@@ -54,6 +57,9 @@ export const saveSecrets = async (id: string, secrets: ConnectionSecrets, hopsWi
 export const deleteSecrets = (id: string) => invoke('secrets_delete', { connectionId: id });
 
 export const readSshConfig = () => invoke<string | null>('ssh_config_read');
+
+/** The tnsnames.ora aliases of an Oracle wallet (zip or folder). */
+export const readWalletAliases = (path: string) => invoke<string[]>('oracle_wallet_aliases', { path });
 
 /* Open sessions: reading a schema and its rows over one connection */
 

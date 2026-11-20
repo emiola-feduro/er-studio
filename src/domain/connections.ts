@@ -5,12 +5,18 @@ import type { DialectId } from './types';
  * passphrases and proxy passwords go to the system keychain and come back only inside the desktop app.
  */
 
-export type ConnectionEngine = 'postgres' | 'mysql' | 'sqlserver' | 'sqlite';
+export type ConnectionEngine = 'postgres' | 'mysql' | 'sqlserver' | 'oracle' | 'sqlite';
 
-export const ENGINES: ConnectionEngine[] = ['postgres', 'mysql', 'sqlserver', 'sqlite'];
+export const ENGINES: ConnectionEngine[] = ['postgres', 'mysql', 'sqlserver', 'oracle', 'sqlite'];
 
 /** The gestor of the projects made from a connection. */
-export const ENGINE_DIALECT: Record<ConnectionEngine, DialectId> = { postgres: 'postgresql', mysql: 'mysql', sqlserver: 'sqlserver', sqlite: 'sqlite' };
+export const ENGINE_DIALECT: Record<ConnectionEngine, DialectId> = {
+  postgres: 'postgresql',
+  mysql: 'mysql',
+  sqlserver: 'sqlserver',
+  oracle: 'oracle',
+  sqlite: 'sqlite',
+};
 
 export type ConnectionEnvironment = 'local' | 'development' | 'staging' | 'production';
 
@@ -19,6 +25,16 @@ export const ENVIRONMENTS: ConnectionEnvironment[] = ['local', 'development', 's
 export type TlsMode = 'disable' | 'prefer' | 'require' | 'verifyCa' | 'verifyFull';
 
 export const TLS_MODES: TlsMode[] = ['disable', 'prefer', 'require', 'verifyCa', 'verifyFull'];
+
+/** Oracle speaks TLS or not on each port, and always checks the certificate when it does. */
+export const ORACLE_TLS_MODES: TlsMode[] = ['disable', 'verifyFull'];
+
+/** How an Oracle connection names its database: a service name, a SID, or a whole connect string (or wallet alias). */
+export type OracleConnectBy = 'service' | 'sid' | 'connectString';
+
+export const ORACLE_CONNECT_BY: OracleConnectBy[] = ['service', 'sid', 'connectString'];
+
+export type OracleRole = 'sysdba' | 'sysoper';
 
 export type SshAuthMethod = 'password' | 'key' | 'agent';
 
@@ -55,17 +71,23 @@ export type ConnectionProfile = {
   /** SQLite: the file, and whether to open it read-only. */
   file?: string;
   readOnlyFile?: boolean;
+  /** Oracle: how the database is named, the connect string or alias, the wallet (zip or folder) and the privilege. */
+  oracleConnectBy?: OracleConnectBy;
+  connectString?: string;
+  wallet?: string;
+  role?: OracleRole;
   createdAt: number;
   updatedAt: number;
 };
 
-/** Secrets typed in the dialog: the database password and one per hop (password, passphrase or proxy password). */
-export type ConnectionSecrets = { db: string; hops: string[] };
+/** Secrets typed in the dialog: the database password, an Oracle wallet password and one per hop (password, passphrase or proxy password). */
+export type ConnectionSecrets = { db: string; hops: string[]; wallet?: string };
 
 export const DEFAULT_PORTS: Record<HopKind | ConnectionEngine, number> = {
   postgres: 5432,
   mysql: 3306,
   sqlserver: 1433,
+  oracle: 1521,
   sqlite: 0,
   ssh: 22,
   socks5: 1080,
@@ -73,7 +95,7 @@ export const DEFAULT_PORTS: Record<HopKind | ConnectionEngine, number> = {
   httpConnect: 3128,
 };
 
-export const DEFAULT_USERS: Record<ConnectionEngine, string> = { postgres: 'postgres', mysql: 'root', sqlserver: 'sa', sqlite: '' };
+export const DEFAULT_USERS: Record<ConnectionEngine, string> = { postgres: 'postgres', mysql: 'root', sqlserver: 'sa', oracle: 'system', sqlite: '' };
 
 export const newHop = (kind: HopKind): HopProfile => {
   const port = DEFAULT_PORTS[kind];
@@ -96,6 +118,12 @@ export const hopSecret = (hop: HopProfile): 'password' | 'passphrase' | null => 
 
 /** Keychain slot of each secret, the same names the desktop side uses. */
 export const secretSlot = (index?: number) => (index === undefined ? 'db' : `hop${index}`);
+
+export const WALLET_SLOT = 'wallet';
+
+/** Whether an Oracle profile names its database with a connect string or alias instead of host, port and service. */
+export const usesConnectString = (profile: Pick<ConnectionProfile, 'engine' | 'oracleConnectBy'>) =>
+  profile.engine === 'oracle' && profile.oracleConnectBy === 'connectString';
 
 const filled = (value: string | undefined) => (value && value.length > 0 ? value : undefined);
 
@@ -139,6 +167,15 @@ export const toConnectionConfig = (profile: ConnectionProfile, secrets?: Connect
   integratedAuth: Boolean(profile.integratedAuth),
   file: filled(profile.file?.trim()),
   readOnlyFile: Boolean(profile.readOnlyFile),
+  ...(profile.engine === 'oracle'
+    ? {
+        connectString: usesConnectString(profile) ? filled(profile.connectString?.trim()) : undefined,
+        sid: profile.oracleConnectBy === 'sid',
+        wallet: filled(profile.wallet?.trim()),
+        walletPassword: profile.wallet?.trim() ? filled(secrets?.wallet) : undefined,
+        role: profile.role,
+      }
+    : {}),
 });
 
 const SSL_MODES: Record<string, TlsMode> = {
@@ -160,6 +197,8 @@ export type ParsedUrl = Pick<ConnectionProfile, 'engine' | 'host' | 'port' | 'da
   tlsMode?: TlsMode;
   instance?: string;
   integratedAuth?: boolean;
+  oracleConnectBy?: OracleConnectBy;
+  connectString?: string;
 };
 
 const SCHEMES: Record<string, ConnectionEngine> = {
@@ -201,6 +240,73 @@ const parseAdoNet = (text: string): ParsedUrl | null => {
 };
 
 /**
+ * Oracle in the forms its tools give: JDBC thin ("jdbc:oracle:thin:@//host:1521/service", "@host:1521:SID",
+ * "@(DESCRIPTION=...)", "@alias"), Easy Connect ("host:1521/service", "tcps://host:2484/service"), SQL*Plus
+ * ("user/password@host:1521/service"), oracle:// URLs and bare connect descriptors.
+ */
+export const parseOracle = (text: string): ParsedUrl | null => {
+  let rest = text.trim();
+  const scheme = /^([a-z]+):\/\//i.exec(rest)?.[1]?.toLowerCase();
+  if (scheme && !['tcp', 'tcps', 'oracle'].includes(scheme)) return null;
+  let user = '';
+  let password: string | undefined;
+  const base = { engine: 'oracle' as const, host: '', port: DEFAULT_PORTS.oracle, database: '', user };
+  const jdbc = /^jdbc:oracle:thin:/i.test(rest);
+  if (jdbc) rest = rest.replace(/^jdbc:oracle:thin:/i, '');
+  const oracleUrl = /^oracle:\/\//i.exec(rest);
+  if (oracleUrl) {
+    try {
+      const url = new URL(rest.replace(/^oracle:/i, 'http:'));
+      return {
+        ...base,
+        host: url.hostname,
+        port: url.port ? Number(url.port) : DEFAULT_PORTS.oracle,
+        database: decodeURIComponent(url.pathname.replace(/^\//, '')),
+        user: decodeURIComponent(url.username),
+        password: url.password ? decodeURIComponent(url.password) : undefined,
+        oracleConnectBy: 'service',
+      };
+    } catch {
+      return null;
+    }
+  }
+  // "user/password@" before the address (SQL*Plus and JDBC both allow it).
+  const credentials = /^([^/@\s()]+)(?:\/([^@\s]*))?@(.+)$/s.exec(rest);
+  if (credentials) {
+    user = credentials[1];
+    password = credentials[2] || undefined;
+    rest = credentials[3];
+  } else if (rest.startsWith('@')) {
+    rest = rest.slice(1);
+  } else if (jdbc) {
+    return null;
+  }
+  rest = rest.trim();
+  if (/^\(\s*DESCRIPTION/i.test(rest) || /^\(\s*DESCRIPTION_LIST/i.test(rest)) {
+    return { ...base, user, password, oracleConnectBy: 'connectString', connectString: rest };
+  }
+  const easy = /^(?:(tcps?):\/\/)?(?:\/\/)?(\[[^\]]+\]|[^:/\s?]+)(?::(\d+))?(?:([/:])([\w.$#-][^?\s]*))?(?:\?.*)?$/i.exec(rest);
+  if (!easy) return null;
+  const [, protocol, rawHost, port, separator, name] = easy;
+  // Without a service, a single word is a tnsnames.ora alias ("mydb_high").
+  if (!separator && !port && !protocol) {
+    if (!jdbc && !credentials) return null;
+    return { ...base, user, password, oracleConnectBy: 'connectString', connectString: rawHost };
+  }
+  return {
+    ...base,
+    host: rawHost.replace(/^\[|\]$/g, ''),
+    port: port ? Number(port) : protocol?.toLowerCase() === 'tcps' ? 2484 : DEFAULT_PORTS.oracle,
+    database: name ?? '',
+    user,
+    password,
+    // "host:port:SID" is the old JDBC form; "host:port/service" names a service.
+    oracleConnectBy: separator === ':' ? 'sid' : 'service',
+    tlsMode: protocol?.toLowerCase() === 'tcps' ? 'verifyFull' : protocol ? 'disable' : undefined,
+  };
+};
+
+/**
  * Reads a connection URL ("postgres://user:password@host:5432/db?sslmode=verify-full", mysql://, mariadb://,
  * sqlserver://) or a SQL Server connection string. Null when it is none of them.
  */
@@ -208,7 +314,10 @@ export const parseConnectionUrl = (text: string): ParsedUrl | null => {
   const trimmed = text.trim();
   const scheme = /^([a-z]+):\/\//i.exec(trimmed)?.[1]?.toLowerCase();
   const engine = scheme ? SCHEMES[scheme] : undefined;
-  if (!engine) return /server\s*=|data source\s*=/i.test(trimmed) ? parseAdoNet(trimmed) : null;
+  if (!engine) {
+    if (/server\s*=|data source\s*=/i.test(trimmed)) return parseAdoNet(trimmed);
+    return parseOracle(trimmed);
+  }
   let url: URL;
   try {
     // URL only parses special schemes fully, so read it as http with the same parts.

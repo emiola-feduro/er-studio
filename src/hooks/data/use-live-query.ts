@@ -104,7 +104,7 @@ const useLiveQuery = (connection: ConnectionProfile | undefined) => {
 
   /** Reads run now; anything else asks first, or says the connection does not allow it. */
   const start = (sql: string, tab: QueryTab) => {
-    const info = statementInfo(sql);
+    const info = statementInfo(sql, connection?.engine);
     if (info.multiple) return show(sql, tab, { error: t('live.oneStatement') });
     if (info.readOnly) return void execute(sql, tab);
     if (!connection?.allowWrites) return show(sql, tab, { error: t('live.writesDisabled') });

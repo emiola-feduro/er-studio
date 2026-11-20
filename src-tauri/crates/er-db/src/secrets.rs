@@ -1,6 +1,6 @@
 //! Passwords, passphrases and proxy passwords live in the system keychain (Windows Credential Manager,
 //! macOS Keychain, Secret Service on Linux), one entry per connection and slot: "db" for the database
-//! password and "hop0", "hop1"... for each hop. The saved connection never holds them.
+//! password, "wallet" for an Oracle wallet password and "hop0", "hop1"... for each hop. The saved connection never holds them.
 
 use crate::config::{ConnectionConfig, Hop, SshAuth};
 
@@ -35,6 +35,7 @@ pub fn set(connection_id: &str, slot: &str, value: Option<&str>) -> Result<(), S
 /// Removes every secret of a deleted connection.
 pub fn delete_all(connection_id: &str) -> Result<(), String> {
     set(connection_id, "db", None)?;
+    set(connection_id, "wallet", None)?;
     for index in 0..MAX_HOPS {
         set(connection_id, &format!("hop{index}"), None)?;
     }
@@ -49,6 +50,9 @@ fn missing(value: &Option<String>) -> bool {
 pub fn fill(config: &mut ConnectionConfig, connection_id: &str) -> Result<(), String> {
     if missing(&config.password) {
         config.password = get(connection_id, "db")?;
+    }
+    if config.wallet.as_deref().is_some_and(|w| !w.trim().is_empty()) && missing(&config.wallet_password) {
+        config.wallet_password = get(connection_id, "wallet")?;
     }
     for (index, hop) in config.hops.iter_mut().enumerate() {
         let slot = format!("hop{index}");

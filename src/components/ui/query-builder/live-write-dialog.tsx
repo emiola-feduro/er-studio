@@ -55,6 +55,9 @@ const LiveWriteDialog = ({ request, connection, onConfirm, onCancel }: LiveWrite
           <code className="font-[inherit]">{request.sql}</code>
         </pre>
         <p>{t('live.reviewNote')}</p>
+        {request.info.ddl && (connection.engine === 'oracle' || connection.engine === 'mysql') && (
+          <p className="text-warning">{t('live.ddlCommits', { engine: t(`connections.engine.${connection.engine}`) })}</p>
+        )}
         {risk && (
           <p role="alert" className="text-danger">
             {risk.kind === 'noWhere' && t(risk.verb === 'DELETE' ? 'live.risk.deleteAll' : 'live.risk.updateAll', { target: risk.target })}

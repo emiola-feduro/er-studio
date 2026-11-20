@@ -35,4 +35,13 @@ describe('statementInfo', () => {
     expect(statementInfo('ALTER TABLE cliente ADD x int').risk).toEqual({ kind: 'alter', target: 'cliente' });
     expect(statementInfo('SELECT 1; SELECT 2').multiple).toBe(true);
   });
+
+  it('keeps an Oracle PL/SQL block whole and marks structure changes', () => {
+    const block = 'BEGIN\n  UPDATE t SET a = 1;\n  DELETE FROM u WHERE id = 2;\nEND;\n/';
+    expect(statementInfo(block, 'oracle').multiple).toBe(false);
+    expect(statementInfo(block, 'postgres').multiple).toBe(true);
+    expect(statementInfo('SELECT 1 FROM dual;\n/', 'oracle').multiple).toBe(false);
+    expect(statementInfo('CREATE TABLE t (a int)').ddl).toBe(true);
+    expect(statementInfo('UPDATE t SET a = 1').ddl).toBe(false);
+  });
 });

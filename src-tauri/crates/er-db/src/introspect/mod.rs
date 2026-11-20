@@ -13,6 +13,7 @@ use regex::Regex;
 use serde::Serialize;
 
 mod mysql;
+mod oracle;
 mod postgres;
 mod sqlserver;
 
@@ -168,6 +169,7 @@ pub async fn list_schemas(driver: &Driver) -> Result<Vec<SchemaInfo>> {
         Engine::Postgres => postgres::list_schemas(driver).await,
         Engine::Mysql => mysql::list_schemas(driver).await,
         Engine::SqlServer => sqlserver::list_schemas(driver).await,
+        Engine::Oracle => oracle::list_schemas(driver).await,
         Engine::Sqlite => Ok(vec![SchemaInfo {
             name: "main".into(),
             tables: 0,
@@ -180,6 +182,7 @@ pub async fn read_schema(driver: &Driver, schemas: &[String]) -> Result<SchemaRe
         Engine::Postgres => postgres::read_schema(driver, schemas).await,
         Engine::Mysql => mysql::read_schema(driver, schemas).await,
         Engine::SqlServer => sqlserver::read_schema(driver, schemas).await,
+        Engine::Oracle => oracle::read_schema(driver, schemas).await,
         Engine::Sqlite => Err(crate::error::Error::Database {
             message: "a SQLite file is read by the interface".into(),
             sql_state: None,
@@ -200,7 +203,7 @@ pub fn quote_name(engine: Engine, name: &str) -> String {
     match engine {
         Engine::Mysql => format!("`{}`", name.replace('`', "``")),
         Engine::SqlServer => format!("[{}]", name.replace(']', "]]")),
-        Engine::Postgres | Engine::Sqlite => quote_ident(name),
+        Engine::Postgres | Engine::Sqlite | Engine::Oracle => quote_ident(name),
     }
 }
 
@@ -219,6 +222,10 @@ pub async fn read_rows(driver: &Driver, schema: &str, table: &str, order_by: &[S
             "SELECT * FROM {from} ORDER BY {} OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY",
             if order.is_empty() { "(SELECT NULL)".to_string() } else { order }
         ),
+        Engine::Oracle => {
+            let order = if order.is_empty() { String::new() } else { format!(" ORDER BY {order}") };
+            format!("SELECT * FROM {from}{order} OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY")
+        }
         _ => {
             let order = if order.is_empty() { String::new() } else { format!(" ORDER BY {order}") };
             format!("SELECT * FROM {from}{order} LIMIT {limit} OFFSET {offset}")

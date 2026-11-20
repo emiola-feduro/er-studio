@@ -3,7 +3,9 @@ import {
   ENGINES,
   ENVIRONMENTS,
   HOP_KINDS,
+  ORACLE_TLS_MODES,
   TLS_MODES,
+  usesConnectString,
   type ConnectionEngine,
   type ConnectionEnvironment,
   type HopKind,
@@ -16,7 +18,9 @@ import Button from '../button/button';
 import ConfirmDialog from '../confirm-dialog/confirm-dialog';
 import Modal from '../modal/modal';
 import ConnectionDialogHop from './connection-dialog-hop';
+import ConnectionDialogOracle from './connection-dialog-oracle';
 import ConnectionDialogReport from './connection-dialog-report';
+import ConnectionDialogWallet from './connection-dialog-wallet';
 import ConnectionField from './connection-field';
 
 /** The file name of a path, for the default connection name. */
@@ -33,6 +37,10 @@ const ConnectionDialog = () => {
   const [hopKind, setHopKind] = useState<HopKind>('ssh');
   const verifying = draft.tls.mode === 'verifyCa' || draft.tls.mode === 'verifyFull';
   const sqlite = draft.engine === 'sqlite';
+  const oracle = draft.engine === 'oracle';
+  const byString = usesConnectString(draft);
+  // A wallet always means TLS.
+  const walletTls = oracle && Boolean(draft.wallet?.trim());
 
   const applyUrl = () => {
     const ok = dialog.applyUrl(url);
@@ -133,7 +141,7 @@ const ConnectionDialog = () => {
                   className="field min-w-48 flex-1 font-sql"
                   value={url}
                   spellCheck={false}
-                  placeholder={t('connections.urlPlaceholder')}
+                  placeholder={oracle ? 'jdbc:oracle:thin:@//host:1521/ORCLPDB1' : t('connections.urlPlaceholder')}
                   onChange={(e) => {
                     setUrl(e.target.value);
                     setUrlInvalid(false);
@@ -147,37 +155,52 @@ const ConnectionDialog = () => {
                 </Button>
               </div>
             </ConnectionField>
-            <div className={`grid gap-3 ${draft.engine === 'sqlserver' ? 'sm:grid-cols-[1fr_10rem_7rem]' : 'sm:grid-cols-[1fr_7rem]'}`}>
-              <ConnectionField id="connection-host" label={t('connections.host')} error={problems.host}>
-                <input id="connection-host" className="field" value={draft.host} onChange={(e) => update({ host: e.target.value })} />
-              </ConnectionField>
-              {draft.engine === 'sqlserver' && (
-                <ConnectionField id="connection-instance" label={t('connections.instance')}>
+            {oracle && <ConnectionDialogOracle draft={draft} problems={problems} aliases={dialog.walletAliases} onChange={update} />}
+            {!byString && (
+              <div className={`grid gap-3 ${draft.engine === 'sqlserver' ? 'sm:grid-cols-[1fr_10rem_7rem]' : 'sm:grid-cols-[1fr_7rem]'}`}>
+                <ConnectionField id="connection-host" label={t('connections.host')} error={problems.host}>
+                  <input id="connection-host" className="field" value={draft.host} onChange={(e) => update({ host: e.target.value })} />
+                </ConnectionField>
+                {draft.engine === 'sqlserver' && (
+                  <ConnectionField id="connection-instance" label={t('connections.instance')}>
+                    <input
+                      id="connection-instance"
+                      className="field"
+                      value={draft.instance ?? ''}
+                      placeholder="SQLEXPRESS"
+                      onChange={(e) => update({ instance: e.target.value })}
+                    />
+                  </ConnectionField>
+                )}
+                <ConnectionField id="connection-port" label={t('connections.port')} error={problems.port}>
                   <input
-                    id="connection-instance"
+                    id="connection-port"
                     className="field"
-                    value={draft.instance ?? ''}
-                    placeholder="SQLEXPRESS"
-                    onChange={(e) => update({ instance: e.target.value })}
+                    type="number"
+                    min={draft.engine === 'sqlserver' ? 0 : 1}
+                    max={65535}
+                    value={draft.port}
+                    onChange={(e) => update({ port: Number(e.target.value) })}
+                  />
+                </ConnectionField>
+              </div>
+            )}
+            <div className={`grid gap-3 ${byString ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}>
+              {!byString && (
+                <ConnectionField
+                  id="connection-database"
+                  label={oracle ? t(`connections.oracle.by.${draft.oracleConnectBy ?? 'service'}`) : t('connections.database')}
+                  error={problems.database}
+                >
+                  <input
+                    id="connection-database"
+                    className="field"
+                    value={draft.database}
+                    placeholder={oracle ? 'ORCLPDB1' : undefined}
+                    onChange={(e) => update({ database: e.target.value })}
                   />
                 </ConnectionField>
               )}
-              <ConnectionField id="connection-port" label={t('connections.port')} error={problems.port}>
-                <input
-                  id="connection-port"
-                  className="field"
-                  type="number"
-                  min={draft.engine === 'sqlserver' ? 0 : 1}
-                  max={65535}
-                  value={draft.port}
-                  onChange={(e) => update({ port: Number(e.target.value) })}
-                />
-              </ConnectionField>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <ConnectionField id="connection-database" label={t('connections.database')} error={problems.database}>
-                <input id="connection-database" className="field" value={draft.database} onChange={(e) => update({ database: e.target.value })} />
-              </ConnectionField>
               {!draft.integratedAuth && (
                 <ConnectionField id="connection-user" label={t('connections.user')} error={problems.user}>
                   <input id="connection-user" className="field" value={draft.user} onChange={(e) => update({ user: e.target.value })} />
@@ -197,6 +220,17 @@ const ConnectionDialog = () => {
                 </ConnectionField>
               )}
             </div>
+            {oracle && (
+              <ConnectionDialogWallet
+                draft={draft}
+                secret={secrets.wallet ?? ''}
+                editing={editing}
+                error={dialog.walletError}
+                onChange={update}
+                onSecret={dialog.setWalletSecret}
+                onChoose={() => void dialog.chooseWallet()}
+              />
+            )}
             {draft.engine === 'sqlserver' && (
               <Checkbox
                 label={t('connections.integratedAuth')}
@@ -218,17 +252,18 @@ const ConnectionDialog = () => {
                   <select
                     id="connection-tls-mode"
                     className="field"
-                    value={draft.tls.mode}
+                    value={walletTls ? 'verifyFull' : draft.tls.mode}
+                    disabled={walletTls}
                     onChange={(e) => update({ tls: { ...draft.tls, mode: e.target.value as TlsMode } })}
                   >
-                    {TLS_MODES.map((mode) => (
+                    {(oracle ? ORACLE_TLS_MODES : TLS_MODES).map((mode) => (
                       <option key={mode} value={mode}>
-                        {t(`connections.tls.${mode}`)}
+                        {t(oracle && mode === 'verifyFull' ? 'connections.tls.oracleTcps' : `connections.tls.${mode}`)}
                       </option>
                     ))}
                   </select>
                 </ConnectionField>
-                {verifying && (
+                {verifying && !oracle && (
                   <ConnectionField id="connection-server-name" label={t('connections.serverName')}>
                     <input
                       id="connection-server-name"
@@ -295,6 +330,7 @@ const ConnectionDialog = () => {
                     </select>
                   </ConnectionField>
                 ))}
+              {problems.oracleRoute && <p className="text-danger">{problems.oracleRoute}</p>}
               {draft.hops.length === 0 ? (
                 <p className="text-muted">{t('connections.routeEmpty')}</p>
               ) : (

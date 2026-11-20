@@ -8,6 +8,7 @@
 #   mysql    MySQL 8.4 (TLS with its own certificate), published on 127.0.0.1:53306
 #   mariadb  MariaDB 11, published on 127.0.0.1:53307
 #   mssql    SQL Server 2022, published on 127.0.0.1:51433, only with ERDB_MSSQL=1 (the image is over 1.5 GB)
+#   oracle   Oracle Database 23ai Free with the user tienda, published on 127.0.0.1:51521, only with ERDB_ORACLE=1
 # Only db, ssh1, socks and http are published; db is also reachable by name from inside the network.
 # Writes the generated keys and certificates to $ERDB_TEST_DIR (default: tests/env/.generated).
 set -euo pipefail
@@ -68,10 +69,14 @@ if [ -n "${ERDB_MSSQL:-}" ]; then
   "$ENGINE" run -d --name erdb-mssql --network "$NET" --network-alias mssql -p 127.0.0.1:51433:1433 \
     -e ACCEPT_EULA=Y -e 'MSSQL_SA_PASSWORD=Secreto.2026' mcr.microsoft.com/mssql/server:2022-latest >/dev/null
 fi
+if [ -n "${ERDB_ORACLE:-}" ]; then
+  "$ENGINE" run -d --name erdb-oracle --network "$NET" --network-alias oracle -p 127.0.0.1:51521:1521 \
+    -e ORACLE_PASSWORD=Secreto2026 -e APP_USER=tienda -e APP_USER_PASSWORD=secreto docker.io/gvenzl/oracle-free:23-slim-faststart >/dev/null
+fi
 
 # Wait until every service answers.
 wait_for() {
-  for _ in $(seq 1 90); do
+  for _ in $(seq 1 "${3:-90}"); do
     if eval "$2" >/dev/null 2>&1; then return 0; fi
     sleep 1
   done
@@ -90,6 +95,10 @@ if [ -n "${ERDB_MSSQL:-}" ]; then
   wait_for mssql "$ENGINE exec erdb-mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Secreto.2026' -Q 'SELECT 1'"
   # CREATE DATABASE cannot run inside a transaction, and the app runs every script in one.
   "$ENGINE" exec erdb-mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Secreto.2026' -Q "IF DB_ID('tienda') IS NULL CREATE DATABASE tienda" >/dev/null
+fi
+
+if [ -n "${ERDB_ORACLE:-}" ]; then
+  wait_for oracle "$ENGINE logs erdb-oracle 2>&1 | grep -q 'DATABASE IS READY TO USE'" 300
 fi
 
 echo "ready: $DIR"

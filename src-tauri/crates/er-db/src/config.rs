@@ -13,6 +13,8 @@ pub enum Engine {
     SqlServer,
     /// A SQLite file on this computer.
     Sqlite,
+    /// Oracle Database and Autonomous Database.
+    Oracle,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -140,6 +142,20 @@ pub struct ConnectionConfig {
     pub file: Option<String>,
     #[serde(default)]
     pub read_only_file: bool,
+    /// Oracle: a connect descriptor, Easy Connect string or tnsnames.ora alias, in place of host, port and service.
+    #[serde(default)]
+    pub connect_string: Option<String>,
+    /// Oracle: `database` is a SID instead of a service name.
+    #[serde(default)]
+    pub sid: bool,
+    /// Oracle: the wallet (the zip of an Autonomous Database, or its folder) and its password.
+    #[serde(default)]
+    pub wallet: Option<String>,
+    #[serde(default)]
+    pub wallet_password: Option<String>,
+    /// Oracle: "sysdba" or "sysoper" to connect with that privilege.
+    #[serde(default)]
+    pub role: Option<String>,
 }
 
 fn default_timeout() -> u64 {

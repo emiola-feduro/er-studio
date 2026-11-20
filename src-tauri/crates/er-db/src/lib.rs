@@ -9,6 +9,7 @@ pub mod error;
 pub mod introspect;
 pub mod ir;
 pub mod mysql;
+pub mod oracle;
 pub mod postgres;
 pub mod secrets;
 pub mod session;

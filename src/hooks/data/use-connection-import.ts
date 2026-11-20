@@ -97,7 +97,9 @@ const useConnectionImport = () => {
         if (cancelled) return;
         setSchemas(found);
         const withTables = found.filter((s) => s.tables > 0);
-        const initial = withTables.find((s) => s.name === 'public') ?? withTables[0];
+        // PostgreSQL keeps tables in public; Oracle in the schema of the user who connects.
+        const own = profile?.user.trim().toUpperCase();
+        const initial = withTables.find((s) => s.name === 'public' || s.name === own) ?? withTables[0];
         setSelected(initial ? [initial.name] : []);
         setPhase({ kind: 'ready' });
       } catch (error) {

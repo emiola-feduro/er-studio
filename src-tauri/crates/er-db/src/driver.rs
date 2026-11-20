@@ -18,6 +18,7 @@ pub enum Driver {
     Mysql(tokio::sync::Mutex<mysql_async::Conn>),
     SqlServer(Box<tokio::sync::Mutex<SqlServerClient>>),
     Sqlite(Arc<std::sync::Mutex<rusqlite::Connection>>),
+    Oracle(crate::oracle::OracleConnection),
 }
 
 /// The rows of a statement, every value as text (NULL as None), or how many rows it changed.
@@ -145,6 +146,7 @@ impl Driver {
             Driver::Mysql(_) => Engine::Mysql,
             Driver::SqlServer(_) => Engine::SqlServer,
             Driver::Sqlite(_) => Engine::Sqlite,
+            Driver::Oracle(_) => Engine::Oracle,
         }
     }
 
@@ -153,6 +155,7 @@ impl Driver {
     pub async fn run(&self, sql: &str, max_rows: usize) -> Result<QueryOutput> {
         let mut out = QueryOutput::default();
         match self {
+            Driver::Oracle(connection) => return crate::oracle::run(connection, sql, max_rows).await,
             Driver::Postgres(client) => {
                 use tokio_postgres::SimpleQueryMessage;
                 let mut stream = Box::pin(client.simple_query_raw(sql).await.map_err(database)?);
@@ -273,6 +276,7 @@ impl Driver {
     /// Runs a script of several statements, without results (a migration, a transaction statement).
     pub async fn execute(&self, sql: &str) -> Result<()> {
         match self {
+            Driver::Oracle(connection) => crate::oracle::execute(connection, sql).await,
             Driver::Postgres(client) => client.batch_execute(sql).await.map_err(database),
             Driver::Mysql(conn) => {
                 use mysql_async::prelude::Queryable;
@@ -296,20 +300,23 @@ impl Driver {
         }
     }
 
-    /// The statement that opens a transaction; read-only where the engine can enforce it.
-    pub fn begin(&self, read_only: bool) -> &'static str {
-        match (self, read_only) {
+    /// The statement that opens a transaction; read-only where the engine can enforce it. Oracle opens
+    /// one with the first change, so only the read-only form needs a statement.
+    pub fn begin(&self, read_only: bool) -> Option<&'static str> {
+        Some(match (self, read_only) {
             (Driver::Postgres(_), true) => "BEGIN READ ONLY",
             (Driver::Postgres(_), false) => "BEGIN",
             (Driver::Mysql(_), true) => "START TRANSACTION READ ONLY",
             (Driver::Mysql(_), false) => "START TRANSACTION",
             (Driver::SqlServer(_), _) => "BEGIN TRANSACTION",
             (Driver::Sqlite(_), _) => "BEGIN",
-        }
+            (Driver::Oracle(_), true) => "SET TRANSACTION READ ONLY",
+            (Driver::Oracle(_), false) => return None,
+        })
     }
 
-    /// Whether a failed migration can be undone: MySQL commits each DDL statement on its own.
+    /// Whether a failed migration can be undone: MySQL and Oracle commit each DDL statement on their own.
     pub fn transactional_ddl(&self) -> bool {
-        !matches!(self, Driver::Mysql(_))
+        !matches!(self, Driver::Mysql(_) | Driver::Oracle(_))
     }
 }

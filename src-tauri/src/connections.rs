@@ -42,6 +42,12 @@ pub fn ssh_config_read() -> Option<String> {
     std::fs::read_to_string(std::path::PathBuf::from(home).join(".ssh").join("config")).ok()
 }
 
+/// The tnsnames.ora aliases of an Oracle wallet (zip or folder), to pick one in the dialog.
+#[tauri::command]
+pub fn oracle_wallet_aliases(path: String) -> Result<Vec<String>, String> {
+    er_db::oracle::wallet_aliases(&path).map_err(message)
+}
+
 fn message(error: er_db::Error) -> String {
     serde_json::to_string(&error).unwrap_or_else(|_| error.to_string())
 }

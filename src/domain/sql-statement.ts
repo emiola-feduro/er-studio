@@ -9,7 +9,13 @@ export type StatementRisk =
   | { kind: 'truncate'; target: string }
   | { kind: 'alter'; target: string };
 
-export type StatementInfo = { readOnly: boolean; risk?: StatementRisk; multiple: boolean };
+/** `ddl`: it changes structure, which MySQL and Oracle commit as soon as it runs. */
+export type StatementInfo = { readOnly: boolean; risk?: StatementRisk; multiple: boolean; ddl: boolean };
+
+const DDL = new Set(['CREATE', 'ALTER', 'DROP', 'TRUNCATE', 'RENAME', 'COMMENT', 'GRANT', 'REVOKE']);
+
+/** An Oracle PL/SQL block or stored unit: its inner ";" do not split it. */
+const PLSQL = /^(?:BEGIN|DECLARE)\b|^CREATE\s+(?:OR\s+REPLACE\s+)?(?:(?:NON)?EDITIONABLE\s+)?(?:FUNCTION|PROCEDURE|PACKAGE|TRIGGER|TYPE)\b/i;
 
 /** The text with comments and string literals blanked out, so keywords inside them do not count. */
 const code = (sql: string) =>
@@ -28,14 +34,20 @@ const objectName = (raw: string | undefined) => (raw ? unquote(raw.split('.').po
 
 const NAME = String.raw`((?:"[^"]+"|\x60[^\x60]+\x60|\[[^\]]+\]|[\w$]+)(?:\.(?:"[^"]+"|\x60[^\x60]+\x60|\[[^\]]+\]|[\w$]+))*)`;
 
-export const statementInfo = (sql: string): StatementInfo => {
+export const statementInfo = (sql: string, engine?: string): StatementInfo => {
   const text = code(sql).trim().replace(/^\(+/, '');
-  const statements = text.split(';').filter((s) => s.trim()).length;
+  const plsql = engine === 'oracle' && PLSQL.test(text);
+  const statements = plsql
+    ? 1
+    : text
+        .replace(/\n\s*\/\s*$/, '')
+        .split(';')
+        .filter((s) => s.trim()).length;
   const first = /^[A-Za-z]+/.exec(text)?.[0]?.toUpperCase() ?? '';
   const readOnly = READING.has(first) || (first === 'PRAGMA' && !text.includes('='));
   // A WITH can end in a DELETE or UPDATE.
   const verb = first === 'WITH' ? (/\b(UPDATE|DELETE|INSERT|MERGE)\b/i.exec(text)?.[1]?.toUpperCase() ?? 'SELECT') : first;
-  const info: StatementInfo = { readOnly: readOnly && verb === first ? true : READING.has(verb), multiple: statements > 1 };
+  const info: StatementInfo = { readOnly: readOnly && verb === first ? true : READING.has(verb), multiple: statements > 1, ddl: DDL.has(first) };
   let match: RegExpExecArray | null;
   if (verb === 'DELETE' && (match = new RegExp(String.raw`\bDELETE\s+(?:FROM\s+)?${NAME}`, 'i').exec(text)) && !/\bWHERE\b/i.test(text)) {
     info.risk = { kind: 'noWhere', verb: 'DELETE', target: objectName(match[1]) };

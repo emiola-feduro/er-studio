@@ -1,0 +1,47 @@
+{
+  "ir": {
+    "tables": [
+      {
+        "name": "CLIENTE",
+        "columns": [
+          { "name": "ID", "type": "INTEGER", "params": [], "notNull": true, "pk": true, "unique": false, "autoIncrement": true },
+          { "name": "NOMBRE", "type": "VARCHAR2", "params": ["80"], "notNull": true, "pk": false, "unique": false, "autoIncrement": false },
+          { "name": "EMAIL", "type": "VARCHAR2", "params": ["120"], "notNull": false, "pk": false, "unique": false, "autoIncrement": false },
+          { "name": "TIPO", "type": "VARCHAR2", "params": ["10"], "notNull": true, "pk": false, "unique": false, "autoIncrement": false, "defaultValue": "'persona'" },
+          { "name": "SALDO", "type": "NUMBER", "params": ["10", "2"], "notNull": true, "pk": false, "unique": false, "autoIncrement": false, "defaultValue": "0" },
+          { "name": "CREADO", "type": "TIMESTAMP", "params": [], "notNull": true, "pk": false, "unique": false, "autoIncrement": false, "defaultValue": "SYSTIMESTAMP" },
+          { "name": "FOTO", "type": "BLOB", "params": [], "notNull": false, "pk": false, "unique": false, "autoIncrement": false },
+          { "name": "NOTAS", "type": "CLOB", "params": [], "notNull": false, "pk": false, "unique": false, "autoIncrement": false }
+        ],
+        "pk": { "columns": ["ID"] },
+        "uniques": [{ "name": "UQ_CLIENTE_EMAIL", "columns": ["EMAIL"] }],
+        "checks": [{ "name": "CK_TIPO", "expression": "TIPO IN ('persona', 'empresa')" }],
+        "foreignKeys": [],
+        "indexes": []
+      },
+      {
+        "name": "PEDIDO",
+        "columns": [
+          { "name": "ID", "type": "NUMBER", "params": ["10", "0"], "notNull": true, "pk": true, "unique": false, "autoIncrement": false },
+          { "name": "CLIENTE_ID", "type": "INTEGER", "params": [], "notNull": true, "pk": false, "unique": false, "autoIncrement": false },
+          { "name": "TOTAL", "type": "NUMBER", "params": ["10", "2"], "notNull": true, "pk": false, "unique": false, "autoIncrement": false }
+        ],
+        "pk": { "columns": ["ID"] },
+        "uniques": [],
+        "checks": [],
+        "foreignKeys": [
+          { "name": "FK_PEDIDO_CLIENTE", "columns": ["CLIENTE_ID"], "refTable": "CLIENTE", "refColumns": ["ID"], "onDelete": "CASCADE", "onUpdate": "NO ACTION" }
+        ],
+        "indexes": [{ "name": "IDX_PEDIDO_TOTAL", "columns": [{ "name": "TOTAL", "order": "DESC" }], "unique": false }]
+      }
+    ],
+    "manyToMany": [],
+    "dialect": "oracle",
+    "databaseName": "FREE",
+    "skipped": ["VIEW V_CLIENTE"]
+  },
+  "sources": [
+    { "name": "CLIENTE", "schema": "TIENDA", "table": "CLIENTE", "key": ["ID"] },
+    { "name": "PEDIDO", "schema": "TIENDA", "table": "PEDIDO", "key": ["ID"] }
+  ]
+}

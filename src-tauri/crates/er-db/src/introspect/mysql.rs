@@ -9,7 +9,10 @@ use crate::driver::Driver;
 use crate::error::Result;
 use crate::ir::{Ir, IrCheck, IrColumn, IrForeignKey, IrIndex, IrIndexColumn, IrKey, IrTable};
 
-const SYSTEM: &str = "'mysql', 'information_schema', 'performance_schema', 'sys'";
+/// System schemas, plus the ones MySQL HeatWave and InnoDB Cluster add for themselves (tasks, audit,
+/// Autopilot, REST service, cluster metadata; AutoML keeps one ML_SCHEMA_<user> per user).
+const SYSTEM: &str = "'mysql', 'information_schema', 'performance_schema', 'sys', 'mysql_tasks', 'mysql_audit', 'mysql_autopilot',
+     'mysql_rest_service_metadata', 'mysql_innodb_cluster_metadata'";
 
 pub async fn list_schemas(driver: &Driver) -> Result<Vec<SchemaInfo>> {
     let found = rows(
@@ -17,7 +20,8 @@ pub async fn list_schemas(driver: &Driver) -> Result<Vec<SchemaInfo>> {
         &format!(
             "SELECT s.schema_name AS name,
                     (SELECT COUNT(*) FROM information_schema.tables t WHERE t.table_schema = s.schema_name AND t.table_type = 'BASE TABLE') AS tables
-             FROM information_schema.schemata s WHERE s.schema_name NOT IN ({SYSTEM}) ORDER BY s.schema_name"
+             FROM information_schema.schemata s WHERE s.schema_name NOT IN ({SYSTEM})
+               AND s.schema_name NOT LIKE 'ML\\_SCHEMA\\_%' ORDER BY s.schema_name"
         ),
     )
     .await?;

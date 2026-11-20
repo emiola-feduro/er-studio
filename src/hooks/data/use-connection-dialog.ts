@@ -8,6 +8,7 @@ import {
   parseSshConfig,
   sshHopsFor,
   sshHostLabel,
+  usesConnectString,
   type ConnectionEngine,
   type ConnectionProfile,
   type ConnectionSecrets,
@@ -17,7 +18,15 @@ import {
 } from '../../domain/connections';
 import { uid } from '../../domain/model';
 import { t } from '../../i18n';
-import { deleteSecrets, readSshConfig, saveSecrets, testConnection, type ConnectionReport } from '../../lib/connections';
+import {
+  deleteSecrets,
+  readSshConfig,
+  readWalletAliases,
+  saveSecrets,
+  sessionErrorMessage,
+  testConnection,
+  type ConnectionReport,
+} from '../../lib/connections';
 import useConnectionStore from '../../stores/use-connection-store';
 import useUiStore from '../../stores/use-ui-store';
 
@@ -40,6 +49,14 @@ const blank = (): ConnectionProfile => {
   };
 };
 
+/** A name for a connection made from a connect string: the alias, or the service of a descriptor. */
+export const oracleName = (connectString: string) => {
+  const text = connectString.trim();
+  const service = /SERVICE_NAME\s*=\s*([^)\s]+)/i.exec(text)?.[1] ?? /\bSID\s*=\s*([^)\s]+)/i.exec(text)?.[1];
+  if (service) return service.split('.')[0];
+  return text.startsWith('(') ? 'Oracle' : text.split(/[/:?]/).filter(Boolean).pop() || 'Oracle';
+};
+
 const validPort = (port: number) => Number.isInteger(port) && port > 0 && port < 65536;
 
 /** Field problems that block testing and saving, by field key. */
@@ -50,12 +67,21 @@ export const connectionProblems = (draft: ConnectionProfile): Record<string, str
     if (!draft.file?.trim()) problems.file = required;
     return problems;
   }
-  if (!draft.host.trim()) problems.host = required;
+  if (usesConnectString(draft)) {
+    if (!draft.connectString?.trim()) problems.connectString = required;
+  } else if (!draft.host.trim()) problems.host = required;
   // A SQL Server named instance may leave the port at 0: SQL Browser gives it.
   const portZeroOk = draft.engine === 'sqlserver' && Boolean(draft.instance?.trim()) && draft.port === 0;
-  if (!validPort(draft.port) && !portZeroOk) problems.port = t('connections.invalidPort');
-  if (!draft.database.trim() && draft.engine !== 'mysql') problems.database = required;
+  if (!usesConnectString(draft)) {
+    if (!validPort(draft.port) && !portZeroOk) problems.port = t('connections.invalidPort');
+    if (!draft.database.trim() && draft.engine !== 'mysql') problems.database = required;
+  }
   if (!draft.user.trim() && !draft.integratedAuth) problems.user = required;
+  // The Oracle driver checks TLS against the host it reaches, which through a tunnel is this computer.
+  if (draft.engine === 'oracle' && draft.hops.length > 0) {
+    if (usesConnectString(draft)) problems.oracleRoute = t('connections.oracle.routeString');
+    else if (draft.wallet?.trim() || draft.tls.mode !== 'disable') problems.oracleRoute = t('connections.oracle.routeTls');
+  }
   draft.hops.forEach((hop, index) => {
     if (!hop.host.trim()) problems[`hop${index}.host`] = required;
     if (!validPort(hop.port)) problems[`hop${index}.port`] = t('connections.invalidPort');
@@ -71,7 +97,9 @@ const useConnectionDialog = () => {
   const connections = useConnectionStore((s) => s.connections);
   const saved = id ? connections.find((c) => c.id === id) : undefined;
   const [draft, setDraft] = useState<ConnectionProfile>(blank);
-  const [secrets, setSecrets] = useState<ConnectionSecrets>({ db: '', hops: [] });
+  const [secrets, setSecrets] = useState<ConnectionSecrets>({ db: '', hops: [], wallet: '' });
+  const [walletAliases, setWalletAliases] = useState<string[]>([]);
+  const [walletError, setWalletError] = useState<string | null>(null);
   const [report, setReport] = useState<ConnectionReport | null>(null);
   const [testing, setTesting] = useState(false);
   const [sshHosts, setSshHosts] = useState<SshConfigHost[] | null>(null);
@@ -81,12 +109,36 @@ const useConnectionDialog = () => {
   useEffect(() => {
     if (!open) return;
     setDraft(saved ? structuredClone(saved) : blank());
-    setSecrets({ db: '', hops: saved?.hops.map(() => '') ?? [] });
+    setSecrets({ db: '', hops: saved?.hops.map(() => '') ?? [], wallet: '' });
     setReport(null);
     setSshHosts(null);
     setShowProblems(false);
     // Only when the dialog opens or switches connection.
   }, [open, id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The aliases of the chosen wallet, to pick one instead of typing the connect string.
+  const walletPath = draft.engine === 'oracle' ? (draft.wallet?.trim() ?? '') : '';
+  useEffect(() => {
+    setWalletError(null);
+    if (!walletPath) {
+      setWalletAliases([]);
+      return;
+    }
+    let current = true;
+    const timer = setTimeout(() => {
+      readWalletAliases(walletPath)
+        .then((aliases) => current && setWalletAliases(aliases))
+        .catch((error) => {
+          if (!current) return;
+          setWalletAliases([]);
+          setWalletError(sessionErrorMessage(error));
+        });
+    }, 300);
+    return () => {
+      current = false;
+      clearTimeout(timer);
+    };
+  }, [walletPath]);
 
   const problems = connectionProblems(draft);
   const invalid = Object.keys(problems).length > 0;
@@ -124,8 +176,13 @@ const useConnectionDialog = () => {
   const setEngine = (engine: ConnectionEngine) => {
     const previous = draft.engine;
     const usual = (value: string | number, of: Record<ConnectionEngine, string | number>) => value === of[previous] || value === '' || value === 0;
-    const databases: Record<ConnectionEngine, string> = { postgres: 'postgres', mysql: '', sqlserver: 'master', sqlite: '' };
+    const databases: Record<ConnectionEngine, string> = { postgres: 'postgres', mysql: '', sqlserver: 'master', oracle: '', sqlite: '' };
+    // Oracle has no "TLS if offered": it is in the clear or verified.
+    const tlsMode =
+      engine === 'oracle' && (draft.tls.mode === 'prefer' || draft.tls.mode === 'require' || draft.tls.mode === 'verifyCa') ? 'disable' : draft.tls.mode;
     update({
+      tls: { ...draft.tls, mode: tlsMode },
+      oracleConnectBy: engine === 'oracle' ? (draft.oracleConnectBy ?? 'service') : draft.oracleConnectBy,
       engine,
       port: usual(draft.port, DEFAULT_PORTS) ? DEFAULT_PORTS[engine] : draft.port,
       user: usual(draft.user, DEFAULT_USERS) ? DEFAULT_USERS[engine] : draft.user,
@@ -134,6 +191,15 @@ const useConnectionDialog = () => {
       integratedAuth: engine === 'sqlserver' ? draft.integratedAuth : false,
     });
   };
+
+  /** Picks an Oracle wallet (the zip the cloud console gives); a wallet always means TLS. */
+  const chooseWallet = async () => {
+    const { open } = await import('@tauri-apps/plugin-dialog');
+    const path = await open({ multiple: false, directory: false, filters: [{ name: 'Wallet', extensions: ['zip'] }] });
+    if (typeof path === 'string') update({ wallet: path, tls: { ...draft.tls, mode: 'verifyFull' } });
+  };
+
+  const setWalletSecret = (value: string) => setSecrets((s) => ({ ...s, wallet: value }));
 
   /** Picks a SQLite file with the system dialog. */
   const chooseFile = async () => {
@@ -150,7 +216,12 @@ const useConnectionDialog = () => {
     const parsed = parseConnectionUrl(text);
     if (!parsed) return false;
     const { password, tlsMode, ...fields } = parsed;
-    update({ ...fields, tls: tlsMode ? { ...draft.tls, mode: tlsMode } : draft.tls });
+    const unverifiable = fields.engine === 'oracle' && ['prefer', 'require', 'verifyCa'].includes(draft.tls.mode);
+    update({
+      ...fields,
+      oracleConnectBy: fields.oracleConnectBy ?? draft.oracleConnectBy,
+      tls: { ...draft.tls, mode: tlsMode ?? (unverifiable ? 'disable' : draft.tls.mode) },
+    });
     if (password) setDbSecret(password);
     return true;
   };
@@ -208,11 +279,13 @@ const useConnectionDialog = () => {
       draft.name.trim() ||
       (draft.engine === 'sqlite'
         ? (draft.file ?? '').split(/[\\/]/).pop() || 'SQLite'
-        : t('connections.defaultName', { database: draft.database.trim() || draft.host.trim(), host: draft.host.trim() }));
+        : usesConnectString(draft)
+          ? oracleName(draft.connectString ?? '')
+          : t('connections.defaultName', { database: draft.database.trim() || draft.host.trim(), host: draft.host.trim() }));
     const profile: ConnectionProfile = { ...draft, name, updatedAt: Date.now() };
     const withoutSecret = profile.hops.flatMap((hop, index) => (hopSecret(hop) ? [] : [index]));
     try {
-      await saveSecrets(profile.id, secrets, withoutSecret);
+      await saveSecrets(profile.id, secrets, withoutSecret, profile.engine !== 'oracle' || !profile.wallet?.trim());
     } catch (error) {
       useUiStore.getState().notify(t('connections.keychainFailed', { message: error instanceof Error ? error.message : String(error) }), 'error');
       return;
@@ -245,6 +318,10 @@ const useConnectionDialog = () => {
     secrets,
     setDbSecret,
     setHopSecret,
+    chooseWallet,
+    setWalletSecret,
+    walletAliases,
+    walletError,
     applyUrl,
     sshHosts,
     loadSshConfig,

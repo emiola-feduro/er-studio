@@ -15,7 +15,7 @@ import useUiStore from '../../stores/use-ui-store';
 type Status = 'idle' | 'reading' | 'ready' | 'failed' | 'applying';
 
 /** Usual schema of each engine, chosen first when it exists. */
-const USUAL_SCHEMA = { postgres: 'public', sqlserver: 'dbo', mysql: '', sqlite: 'main' } as const;
+const USUAL_SCHEMA = { postgres: 'public', sqlserver: 'dbo', mysql: '', sqlite: 'main', oracle: '' } as const;
 
 /**
  * Compares a live database with the open model: reads its schema, matches tables and columns by name,
@@ -93,7 +93,8 @@ const useLiveCompare = (project: Project | null | undefined, connection: Connect
         const found = connection.engine === 'sqlite' ? [{ name: 'main', tables: 0 }] : await listSchemas(await sessionId());
         if (cancelled) return;
         setSchemas(found);
-        const usual = USUAL_SCHEMA[connection.engine] || connection.database;
+        // Oracle keeps each user's tables in the schema named after it.
+        const usual = USUAL_SCHEMA[connection.engine] || (connection.engine === 'oracle' ? connection.user.trim().toUpperCase() : connection.database);
         const first = found.find((s) => s.name === usual) ?? found.find((s) => s.tables > 0) ?? found[0];
         const chosen = first?.name ?? '';
         setSchema(chosen);

@@ -17,6 +17,7 @@ pub fn run() {
             connections::secrets_save,
             connections::secrets_delete,
             connections::ssh_config_read,
+            connections::oracle_wallet_aliases,
             connections::connection_open,
             connections::connection_close,
             connections::session_schemas,

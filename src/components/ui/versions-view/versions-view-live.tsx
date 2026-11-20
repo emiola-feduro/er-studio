@@ -15,6 +15,8 @@ const VersionsViewLive = ({ connection, live }: VersionsViewLiveProps) => {
   const t = useT();
   const [confirming, setConfirming] = useState(false);
   const [typed, setTyped] = useState('');
+  // MySQL and Oracle commit each structure change as it runs, so a failed step leaves the earlier ones applied.
+  const autoCommitsDdl = connection.engine === 'mysql' || connection.engine === 'oracle';
   const { status, migration } = live;
   const changes = migration?.changes.length ?? 0;
   const blocked = !connection.allowWrites ? t('liveCompare.readOnly') : live.dialectMismatch ? t('liveCompare.mismatch') : null;
@@ -77,8 +79,8 @@ const VersionsViewLive = ({ connection, live }: VersionsViewLiveProps) => {
       >
         <div className="space-y-3">
           <p>{t('liveCompare.confirmMessage', { count: changes, name: connection.name })}</p>
-          <p className={connection.engine === 'mysql' ? 'text-warning' : ''}>
-            {connection.engine === 'mysql' ? t('liveCompare.mysqlNote') : t('liveCompare.transactionNote')}
+          <p className={autoCommitsDdl ? 'text-warning' : ''}>
+            {autoCommitsDdl ? t('liveCompare.ddlNote', { engine: t(`connections.engine.${connection.engine}`) }) : t('liveCompare.transactionNote')}
           </p>
           <div className="space-y-1">
             <label htmlFor="live-compare-confirm" className="block">
