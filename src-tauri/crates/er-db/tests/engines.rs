@@ -400,7 +400,8 @@ fn bounded(future: impl std::future::Future<Output = ()> + Send + 'static) {
     }
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let task = runtime.spawn(future);
-    let outcome = runtime.block_on(tokio::time::timeout(std::time::Duration::from_secs(240), task));
+    // The timer needs the runtime, so it is made inside it.
+    let outcome = runtime.block_on(async { tokio::time::timeout(std::time::Duration::from_secs(240), task).await });
     runtime.shutdown_timeout(std::time::Duration::from_secs(2));
     match outcome {
         Ok(Ok(())) => {}
