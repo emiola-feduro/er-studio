@@ -187,12 +187,15 @@ fn auth_mode(role: Option<&str>) -> Result<Option<u8>> {
     }
 }
 
+/// How the session shows in V$SESSION; Oracle only takes letters, digits and a few signs there.
+const PROGRAM: &str = "ERStudio";
+
 fn open_blocking(config: ConnectionConfig, connect_string: String, wallet: Option<WalletDir>) -> Result<(oracledb::Connection, String)> {
     let mut options = oracledb::Config::default()
         .set_credentials(&config.user, config.password.as_deref().unwrap_or(""))
-        .set_driver_name("ER Studio ++")
+        .set_driver_name(PROGRAM)
         .set_transport_connect_timeout(Some(Duration::from_secs(config.timeout_secs.max(1))))
-        .set_program("ER Studio ++")
+        .set_program(PROGRAM)
         .map_err(oracle_error)?;
     if let Some(dir) = &wallet {
         let dir = dir.0.to_string_lossy().to_string();
@@ -634,6 +637,12 @@ mod tests {
         );
         assert_eq!(split_script("SELECT 1 FROM dual\n/\n"), ["SELECT 1 FROM dual"]);
         assert!(split_script("  ;\n").is_empty());
+    }
+
+    #[test]
+    fn the_program_name_is_accepted() {
+        assert!(oracledb::Config::default().set_program(PROGRAM).is_ok());
+        assert!(oracledb::Config::default().set_program("ER Studio ++").is_err());
     }
 
     #[test]
