@@ -57,6 +57,10 @@ jobs:
         working-directory: src-tauri
         run: ERDB_TEST=1 ERDB_MSSQL=1 ERDB_ORACLE=1 cargo test -p er-db
 
+      - name: Oracle logs
+        if: failure()
+        run: docker logs --tail 60 erdb-oracle 2>&1 || true
+
       - name: Stop test servers
         if: always()
         run: CONTAINER_ENGINE=docker src-tauri/crates/er-db/tests/env/down.sh

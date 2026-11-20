@@ -136,6 +136,31 @@ pub async fn local_forward(tunnel: Tunnel) -> Result<u16> {
     Ok(port)
 }
 
+/// Stops a local forward when dropped, closing both of its sockets: a driver blocked reading from it
+/// gets an error instead of waiting forever.
+pub struct ForwardGuard(tokio::task::AbortHandle);
+
+impl Drop for ForwardGuard {
+    fn drop(&mut self) {
+        self.0.abort();
+    }
+}
+
+/// Like `local_forward`, but the forward lives only as long as the guard it returns.
+pub async fn local_forward_guarded(tunnel: Tunnel) -> Result<(u16, ForwardGuard)> {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.map_err(|e| unreachable("127.0.0.1", e))?;
+    let port = listener.local_addr().map_err(|e| unreachable("127.0.0.1", e))?.port();
+    let task = tokio::spawn(async move {
+        if let Ok((mut local, _)) = listener.accept().await {
+            drop(listener);
+            let Tunnel { mut stream, guards } = tunnel;
+            let _ = tokio::io::copy_bidirectional(&mut local, &mut stream).await;
+            drop(guards);
+        }
+    });
+    Ok((port, ForwardGuard(task.abort_handle())))
+}
+
 /// Opens the chain and returns the stream to `config.host:config.port`, recording each step.
 pub async fn open(config: &ConnectionConfig, steps: &mut Vec<Step>) -> Result<Tunnel> {
     let seconds = config.timeout_secs;

@@ -392,11 +392,30 @@ fn oracle_config(allow_writes: bool) -> ConnectionConfig {
     config(Engine::Oracle, 51521, "tienda", "secreto", "FREEPDB1", TlsMode::Disable, allow_writes)
 }
 
-#[tokio::test]
-async fn oracle() {
+/// Runs an Oracle test with a time limit. The driver blocks threads, and a runtime waits for them when it
+/// shuts down, so a stuck call would hang the whole test run instead of failing it.
+fn bounded(future: impl std::future::Future<Output = ()> + Send + 'static) {
     if !enabled() || std::env::var("ERDB_ORACLE").is_err() {
         return;
     }
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+    let task = runtime.spawn(future);
+    let outcome = runtime.block_on(tokio::time::timeout(std::time::Duration::from_secs(240), task));
+    runtime.shutdown_timeout(std::time::Duration::from_secs(2));
+    match outcome {
+        Ok(Ok(())) => {}
+        Ok(Err(error)) if error.is_panic() => std::panic::resume_unwind(error.into_panic()),
+        Ok(Err(error)) => panic!("{error}"),
+        Err(_) => panic!("no answer after 240 s"),
+    }
+}
+
+#[test]
+fn oracle() {
+    bounded(oracle_checks());
+}
+
+async fn oracle_checks() {
     er_db::init();
     let sessions = Arc::new(Sessions::default());
     let admin = oracle_config(true);
@@ -473,11 +492,12 @@ async fn oracle() {
     sessions.close(read_only).await;
 }
 
-#[tokio::test]
-async fn oracle_through_an_ssh_tunnel() {
-    if !enabled() || std::env::var("ERDB_ORACLE").is_err() {
-        return;
-    }
+#[test]
+fn oracle_through_an_ssh_tunnel() {
+    bounded(oracle_tunnel_checks());
+}
+
+async fn oracle_tunnel_checks() {
     let sessions = Arc::new(Sessions::default());
     let mut cfg = oracle_config(false);
     cfg.host = "oracle".into();

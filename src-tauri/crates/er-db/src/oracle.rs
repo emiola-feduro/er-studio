@@ -219,36 +219,25 @@ pub async fn connect(config: &ConnectionConfig, steps: &mut Vec<Step>) -> Result
     crate::init();
     let tls = uses_tls(config);
     let given = given_connect_string(config);
-    let connect_string = if !config.hops.is_empty() {
-        if given.is_some() {
+    // Plain TCP always goes through a local forward this side owns, directly or through the hops: when
+    // time runs out, dropping it closes the socket, so the driver's blocking thread ends too. TLS has to
+    // reach the real host name, so the driver opens that connection itself.
+    let mut forward = None;
+    let connect_string = if let Some(given) = given {
+        if !config.hops.is_empty() {
             return Err(unsupported("Through SSH or a proxy, Oracle connects with host, port and service, not with a connect string or alias"));
         }
-        if tls {
-            return Err(unsupported("Oracle TLS (TCPS) does not work through SSH or a proxy yet; connect directly or through a VPN"));
-        }
-        let tunnel = transport::open(config, steps).await?;
-        let port = transport::local_forward(tunnel).await?;
-        descriptor("127.0.0.1", port, &config.database, config.sid, false)
-    } else if let Some(given) = given {
         given
     } else if tls {
+        if !config.hops.is_empty() {
+            return Err(unsupported("Oracle TLS (TCPS) does not work through SSH or a proxy yet; connect directly or through a VPN"));
+        }
         descriptor(config.host.trim(), config.port, &config.database, config.sid, true)
     } else {
-        // Find the address that answers (localhost may be ::1 or 127.0.0.1) and hand that one to the driver.
-        let started = Instant::now();
-        let target = format!("{}:{}", config.host.trim(), config.port);
-        let probe = within(config.timeout_secs, "tcp", &target, async {
-            transport::connect_tcp(config.host.trim(), config.port).await.map_err(|e| crate::error::unreachable(&target, e))
-        })
-        .await?;
-        let address = probe.peer_addr().map_err(|e| crate::error::unreachable(&target, e))?;
-        drop(probe);
-        steps.push(Step {
-            kind: "tcp",
-            target,
-            ms: started.elapsed().as_millis() as u64,
-        });
-        descriptor(&address.ip().to_string(), config.port, &config.database, config.sid, false)
+        let tunnel = transport::open(config, steps).await?;
+        let (port, guard) = transport::local_forward_guarded(tunnel).await?;
+        forward = Some(guard);
+        descriptor("127.0.0.1", port, &config.database, config.sid, false)
     };
     let wallet = wallet_dir(config)?;
     let target = if config.connect_string.as_deref().is_some_and(|s| !s.trim().is_empty()) {
@@ -267,7 +256,11 @@ pub async fn connect(config: &ConnectionConfig, steps: &mut Vec<Step>) -> Result
         target,
         ms: started.elapsed().as_millis() as u64,
     });
-    Ok((Driver::Oracle(Arc::new(Mutex::new(connection))), version, Vec::new()))
+    let mut guards: transport::Guards = Vec::new();
+    if let Some(forward) = forward {
+        guards.push(Box::new(forward));
+    }
+    Ok((Driver::Oracle(Arc::new(Mutex::new(connection))), version, guards))
 }
 
 /// The value of an Oracle timestamp as "2024-05-01 13:45:00" (fractions without trailing zeros).

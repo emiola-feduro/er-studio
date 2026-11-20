@@ -60,3 +60,25 @@ fn live_query_futures_are_send(sessions: &std::sync::Arc<er_db::session::Session
     is_send(sessions.finish(1, true));
     is_send(sessions.script(1, sql));
 }
+
+#[tokio::test]
+async fn a_silent_oracle_server_times_out_instead_of_hanging() {
+    // The Oracle driver blocks a thread; if nothing closed its socket, this test would never end.
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let silent = tokio::spawn(async move {
+        let mut held = Vec::new();
+        while let Ok((socket, _)) = listener.accept().await {
+            held.push(socket);
+        }
+    });
+    let config: ConnectionConfig = serde_json::from_str(&format!(
+        r#"{{"engine":"oracle","host":"127.0.0.1","port":{port},"database":"FREEPDB1","user":"x","password":"x","tls":{{"mode":"disable"}},"timeoutSecs":1}}"#
+    ))
+    .unwrap();
+    let started = std::time::Instant::now();
+    let report = er_db::test_connection(&config).await;
+    assert!(matches!(report.error, Some(er_db::Error::Timeout { .. })), "{:?}", report.error);
+    assert!(started.elapsed() < std::time::Duration::from_secs(15), "{:?}", started.elapsed());
+    silent.abort();
+}
