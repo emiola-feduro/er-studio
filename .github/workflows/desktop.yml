@@ -3,8 +3,8 @@ name: Desktop release
 on:
   push:
     tags: ['v*']
-    # Feature branches build too (the app embeds the interface, so any change counts), until the workflow lives on main.
-    branches: ['feat/**']
+    # Feature and fix branches build too (the app embeds the interface, so any change counts).
+    branches: ['feat/**', 'fix/**']
   workflow_dispatch:
 
 permissions:
@@ -84,6 +84,17 @@ jobs:
           # latest.json lists the signed bundles; installed apps read it from the latest published release.
           includeUpdaterJson: true
           args: ${{ matrix.args }}
+
+      # The macOS app is signed ad hoc (tauri.conf.json): without any signature, Gatekeeper calls a downloaded app
+      # "damaged". This fails the build if the bundle is not signed as a whole.
+      - name: Check the macOS signature
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        run: |
+          app=$(find src-tauri/target -path '*/bundle/macos/*.app' -maxdepth 5 -type d | head -1)
+          echo "$app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign -dv "$app" 2>&1 | grep -E 'Signature|Identifier|Format'
 
   # Branch builds become public prereleases once every installer is up; version tags stay drafts to publish by hand.
   publish:

@@ -105,7 +105,11 @@ Hay dos versiones:
 Descarga el instalador de tu sistema desde [Releases](https://github.com/emiola-feduro/er-studio/releases/latest). Los instaladores todavía no están firmados:
 
 - **Windows:** `ER.Studio.++_<versión>_x64-setup.exe`. SmartScreen mostrará un aviso: elige "Más información" y luego "Ejecutar de todas formas".
-- **macOS:** el `.dmg` de tu procesador (`aarch64` para Apple Silicon, `x64` para Intel). La primera vez, ábrelo con clic derecho y "Abrir".
+- **macOS:** el `.dmg` de tu procesador (`aarch64` para Apple Silicon, `x64` para Intel). Arrastra la app a Aplicaciones. La primera vez, macOS dirá que no puede verificarla: ciérralo, abre Configuración del Sistema, ve a "Privacidad y seguridad" y pulsa "Abrir de todas formas" junto a ER Studio ++. Si un instalador anterior a la 0.4.1 dice que la app "está dañada", quítale la marca de descarga en Terminal:
+
+  ```bash
+  xattr -dr com.apple.quarantine "/Applications/ER Studio ++.app"
+  ```
 - **Linux:** `.deb`, `.rpm` o `.AppImage`.
 
 ## Desarrollo
